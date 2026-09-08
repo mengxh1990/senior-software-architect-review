@@ -29,11 +29,16 @@
 ## Step 1 · 引擎推荐下一考点
 
 ```bash
-python3 scripts/tutor.py recommend --limit 6
+python3 scripts/tutor.py diagnose --subject comprehensive
+python3 scripts/tutor.py recommend --subject comprehensive --limit 5
 # 若要切换科目：
 python3 scripts/tutor.py recommend --subject case --limit 6
 python3 scripts/tutor.py recommend --subject essay --limit 6
 ```
+
+有完整模考时，必须先合并逐题作答与 `postmortems.jsonl`：未纠偏错题、
+到期跨日复测、猜对/不确定题依次优先。通用考点排序只用于填补剩余名额。
+同一细考点当天完成确定作答后进入冷却，不继续密集重复。
 
 从输出取**优先级最高、且有 exam-bank 题**的考点。
 "有没有 exam-bank 题"用
@@ -73,9 +78,12 @@ python3 scripts/sanitize_bank.py exam-bank/07-software-engineering.md 1 4 6
 输出是 JSON 数组，每项含 `stem` / `options[]` / `correct` / `explanation`。
 `correct` 与 `explanation` **只**用于判分和作答后反馈，**不**在作答前回显。
 
-## Step 3 · AskUserQuestion 点选出题
+## Step 3 · 批量出题
 
-学员偏好点选。`AskUserQuestion` 的正确姿势：
+默认一次展示 5 题，学员统一作答后再统一判分和记档；冲刺时可按学员要求改为
+10 题。每组尽量覆盖不同细考点，不为了凑题重复当天已纠偏的题型。
+
+如果运行环境支持点选工具：
 
 - 每次调用 ≤ 4 题（工具上限）
 - `label` 只放选项字母：`"A"` / `"B"` / `"C"` / `"D"`（`label` 有 12 字符限制）
@@ -104,9 +112,19 @@ python3 scripts/tutor.py record \
   --subject comprehensive \
   --mode diagnostic \
   --score 0|1 --max-score 1 \
-  --confidence sure|unsure|guessed \
-  --source-type past_paper|self_authored
+  --confidence sure|unsure|guess \
+  --source-type simulation|self_authored
 ```
+
+自编题必须先登记，登记文件包含稳定 `item_id`、`topic_id`、`concept_id`、
+`question_family_id`、题干和选项：
+
+```bash
+python3 scripts/tutor.py register-question --file .study/new-question.json
+```
+
+登记会计算内容指纹；内容完全相同却更换 `item_id` 会被拒绝。变式题使用
+`variant_of` 指向来源题，并共享细考点或题型族，便于推荐器做冷却和去重。
 
 ### 聚合考点必须传 `--facet`
 
@@ -128,7 +146,7 @@ python3 scripts/tutor.py record \
 | 场景 | record？ | skill | mode | 能升 pass_ready？ |
 |---|---|---|---|---|
 | 客观题、闭卷、答对、`sure` | ✅ | recognition | diagnostic/practice | 是（累积 6 条证据 + 跨日 2 次） |
-| 答对但 `guessed` | ✅ | recognition | diagnostic | 否，只算 fragile |
+| 答对但 `guess` | ✅ | recognition | diagnostic | 否，只算 fragile |
 | 答错 | ✅ | recognition | diagnostic | 否，进 1/3/7/14 复习队列 |
 | 案例独立作答 + 逐项估分 | ✅ | application | practice/mock | 需 2 次 15/25 等价分 |
 | 案例只看讲解未作答 | ⚠️ 只写 note | application | practice | 否 |
@@ -175,7 +193,7 @@ record 完再跑 `python3 scripts/tutor.py status` 确认落盘。
 | `record` 报 `--facet is required` | 聚合考点漏 facet | 查 [`topic-map.md`](./topic-map.md) 补 facet |
 | topic-map 与 curriculum 不一致 | 有人改了 curriculum 没重跑生成脚本 | `python3 scripts/gen_topic_map.py` |
 | 学员答案里选项字母对不上 | label 用了字母以外内容 | 回 Step 3 校验 label 只放 A/B/C/D |
-| status 仍显示 `unmeasured` | 单题小测不能升 measured | 限时 65 题整卷模考才升级 |
+| status 仍显示 `unmeasured` | 单题小测不能升 measured | 完整 75 分制整卷模考才升级 |
 | 学员嫌打字慢改点选 | 走过一次就立刻切 AskUserQuestion | 后续每屏都点选，不要回退 |
 | 学员直接要答案 | PROGRESS_PROTOCOL 禁止直接给答案 | 走 scaffolding：给方法 + 让 TA 填空 |
 
@@ -185,7 +203,9 @@ record 完再跑 `python3 scripts/tutor.py status` 确认落盘。
 
 - [ ] 每题都 `record` 了，`status` 里 attempt 数增加
 - [ ] 聚合考点每条都带了 `--facet`
-- [ ] 蒙对/不确定的题 `--confidence` 标了 `unsure` / `guessed`
+- [ ] 蒙对/不确定的题 `--confidence` 标了 `unsure` / `guess`
+- [ ] 自编题已登记细考点、题型族和内容指纹
+- [ ] 未重复原题、同题型或当天已经纠偏的细考点
 - [ ] 错题给了错因 + 记忆钩子 + 变式题
 - [ ] 没把 `✅` / `**答案**` / `**解析**` 泄给学员
 - [ ] 没有硬贴 exam-bank 原文（一律走 `sanitize_bank.py`）

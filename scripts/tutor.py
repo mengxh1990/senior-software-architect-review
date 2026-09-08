@@ -21,6 +21,8 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterable, Iterator
 
+import question_registry
+
 
 SCHEMA_VERSION = 1
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -207,6 +209,8 @@ def state_paths(data_dir: Path) -> dict[str, Path]:
         "state": data_dir / "state.json",
         "attempts": data_dir / "attempts.jsonl",
         "dashboard": data_dir / "dashboard.md",
+        "question_registry": question_registry.registry_path(data_dir),
+        "postmortems": data_dir / "postmortems.jsonl",
     }
 
 
@@ -229,6 +233,7 @@ def new_state(curriculum: dict[str, Any], created_at: str) -> dict[str, Any]:
         "strategy": {
             "pass_line": float(strategy.get("pass_line", 45)),
             "safe_target": float(strategy.get("safe_target", 52)),
+            "min_review_interval_days": 0,
             "case_tracks": ["C01.CASE_ATAM"],
             "essay_themes": [],
             "case_tracks_configured": False,
@@ -271,6 +276,15 @@ def validate_state(state: Any) -> dict[str, Any]:
         raise TutorError("state.json strategy 必须是对象")
     for key in ("pass_line", "safe_target"):
         require_number_or_none(strategy.get(key), f"strategy.{key}")
+    minimum_interval = strategy.get("min_review_interval_days", 0)
+    if (
+        not isinstance(minimum_interval, int)
+        or isinstance(minimum_interval, bool)
+        or minimum_interval < 0
+    ):
+        raise TutorError(
+            "state.json strategy.min_review_interval_days 必须是非负整数"
+        )
     for key in ("case_tracks", "essay_themes"):
         values = strategy.get(key)
         if not isinstance(values, list) or any(not isinstance(item, str) for item in values):
@@ -465,19 +479,70 @@ def subject_status(subject: dict[str, Any], safe_target: float) -> str:
     return "safe"
 
 
+def effective_review_date(
+    next_review: str | None, last_attempt: str | None, minimum_interval: int
+) -> str | None:
+    """Organic review date with the configured minimum interval applied.
+
+    Stored ``next_review_at`` keeps its organic spacing (1/3/14 days). The
+    ``min_review_interval_days`` floor is recomputed at every read site, so
+    raising and later lowering the setting both take effect immediately
+    without rewriting stored state.
+    """
+
+    if not next_review:
+        return next_review
+    effective = parse_date(next_review)
+    if minimum_interval > 0 and last_attempt:
+        floor = parse_datetime(last_attempt).date() + timedelta(days=minimum_interval)
+        if floor > effective:
+            effective = floor
+    return effective.isoformat()
+
+
 def status_payload(profile: dict[str, Any], state: dict[str, Any]) -> dict[str, Any]:
     safe_target = float(state.get("strategy", {}).get("safe_target", 52))
+    minimum_interval = int(
+        state.get("strategy", {}).get("min_review_interval_days", 0) or 0
+    )
     subjects: dict[str, Any] = {}
     for name in SUBJECTS:
         item = dict(state["subjects"][name])
         item["status"] = subject_status(item, safe_target)
         subjects[name] = item
+    # Report review dates with the interval floor applied, without mutating
+    # the stored organic values.
+    topics: dict[str, Any] = {}
+    for topic_id, record in state.get("topics", {}).items():
+        mastery = record.get("mastery") if isinstance(record, dict) else None
+        if not isinstance(mastery, dict):
+            topics[topic_id] = record
+            continue
+        effective_mastery: dict[str, Any] = {}
+        effective_dates: list[str] = []
+        for skill, skill_record in mastery.items():
+            if not isinstance(skill_record, dict):
+                effective_mastery[skill] = skill_record
+                continue
+            effective = effective_review_date(
+                skill_record.get("next_review_at"),
+                skill_record.get("last_attempt_at"),
+                minimum_interval,
+            )
+            if effective:
+                effective_dates.append(effective)
+            effective_mastery[skill] = {**skill_record, "next_review_at": effective}
+        topics[topic_id] = {
+            **record,
+            "mastery": effective_mastery,
+            "next_review_at": min(effective_dates) if effective_dates else None,
+        }
     return {
         "schema_version": SCHEMA_VERSION,
         "profile": profile,
         "strategy": state.get("strategy", {}),
         "subjects": subjects,
-        "topics": state.get("topics", {}),
+        "topics": topics,
         "last_session_at": state.get("last_session_at"),
     }
 
@@ -850,6 +915,15 @@ def validate_record_event(event: dict[str, Any], curriculum: dict[str, Any]) -> 
     invalid_reasons = set(reasons) - WRONG_REASONS
     if invalid_reasons:
         raise TutorError("未知错因：" + ", ".join(sorted(invalid_reasons)))
+    for key in (
+        "concept_id",
+        "question_family_id",
+        "question_fingerprint",
+        "variant_of",
+    ):
+        value = event.get(key)
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            raise TutorError(f"{key} 必须是非空字符串")
     if skill == "production" and event.get("mode") == "full_timed":
         if event.get("complete") is not True:
             raise TutorError("完整限时论文必须显式传入 --complete")
@@ -953,6 +1027,10 @@ def apply_record_event(
                 "complete": event.get("complete", False),
                 "duration_seconds": event.get("duration_seconds"),
                 "word_count": event.get("word_count"),
+                "concept_id": event.get("concept_id"),
+                "question_family_id": event.get("question_family_id"),
+                "question_fingerprint": event.get("question_fingerprint"),
+                "variant_of": event.get("variant_of"),
             }
         )
         dates = set(record.get("successful_dates", []))
@@ -986,6 +1064,8 @@ def apply_record_event(
         interval_days = 1
     else:
         interval_days = 3
+    # Store the organic interval; the configured minimum interval is a floor
+    # applied wherever the date is read, so it can change in both directions.
     next_review = attempted_at.date() + timedelta(days=interval_days)
     if is_latest and (is_mastery_assessment or not record.get("next_review_at")):
         record["next_review_at"] = next_review.isoformat()
@@ -1010,11 +1090,29 @@ def apply_record_event(
     if not session_last or attempted_at >= parse_datetime(session_last):
         state["last_session_at"] = attempted_iso
     state["applied_attempt_ids"].append(attempt_id)
+    minimum_interval = int(
+        state.get("strategy", {}).get("min_review_interval_days", 0) or 0
+    )
     return {
         "already_applied": False,
         "topic_status": topic_record["status"],
-        "next_review_at": record.get("next_review_at") or next_review.isoformat(),
+        "next_review_at": effective_review_date(
+            record.get("next_review_at") or next_review.isoformat(),
+            record.get("last_attempt_at"),
+            minimum_interval,
+        ),
     }
+
+
+# Enrichment keys added after the first deployed version. Events recorded
+# before the keys existed store ``None``; a replay that now fills them in is
+# still the same answer, so ``None`` on either side must stay compatible.
+DERIVED_EVENT_KEYS = (
+    "concept_id",
+    "question_family_id",
+    "question_fingerprint",
+    "variant_of",
+)
 
 
 def events_conflict(existing: dict[str, Any], candidate: dict[str, Any], *, compare_at: bool) -> bool:
@@ -1039,9 +1137,16 @@ def events_conflict(existing: dict[str, Any], candidate: dict[str, Any], *, comp
         "selected_answer",
         "correct_answer",
     )
-    return any(existing.get(key) != candidate.get(key) for key in keys) or (
-        compare_at and existing.get("at") != candidate.get("at")
-    )
+    if any(existing.get(key) != candidate.get(key) for key in keys):
+        return True
+    if any(
+        existing.get(key) is not None
+        and candidate.get(key) is not None
+        and existing.get(key) != candidate.get(key)
+        for key in DERIVED_EVENT_KEYS
+    ):
+        return True
+    return compare_at and existing.get("at") != candidate.get("at")
 
 
 def cmd_record(args: argparse.Namespace) -> int:
@@ -1051,6 +1156,40 @@ def cmd_record(args: argparse.Namespace) -> int:
     if topic is None:
         raise TutorError(f"未知稳定考点 ID：{args.topic}")
     subject = args.subject or choose_subject_for_skill(topic, args.skill)
+    private_registry = load_private_question_registry(args.data_dir)
+    registered = private_registry.get(args.item_id)
+    if args.item_id.startswith("self-authored/") and registered is None:
+        raise TutorError(
+            "自编题必须先用 register-question 登记题干、细考点与题型族，"
+            "再记录作答"
+        )
+    if registered is not None and registered.get("topic_id") != args.topic:
+        raise TutorError(
+            f"题目 {args.item_id} 已登记到 {registered.get('topic_id')}，"
+            f"不能记录到 {args.topic}"
+        )
+    concept_id = args.concept_id or (registered or {}).get("concept_id")
+    family_id = args.question_family_id or (registered or {}).get(
+        "question_family_id"
+    )
+    fingerprint = args.question_fingerprint or (registered or {}).get(
+        "question_fingerprint"
+    )
+    variant_of = args.variant_of or (registered or {}).get("variant_of")
+    if fingerprint:
+        duplicate = next(
+            (
+                item_id
+                for item_id, entry in private_registry.items()
+                if entry.get("question_fingerprint") == fingerprint
+                and item_id != args.item_id
+            ),
+            None,
+        )
+        if duplicate:
+            raise TutorError(
+                f"题目内容已登记为 {duplicate}；请复用原 item_id，不能换 ID 重复计证据"
+            )
     event = {
         "attempt_id": args.attempt_id,
         "event_type": "practice",
@@ -1071,6 +1210,10 @@ def cmd_record(args: argparse.Namespace) -> int:
         "source_type": args.source_type,
         "source": args.source,
         "feedback_seen": False,
+        "concept_id": concept_id,
+        "question_family_id": family_id,
+        "question_fingerprint": fingerprint,
+        "variant_of": variant_of,
     }
     validate_record_event(event, curriculum)
     profile, state = load_profile_and_state(args.data_dir)
@@ -1332,12 +1475,311 @@ def select_maintenance_subject(
     return max(overdue, key=lambda item: (item[0], -SUBJECTS.index(item[1])))[1]
 
 
+def load_private_question_registry(data_dir: Path) -> dict[str, dict[str, Any]]:
+    try:
+        return question_registry.load_registry(question_registry.registry_path(data_dir))
+    except ValueError as error:
+        raise TutorError(str(error)) from error
+
+
+def load_postmortems(data_dir: Path) -> list[dict[str, Any]]:
+    path = data_dir / "postmortems.jsonl"
+    if not path.exists():
+        return []
+    result: list[dict[str, Any]] = []
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError as error:
+            raise TutorError(
+                f"postmortems.jsonl 第 {line_number} 行损坏，拒绝用于诊断"
+            ) from error
+        if not isinstance(item, dict) or not isinstance(item.get("mock_id"), str):
+            raise TutorError(f"postmortems.jsonl 第 {line_number} 行无效")
+        result.append(item)
+    return result
+
+
+def _event_ratio(event: dict[str, Any]) -> float:
+    maximum = float(event.get("max_score", 0) or 0)
+    return float(event.get("score", 0) or 0) / maximum if maximum > 0 else 0.0
+
+
+def learning_diagnosis(
+    data_dir: Path,
+    subject: str,
+    today: date,
+    *,
+    state: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Merge the latest full mock, its postmortem and later variants."""
+
+    if subject not in SUBJECTS:
+        raise TutorError(f"未知科目：{subject}")
+    # Callers that already hold the validated state pass it in; reloading it
+    # here would repeat four file reads on every learning-plan request.
+    if state is None:
+        _, state = load_profile_and_state(data_dir)
+    attempts = load_attempts(state_paths(data_dir)["attempts"])
+    mock_events = sorted(
+        (
+            event
+            for event in attempts
+            if event.get("event_type") == "mock" and event.get("subject") == subject
+        ),
+        key=lambda event: parse_datetime(event.get("at")),
+    )
+    if not mock_events:
+        return {"subject": subject, "mock": None, "issues": []}
+    mock = mock_events[-1]
+    postmortems = {
+        item["mock_id"]: item for item in load_postmortems(data_dir)
+    }
+    private_registry = load_private_question_registry(data_dir)
+    grouped: dict[str, dict[str, Any]] = {}
+    for source_mock in mock_events:
+        mock_id = source_mock["attempt_id"]
+        prefix = f"{mock_id}-q-"
+        question_events = sorted(
+            (
+                event
+                for event in attempts
+                if event.get("event_type") == "practice"
+                and str(event.get("attempt_id", "")).startswith(prefix)
+            ),
+            key=lambda event: str(event.get("attempt_id")),
+        )
+        reasons_by_question = {
+            item.get("question_id"): item.get("wrong_reason")
+            for item in postmortems.get(mock_id, {}).get("items", [])
+            if isinstance(item, dict)
+        }
+        for event in question_events:
+            wrong = _event_ratio(event) < 1.0
+            uncertain = event.get("confidence") in {"guess", "unsure"}
+            if not wrong and not uncertain:
+                continue
+            metadata = question_registry.resolve_metadata(event, private_registry)
+            concept_id = metadata.get("concept_id")
+            if not concept_id:
+                continue
+            issue = grouped.setdefault(
+                concept_id,
+                {
+                    "concept_id": concept_id,
+                    "concept_label": metadata.get("concept_label") or concept_id,
+                    "question_family_id": metadata.get("question_family_id"),
+                    "topic_id": event.get("topic_id"),
+                    "subject": subject,
+                    "skill": event.get("skill"),
+                    "source_mock_id": mock_id,
+                    "source_mock_ids": [],
+                    "source_paper_id": source_mock.get("item_id"),
+                    "source_item_ids": [],
+                    "source_question_ids": [],
+                    "wrong_reasons": [],
+                    "signal": "wrong" if wrong else "uncertain",
+                    "source_at": source_mock["at"],
+                },
+            )
+            if mock_id not in issue["source_mock_ids"]:
+                issue["source_mock_ids"].append(mock_id)
+            if event.get("item_id") not in issue["source_item_ids"]:
+                issue["source_item_ids"].append(event.get("item_id"))
+            if event.get("question_id") and event["question_id"] not in issue["source_question_ids"]:
+                issue["source_question_ids"].append(event["question_id"])
+            reason = reasons_by_question.get(event.get("question_id"))
+            if reason and reason not in issue["wrong_reasons"]:
+                issue["wrong_reasons"].append(reason)
+            if parse_datetime(source_mock["at"]) >= parse_datetime(issue["source_at"]):
+                issue["source_at"] = source_mock["at"]
+                issue["source_mock_id"] = mock_id
+                issue["source_paper_id"] = source_mock.get("item_id")
+            if wrong:
+                issue["signal"] = "wrong"
+
+    minimum_interval = int(
+        state.get("strategy", {}).get("min_review_interval_days", 0) or 0
+    )
+    review_interval = max(1, minimum_interval)
+    # One pass resolves every attempt's metadata once; each issue then only
+    # filters the strong same-concept candidates instead of rescanning (and
+    # re-resolving) the whole event log per issue.
+    strong_by_concept: dict[
+        str, list[tuple[datetime, dict[str, Any], dict[str, Any]]]
+    ] = {}
+    for event in attempts:
+        if (
+            event.get("event_type") != "practice"
+            or event.get("subject") != subject
+            or _event_ratio(event) < 0.8
+            or event.get("confidence") != "sure"
+        ):
+            continue
+        metadata = question_registry.resolve_metadata(event, private_registry)
+        strong_concept = metadata.get("concept_id")
+        if not strong_concept:
+            continue
+        strong_by_concept.setdefault(strong_concept, []).append(
+            (parse_datetime(event.get("at")), event, metadata)
+        )
+    for issue in grouped.values():
+        concept_id = issue["concept_id"]
+        source_items = set(issue["source_item_ids"])
+        source_at = parse_datetime(issue["source_at"])
+        remedies = [
+            {
+                "attempt_id": event.get("attempt_id"),
+                "item_id": event.get("item_id"),
+                "at": event.get("at"),
+                "question_family_id": metadata.get("question_family_id"),
+            }
+            for attempted_at, event, metadata in strong_by_concept.get(concept_id, [])
+            if attempted_at > source_at and event.get("item_id") not in source_items
+        ]
+        distinct_items = {item["item_id"] for item in remedies if item.get("item_id")}
+        dates = {
+            parse_datetime(item["at"]).date().isoformat()
+            for item in remedies
+            if item.get("at")
+        }
+        verified = len(distinct_items) >= 2 and len(dates) >= 2
+        last_remedy_date = max((parse_date(value) for value in dates), default=None)
+        review_date = (
+            last_remedy_date + timedelta(days=review_interval)
+            if last_remedy_date
+            else today
+        )
+        if verified:
+            status = "verified"
+        elif remedies and review_date <= today:
+            status = "due_review"
+        elif remedies:
+            status = "awaiting_review"
+        else:
+            status = "pending_remediation"
+        issue["status"] = status
+        issue["remedy_attempts"] = remedies
+        issue["next_review_at"] = review_date.isoformat()
+        issue["avoid_item_ids"] = sorted(source_items | distinct_items)
+        issue["avoid_question_family_ids"] = sorted(
+            {
+                value
+                for value in [
+                    issue.get("question_family_id"),
+                    *[item.get("question_family_id") for item in remedies],
+                ]
+                if value
+            }
+        )
+        issue["reason"] = {
+            "pending_remediation": "最近完整模考暴露，尚无对准的确定作答变式",
+            "due_review": "已完成当日纠偏，现已到跨日复测日",
+            "awaiting_review": "已完成当日纠偏，等待跨日复测",
+            "verified": "已由不同题目和不同日期的确定作答验证",
+        }[status]
+
+    priority = {
+        "pending_remediation": 0,
+        "due_review": 1,
+        "awaiting_review": 2,
+        "verified": 3,
+    }
+    issues = sorted(
+        grouped.values(),
+        key=lambda item: (
+            priority[item["status"]],
+            0 if item["signal"] == "wrong" else 1,
+            item["topic_id"],
+            item["concept_id"],
+        ),
+    )
+    return {
+        "subject": subject,
+        "mock": {
+            "mock_id": mock_id,
+            "paper_id": mock.get("item_id"),
+            "at": mock.get("at"),
+            "score": mock.get("score"),
+            "max_score": mock.get("max_score"),
+        },
+        "issues": issues,
+    }
+
+
+def cmd_diagnose(args: argparse.Namespace) -> int:
+    today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
+    payload = learning_diagnosis(args.data_dir, args.subject, today)
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+    if payload["mock"] is None:
+        print(f"{args.subject} 尚无完整模考，暂无逐题诊断。")
+        return 0
+    print(
+        f"最近模考：{payload['mock']['score']:g}/{payload['mock']['max_score']:g} "
+        f"({payload['mock']['at']})"
+    )
+    for index, issue in enumerate(payload["issues"], 1):
+        print(
+            f"{index}. {issue['concept_label']} [{issue['status']}] — {issue['reason']}"
+        )
+    return 0
+
+
+def cmd_register_question(args: argparse.Namespace) -> int:
+    curriculum = load_curriculum()
+    topics = topic_map(curriculum)
+    try:
+        payload = json.loads(args.file.read_text(encoding="utf-8"))
+    except FileNotFoundError as error:
+        raise TutorError(f"题目登记文件不存在：{args.file}") from error
+    except json.JSONDecodeError as error:
+        raise TutorError(f"题目登记文件不是有效 JSON：{args.file}") from error
+    raw_entries = payload if isinstance(payload, list) else [payload]
+    path = question_registry.registry_path(args.data_dir)
+    existing = load_private_question_registry(args.data_dir)
+    fingerprints = {
+        entry.get("question_fingerprint"): item_id
+        for item_id, entry in existing.items()
+        if entry.get("question_fingerprint")
+    }
+    changed = False
+    for raw in raw_entries:
+        try:
+            entry = question_registry.validate_entry(raw)
+        except ValueError as error:
+            raise TutorError(str(error)) from error
+        if entry["topic_id"] not in topics:
+            raise TutorError(f"未知稳定考点 ID：{entry['topic_id']}")
+        previous = existing.get(entry["item_id"])
+        if previous is not None:
+            if previous != entry:
+                raise TutorError(f"题目 {entry['item_id']} 已登记且内容不同")
+            continue
+        duplicate = fingerprints.get(entry["question_fingerprint"])
+        if duplicate:
+            raise TutorError(
+                f"题目内容已登记为 {duplicate}；请复用原 item_id，不能换 ID 重复计证据"
+            )
+        existing[entry["item_id"]] = entry
+        fingerprints[entry["question_fingerprint"]] = entry["item_id"]
+        changed = True
+    if changed:
+        atomic_write_text(path, question_registry.serialize_registry(existing.values()))
+    print(f"已登记 {len(raw_entries)} 道题；私人题目登记共 {len(existing)} 道。")
+    return 0
+
+
 def cmd_configure(args: argparse.Namespace) -> int:
     if (
         args.case_track is None
         and args.essay_theme is None
         and args.skip_topic is None
         and args.unskip_topic is None
+        and args.min_review_interval_days is None
     ):
         raise TutorError(
             "至少提供路线选项或 --skip-topic TOPIC=原因 / --unskip-topic TOPIC"
@@ -1389,6 +1831,13 @@ def cmd_configure(args: argparse.Namespace) -> int:
         if topic_id not in topics:
             raise TutorError(f"未知稳定考点 ID：{topic_id}")
         skips.pop(topic_id, None)
+    if args.min_review_interval_days is not None:
+        if args.min_review_interval_days < 0:
+            raise TutorError("min-review-interval-days 必须是非负整数")
+        # The floor is applied at every read site (status, recommend, record
+        # output), so changing the value in either direction takes effect
+        # immediately without rewriting stored review dates.
+        state["strategy"]["min_review_interval_days"] = args.min_review_interval_days
     save_state_bundle(args.data_dir, profile, state, backup=True)
     print(
         "已更新个人路线：案例 "
@@ -1400,7 +1849,7 @@ def cmd_configure(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_recommend(args: argparse.Namespace) -> int:
+def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
     curriculum = load_curriculum()
     profile, state = load_profile_and_state(args.data_dir)
     today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
@@ -1418,6 +1867,7 @@ def cmd_recommend(args: argparse.Namespace) -> int:
     configured_case_tracks = set(strategy.get("case_tracks", []))
     configured_essay_themes = set(strategy.get("essay_themes", []))
     strategic_skips = set(strategy.get("strategic_skips", {}))
+    minimum_interval = int(strategy.get("min_review_interval_days", 0) or 0)
     cold_start_groups = curriculum.get("strategy", {}).get(
         "comprehensive_cold_start_groups", []
     )
@@ -1474,7 +1924,16 @@ def cmd_recommend(args: argparse.Namespace) -> int:
         due = False
         if review_at:
             try:
-                due = parse_date(review_at) <= today
+                due = (
+                    parse_date(
+                        effective_review_date(
+                            review_at,
+                            skill_progress.get("last_attempt_at"),
+                            minimum_interval,
+                        )
+                    )
+                    <= today
+                )
             except TutorError:
                 due = True
         due_factor = 1.7 if due else 1.0
@@ -1555,7 +2014,67 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             item["topic_id"],
         )
     )
-    selected = ranked[: args.limit]
+    # A corrupt private data file must not take the generic plan down with
+    # it: fall back to ranked topics and surface the diagnosis failure.
+    diagnosis_error: str | None = None
+    try:
+        diagnosis = learning_diagnosis(
+            args.data_dir, target_subject, today, state=state
+        )
+    except TutorError as error:
+        diagnosis = {"subject": target_subject, "mock": None, "issues": []}
+        diagnosis_error = str(error)
+    active_diagnostics = [
+        issue
+        for issue in diagnosis["issues"]
+        if issue["status"] in {"pending_remediation", "due_review"}
+        # The configured route gates apply to diagnostic gaps too: an
+        # explicitly skipped topic or an unselected track stays out of the
+        # plan even at priority 999.
+        and issue["topic_id"] not in strategic_skips
+        and not (
+            issue["topic_id"].startswith("C")
+            and strategy.get("case_tracks_configured")
+            and issue["topic_id"] not in configured_case_tracks
+        )
+        and not (
+            issue["topic_id"].startswith("P")
+            and strategy.get("essay_themes_configured")
+            and issue["topic_id"] not in configured_essay_themes
+        )
+    ]
+    diagnostic_items = [
+        {
+            "topic_id": issue["topic_id"],
+            "name": issue["concept_label"],
+            "subject": issue["subject"],
+            "skill": issue["skill"],
+            "priority_score": 999.0 - index,
+            "mastery": topic_mastery(state, issue["topic_id"], issue["skill"]),
+            "review_due": issue["status"] == "due_review",
+            "estimated_minutes": 5,
+            "reason": issue["reason"],
+            "resources": [],
+            "diagnostic_status": issue["status"],
+            "concept_id": issue["concept_id"],
+            "question_family_id": issue["question_family_id"],
+            "source_mock_id": issue["source_mock_id"],
+            "source_item_ids": issue["source_item_ids"],
+            "wrong_reasons": issue["wrong_reasons"],
+            "avoid_item_ids": issue["avoid_item_ids"],
+            "avoid_question_family_ids": issue["avoid_question_family_ids"],
+        }
+        for index, issue in enumerate(active_diagnostics)
+    ]
+    selected = diagnostic_items[: args.limit]
+    diagnostic_topics = {item["topic_id"] for item in selected}
+    if len(selected) < args.limit:
+        selected.extend(
+            item
+            for item in ranked
+            if item["topic_id"] not in diagnostic_topics
+        )
+        selected = selected[: args.limit]
     if maintenance_subject and args.limit >= 2 and not any(
         item["subject"] == maintenance_subject for item in selected
     ):
@@ -1563,10 +2082,17 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             (item for item in ranked if item["subject"] == maintenance_subject),
             None,
         )
-        if maintenance_item is not None:
+        # Maintenance is best-effort: never evict an uncorrected mock gap
+        # (a diagnostic item) to make room for it.
+        replaceable = [
+            index
+            for index, item in enumerate(selected)
+            if "diagnostic_status" not in item
+        ]
+        if maintenance_item is not None and replaceable:
             maintenance_item = dict(maintenance_item)
             maintenance_item["reason"] = "三天最低维护；" + maintenance_item["reason"]
-            selected[-1] = maintenance_item
+            selected[replaceable[-1]] = maintenance_item
 
     recommendations = []
     for item in selected:
@@ -1582,21 +2108,33 @@ def cmd_recommend(args: argparse.Namespace) -> int:
         "days_to_exam": days_to_exam,
         "subject_allocation": allocations,
         "recommendations": recommendations,
+        "diagnosis_error": diagnosis_error,
         "profile": {
             "exam_date": profile.get("exam_date"),
             "daily_minutes": profile.get("daily_minutes"),
         },
     }
+    payload["diagnosis"] = diagnosis
+    return payload
+
+
+def cmd_recommend(args: argparse.Namespace) -> int:
+    payload = build_recommendation_payload(args)
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
 
-    print(f"当前优先科目：{target_subject}")
+    print(f"当前优先科目：{payload['target_subject']}")
     print(
         "时间分配："
-        + "，".join(f"{subject} {allocation:.0%}" for subject, allocation in allocations.items())
+        + "，".join(
+            f"{subject} {allocation:.0%}"
+            for subject, allocation in payload["subject_allocation"].items()
+        )
     )
-    for index, item in enumerate(recommendations, 1):
+    if payload.get("diagnosis_error"):
+        print(f"注意：逐题诊断暂不可用（{payload['diagnosis_error']}），已回退到通用排序。")
+    for index, item in enumerate(payload["recommendations"], 1):
         print(
             f"{index}. [{item['subject']}] {item['topic_id']} {item['name']} "
             f"— {item['reason']}"
@@ -1688,6 +2226,7 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
         try:
             _, state = load_profile_and_state(data_dir)
             attempts = load_attempts(paths["attempts"])
+            load_private_question_registry(data_dir)
             backup_path = state_path.with_name("state.json.bak")
             validate_state(load_json(backup_path, "状态备份"))
             logged_ids = {event["attempt_id"] for event in attempts}
@@ -1767,6 +2306,7 @@ def cmd_repair(args: argparse.Namespace) -> int:
         for key in (
             "pass_line",
             "safe_target",
+            "min_review_interval_days",
             "case_tracks",
             "essay_themes",
             "case_tracks_configured",
@@ -1831,6 +2371,7 @@ def build_parser() -> argparse.ArgumentParser:
     configure_parser.add_argument("--essay-theme", action="append")
     configure_parser.add_argument("--skip-topic", action="append")
     configure_parser.add_argument("--unskip-topic", action="append")
+    configure_parser.add_argument("--min-review-interval-days", type=int)
     configure_parser.set_defaults(func=cmd_configure)
 
     record_parser = subparsers.add_parser("record", help="记录一次有效作答")
@@ -1854,12 +2395,30 @@ def build_parser() -> argparse.ArgumentParser:
     record_parser.add_argument("--word-count", type=int)
     record_parser.add_argument("--complete", action="store_true")
     record_parser.add_argument("--confidence", choices=("guess", "unsure", "sure"), default="sure")
+    record_parser.add_argument("--concept-id")
+    record_parser.add_argument("--question-family-id")
+    record_parser.add_argument("--question-fingerprint")
+    record_parser.add_argument("--variant-of")
     record_parser.add_argument(
         "--mode",
         choices=("diagnostic", "practice", "review", "mock", "full_timed"),
         default="practice",
     )
     record_parser.set_defaults(func=cmd_record)
+
+    diagnose_parser = subparsers.add_parser(
+        "diagnose", help="合并最近模考、错因与后续补练，列出具体薄弱点"
+    )
+    diagnose_parser.add_argument("--subject", choices=SUBJECTS, default="comprehensive")
+    diagnose_parser.add_argument("--today")
+    diagnose_parser.add_argument("--json", action="store_true")
+    diagnose_parser.set_defaults(func=cmd_diagnose)
+
+    register_parser = subparsers.add_parser(
+        "register-question", help="把自编题的细考点与题型身份登记到私人目录"
+    )
+    register_parser.add_argument("--file", type=Path, required=True)
+    register_parser.set_defaults(func=cmd_register_question)
 
     mock_parser = subparsers.add_parser("mock", help="记录一科完整限时成绩")
     mock_parser.add_argument("--subject", choices=SUBJECTS, required=True)

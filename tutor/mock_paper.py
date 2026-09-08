@@ -11,6 +11,8 @@ from pathlib import Path
 import re
 from typing import Any
 
+import question_registry
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGLISH_SOURCE_PATH = REPO_ROOT / "exam-bank" / "23-english-reading.md"
 PAPER_ID = "hf-pass-mock-01-v2"
@@ -110,15 +112,27 @@ def private_items() -> list[dict[str, Any]]:
     missing = [item_id for item_id, _, _ in _ITEMS if item_id not in questions]
     if missing:
         raise ValueError("模拟卷题目未在题库中找到：" + ", ".join(missing))
-    return [
-        {
-            "number": number,
-            "question": questions[item_id],
-            "topic_id": topic_id,
-            "facet": facet,
-        }
-        for number, (item_id, topic_id, facet) in enumerate(_ITEMS, 1)
-    ]
+    items = []
+    for number, (question_id, topic_id, facet) in enumerate(_ITEMS, 1):
+        question = questions[question_id]
+        source_item_id = (
+            f"exam-bank/{question['topic_file']}.md#"
+            f"{int(question['id'].rsplit('-', 1)[1])}"
+        )
+        metadata = question_registry.default_metadata(source_item_id, topic_id, facet)
+        metadata["question_fingerprint"] = question_registry.content_fingerprint(
+            question["stem"], [option["text"] for option in question["options"]]
+        )
+        items.append(
+            {
+                "number": number,
+                "question": question,
+                "topic_id": topic_id,
+                "facet": facet,
+                **metadata,
+            }
+        )
+    return items
 
 
 def public_payload() -> dict[str, Any]:

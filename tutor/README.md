@@ -46,6 +46,7 @@ python3 scripts/serve.py
 ├── state.json          # 三科状态与考点掌握度
 ├── attempts.jsonl      # 只追加的作答证据
 ├── postmortems.jsonl   # 只追加的考后错因补充（按需创建）
+├── question-registry.json # 私有自编题、细考点、题型族与内容指纹
 ├── dashboard.md        # 人类可读进度面板
 └── paper-project.md    # 论文匿名项目素材（按需创建）
 ```
@@ -92,6 +93,13 @@ python3 scripts/tutor.py --data-dir .study status
 
 # 推荐下一项
 python3 scripts/tutor.py --data-dir .study recommend
+
+# 查看最近完整模考暴露的具体薄弱点
+python3 scripts/tutor.py --data-dir .study diagnose --subject comprehensive
+
+# 自编题先登记细考点、题型族和内容指纹
+python3 scripts/tutor.py --data-dir .study register-question \
+  --file .study/new-question.json
 
 # 诊断后固定个人路线（案例 1–3 条、论文 1–3 个主题）
 python3 scripts/tutor.py --data-dir .study configure \

@@ -10,6 +10,7 @@
 | `K06.DESIGN_DATA_VIEWS` | 概要设计、数据设计与 UML 视图 | `high_level_design` / `data_design` / `uml_views` |
 | `K12.PATTERNS_SOA_MICROSERVICES` | 设计模式、SOA 与微服务核心概念 | `design_patterns` / `soa` / `microservices` |
 | `K13.VIEWS_SOA_LAYERING` | 4+1 视图、SOA 与分层架构 | `four_plus_one` / `soa` / `layering` |
+| `K23.PROJECT_MANAGEMENT_METRICS` | 项目管理、配置管理与软件度量 | `project_management` / `software_metrics` |
 
 ## 2. 所有考点 → 资源映射
 
@@ -37,6 +38,12 @@
 | `K20.SECURITY_FOUNDATIONS` | CIA、安全服务、STRIDE 与等保 | comprehensive/case/essay | 6 | 120 | ✅ | `exam-bank/21-security.md`, `knowledge-index/21-security.md`, `past-papers/case-types/07-security-architecture.md` (+1) |
 | `K21.MESSAGING_CACHE` | 消息中间件、缓存与一致性 | comprehensive/case/essay | 5 | 120 | ✅ | `exam-bank/16-middleware.md`, `exam-bank/18-cache.md`, `knowledge-index/16-middleware.md` (+2) |
 | `K22.ENGLISH_READING` | 专业英语阅读与高频词 | comprehensive | 23 | 75 | ✅ | `exam-bank/23-english-reading.md`, `cheatsheets/english-reading.md`, `past-papers/HIGH_FREQ.md` |
+| `K23.PROJECT_MANAGEMENT_METRICS` | 项目管理、配置管理与软件度量 | comprehensive | 8 | 120 | ✅ | `exam-bank/08-project-management.md`, `exam-bank/09-software-metrics.md`, `knowledge-index/08-project-management.md` (+3) |
+| `K24.INFORMATION_SYSTEMS` | 信息系统、ERP 与电子政务 | comprehensive | 6 | 75 | ✅ | `exam-bank/27-information-systems.md`, `notes/02-information-systems/README.md`, `past-papers/SURVIVAL_CARD.md` (+1) |
+| `K25.RELIABILITY_ENGINEERING` | 软件可靠性工程、容错与评估 | comprehensive/case | 5 | 120 | ✅ | `exam-bank/20-reliability.md`, `knowledge-index/20-reliability.md`, `notes/08-software-reliability/README.md` (+2) |
+| `K26.ARCH_EVOLUTION` | 软件架构演化、迁移与维护 | comprehensive/case | 5 | 120 | ✅ | `exam-bank/26-soa-evolution.md`, `notes/09-architecture-evolution/README.md`, `past-papers/case-types/11-architecture-evolution.md` (+1) |
+| `K27.EMERGING_TECH` | CPS、AI、边缘计算与数字孪生 | comprehensive | 12 | 90 | ✅ | `exam-bank/28-emerging-tech.md`, `notes/10-emerging-tech/README.md`, `notes/23-frontier-tech/README.md` (+3) |
+| `K28.MATH_OPERATIONS` | 应用数学、图论与运筹学 | comprehensive | 15 | 90 | ✅ | `exam-bank/29-applied-math.md`, `notes/20-math-foundations/README.md`, `past-papers/HIGH_FREQ.md` (+2) |
 | `C01.CASE_ATAM` | 案例主赛道：架构评估与质量属性 | case | 0 | 120 | ⚠️ 无 | `past-papers/CASE_SURVIVAL.md`, `past-papers/case-types/01-architecture-evaluation.md` |
 | `C02.CASE_DATABASE` | 案例主赛道：数据库设计 | case | 0 | 180 | ⚠️ 无 | `past-papers/CASE_SURVIVAL.md`, `past-papers/case-types/02-database-design.md` |
 | `C03.CASE_MESSAGING_CACHE` | 案例主赛道：消息与缓存 | case | 0 | 150 | ⚠️ 无 | `past-papers/CASE_SURVIVAL.md`, `past-papers/case-types/06-messaging-caching.md` |
@@ -70,6 +77,8 @@
 - `exam-bank/05-uml.md` → `K03.SOFTWARE_DESIGN_UML`
 - `exam-bank/06-ip-and-standards.md` → `K17.IP_COPYRIGHT`
 - `exam-bank/07-software-engineering.md` → `K05.TEST_CMMI_PATTERNS`, `K08.SOFTWARE_PROCESS_MODELS`, `K15.STRUCTURED_ANALYSIS_DFD`, `K16.REQUIREMENTS_MANAGEMENT`
+- `exam-bank/08-project-management.md` → `K23.PROJECT_MANAGEMENT_METRICS`
+- `exam-bank/09-software-metrics.md` → `K23.PROJECT_MANAGEMENT_METRICS`
 - `exam-bank/10-architecture-styles.md` → `K04.ARCH_STYLES_ABSD`
 - `exam-bank/11-quality-attributes.md` → `K09.QUALITY_SCENARIOS`
 - `exam-bank/12-atam-evaluation.md` → `K19.ATAM_TACTICS`
@@ -78,8 +87,12 @@
 - `exam-bank/15-microservice-cloud-native.md` → `K12.PATTERNS_SOA_MICROSERVICES`
 - `exam-bank/16-middleware.md` → `K21.MESSAGING_CACHE`
 - `exam-bank/18-cache.md` → `K21.MESSAGING_CACHE`
+- `exam-bank/20-reliability.md` → `K25.RELIABILITY_ENGINEERING`
 - `exam-bank/21-security.md` → `K20.SECURITY_FOUNDATIONS`
 - `exam-bank/22-embedded.md` → `K07.REALTIME_EMBEDDED`
 - `exam-bank/23-english-reading.md` → `K22.ENGLISH_READING`
-- `exam-bank/26-soa-evolution.md` → `K13.VIEWS_SOA_LAYERING`
+- `exam-bank/26-soa-evolution.md` → `K13.VIEWS_SOA_LAYERING`, `K26.ARCH_EVOLUTION`
+- `exam-bank/27-information-systems.md` → `K24.INFORMATION_SYSTEMS`
+- `exam-bank/28-emerging-tech.md` → `K27.EMERGING_TECH`
+- `exam-bank/29-applied-math.md` → `K28.MATH_OPERATIONS`
 
