@@ -18,23 +18,15 @@ past-papers/
 ├── README.md                 # 本文件
 ├── analysis-template.md      # 真题解析模板
 ├── SOURCE_COVERAGE.md        # 真题来源类型与结构化覆盖状态
+├── comprehensive-by-year/    # ⭐ 综合知识按考期（2009 下 – 2026 上）
+├── case-by-year/             # ⭐ 案例分析按考期（2009 下 – 2026 上，缺 2023 下）
+├── essay-by-year/            # ⭐ 论文按考期（完整题干与小问）
+├── assets/                   # 原题插图（无损 WebP，已剔除广告与水印图）
+├── incoming-raw/             # 待整理的回忆版原始文本
 ├── source-pdfs/              # 明确标记的非官方回忆版来源文件
 ├── paper-topics/             # ⭐ 论文 13 大主题（按题型分类）
-│   ├── README.md             #   索引 + 选题策略 + 评分权重
-│   ├── 01-architecture-design.md
-│   ├── 02-architecture-evaluation.md
-│   └── ... (13 个主题)
+├── paper-samples/            # ⭐ 论文范文
 ├── case-types/               # ⭐ 案例 9 大题型（按题型分类）
-│   ├── README.md             #   索引 + 答题铁律 + 时间分配
-│   ├── 01-architecture-evaluation.md
-│   ├── 02-database-design.md
-│   └── ... (9 个题型)
-├── 2024-05/                  # 按年份组织（原题解析）
-│   ├── comprehensive.md      # 综合知识解析
-│   ├── case-analysis.md      # 案例分析解析
-│   └── paper.md              # 论文复盘
-├── 2024-11/
-├── 2025-05/
 └── wrong-questions.md        # 错题本（跨年份汇总）
 ```
 
