@@ -162,3 +162,115 @@ class SanitizeBankCliTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PastPaperParsingTests(unittest.TestCase):
+    """真题（past-papers）走同一套脱敏契约，必须同样不泄答案。"""
+
+    TRANSCRIPT = "\n".join(
+        [
+            "# 2013 年下半年 系统架构设计师 · 综合知识真题（75 题）",
+            "",
+            "某操作系统采用分页存储管理方式，进程 A 逻辑地址 1111 的变量存放在 (1) 号物理页。",
+            "",
+            "(1) A. 9",
+            "B. 2",
+            "C. 4",
+            "D. 6",
+            "",
+            "【答案】C",
+            "",
+            "**考点**：§1 操作系统—存储管理",
+            "",
+            "【解析】本题考查操作系统存储管理方面的基础知识。",
+            "",
+            "数据库设计的需求分析阶段应完成包括 (5) 在内的文档。",
+            "",
+            "(5) A. E-R 图  B. 关系模式  C. 数据字典和数据流图  D. 任务书和设计方案",
+            "",
+            "【答案】C",
+            "",
+            "**考点**：§5 数据库—需求分析文档",
+            "",
+            "【解析】本题考查数据库设计方面的相关知识。",
+        ]
+    )
+
+    CURATED = "\n".join(
+        [
+            "# 2018 年下半年 系统架构设计师 · 综合知识真题（75 题）",
+            "",
+            "### 5. 【题干】",
+            "关系 R(A,B,C,D,E) 与 S(A,B,C,F,G)，等价 SQL 的 SELECT 列表为（5）。",
+            "A. R.A,R.B,R.E,S.C,G  B. R.A,R.B,D,F,G  C. R.A,R.B,R.D,S.C,F  D. R.A,R.B,R.D,S.C,G",
+            "**答案：B**  |  **考点**：§5.2 关系代数投影与 SQL 转换",
+            "**解析**：投影列由题目图给出的表达式决定。",
+        ]
+    )
+
+    def _write(self, text: str, name: str):
+        directory = Path(tempfile.mkdtemp())
+        path = directory / f"{name}.md"
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def test_transcript_layout_yields_usable_items(self) -> None:
+        path = self._write(self.TRANSCRIPT, "2013下")
+        items = sanitize_bank.parse_paper(path)
+        self.assertEqual(len(items), 2)
+        first, second = items
+        self.assertEqual(first["range"], [1, 1])
+        self.assertEqual([option["label"] for option in first["options"]], ["A", "B", "C", "D"])
+        self.assertEqual(first["correct"], ["C"])
+        self.assertEqual(first["tag"], "§1")
+        self.assertIn("存储管理", first["explanation"])
+        self.assertEqual(second["range"], [5, 5])
+        self.assertEqual(len(second["options"]), 4)
+
+    def test_curated_layout_yields_usable_items(self) -> None:
+        path = self._write(self.CURATED, "2018下")
+        items = sanitize_bank.parse_paper(path)
+        self.assertEqual(len(items), 1)
+        item = items[0]
+        self.assertEqual(item["range"], [5, 5])
+        self.assertEqual(item["tag"], "§5.2")
+        self.assertEqual(item["correct"], ["B"])
+        self.assertEqual(len(item["options"]), 4)
+        self.assertIn("投影列", item["explanation"])
+
+    def test_answers_never_leak_into_stem_or_options(self) -> None:
+        for name, text in (("2013下", self.TRANSCRIPT), ("2018下", self.CURATED)):
+            path = self._write(text, name)
+            for item in sanitize_bank.parse_paper(path):
+                with self.subTest(year=name, item=item["id"]):
+                    haystack = item["stem"] + " ".join(o["text"] for o in item["options"])
+                    self.assertNotIn("答案", haystack)
+                    self.assertNotIn("解析", haystack)
+                    self.assertNotIn("考点", haystack)
+                    self.assertNotIn("✅", haystack)
+
+    def test_candidate_topics_map_from_curriculum(self) -> None:
+        topic_tags = sanitize_bank.load_topic_tags()
+        self.assertTrue(topic_tags, "curriculum.json 应提供 § 标签映射")
+        self.assertIn("K10.DATABASE_MODELING", sanitize_bank.candidate_topics("§5", topic_tags))
+        self.assertIn("K10.DATABASE_MODELING", sanitize_bank.candidate_topics("§5.2", topic_tags))
+        self.assertIn("K01.OS_MEMORY_KERNEL", sanitize_bank.candidate_topics("§1", topic_tags))
+
+    def test_optional_images_do_not_break_option_parsing(self) -> None:
+        text = self.TRANSCRIPT.replace(
+            "【答案】C", "![p1_000.png](../assets/2013下/p1_000.webp)\n\n【答案】C", 1
+        )
+        path = self._write(text, "2013下")
+        first = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(len(first["options"]), 4)
+
+    def test_real_paper_files_parse_with_expected_coverage(self) -> None:
+        """仓库内真题必须能被脱敏器读出题块，且核心考期可用题数达标。"""
+        expectations = {"2013下": 30, "2016下": 40, "2017下": 40, "2024下": 70, "2025下": 70}
+        for year, minimum in expectations.items():
+            path = REPO_ROOT / "past-papers" / "comprehensive-by-year" / f"{year}.md"
+            with self.subTest(year=year):
+                items = sanitize_bank.parse_paper(path)
+                usable = [i for i in items if i["options"] and i["correct"]]
+                self.assertGreaterEqual(len(usable), minimum, f"{year} 可用题块过少")
+                self.assertTrue(all(i["tag"] for i in usable), f"{year} 存在无标签题块")

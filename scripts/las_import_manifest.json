@@ -1,0 +1,698 @@
+{
+  "documents": [
+    {
+      "las_key": "2009_答案详解",
+      "label": "2009下",
+      "comprehensive": {
+        "source": "本地购买扫描件《2009 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2009 年下半年 系统架构设计师 · 综合知识真题（75 题）",
+        "subtitle": "题干与选项取自正式试卷；答案与解析取自随卷答案详解"
+      },
+      "case": {
+        "source": "本地购买扫描件《2009 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2009 年下半年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一必答 + 试题二至五选答 2 道；含参考答案"
+      },
+      "essay": {
+        "source": "本地购买扫描件《2009 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2009 年下半年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干、小问与参考要点"
+      },
+      "drop_images": {
+        "p1_002.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p37_022.png": "页尾文字截图，残留浅粉水印（正文已有同样内容）"
+      }
+    },
+    {
+      "las_key": "2010_答案详解",
+      "label": "2010下",
+      "comprehensive": {
+        "source": "本地购买扫描件《2010 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2010 年下半年 系统架构设计师 · 综合知识真题（75 题）",
+        "subtitle": "题干与选项取自正式试卷；答案与解析取自随卷答案详解"
+      },
+      "case": {
+        "source": "本地购买扫描件《2010 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2010 年下半年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一必答 + 试题二至五选答 2 道；含参考答案"
+      },
+      "essay": {
+        "source": "本地购买扫描件《2010 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2010 年下半年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干、小问与参考要点"
+      },
+      "drop_images": {
+        "p61_028.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p16_005.png": "彩色图上叠加斜向机构水印",
+        "p17_006.png": "彩色图上叠加斜向机构水印"
+      }
+    },
+    {
+      "las_key": "2011_答案详解",
+      "label": "2011下",
+      "comprehensive": {
+        "source": "本地购买扫描件《2011 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2011 年下半年 系统架构设计师 · 综合知识真题（75 题）",
+        "subtitle": "题干与选项取自正式试卷；答案与解析取自随卷答案详解"
+      },
+      "case": {
+        "source": "本地购买扫描件《2011 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2011 年下半年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一必答 + 试题二至五选答 2 道；含参考答案"
+      },
+      "essay": {
+        "source": "本地购买扫描件《2011 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2011 年下半年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干、小问与参考要点"
+      },
+      "drop_images": {
+        "p32_018.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p35_021.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p37_024.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p53_035.png": "机构广告或水印（OCR 命中机构推广文案）"
+      }
+    },
+    {
+      "las_key": "2012_答案详解",
+      "label": "2012下",
+      "comprehensive": {
+        "source": "本地购买扫描件《2012 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2012 年下半年 系统架构设计师 · 综合知识真题（75 题）",
+        "subtitle": "题干与选项取自正式试卷；答案与解析取自随卷答案详解"
+      },
+      "case": {
+        "source": "本地购买扫描件《2012 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2012 年下半年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一必答 + 试题二至五选答 2 道；含参考答案"
+      },
+      "essay": {
+        "source": "本地购买扫描件《2012 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2012 年下半年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干、小问与参考要点"
+      },
+      "drop_images": {
+        "p40_019.png": "机构广告或水印（OCR 命中机构推广文案）"
+      }
+    },
+    {
+      "las_key": "2013_答案详解",
+      "label": "2013下",
+      "comprehensive": {
+        "source": "本地购买扫描件《2013 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2013 年下半年 系统架构设计师 · 综合知识真题（75 题）",
+        "subtitle": "题干与选项取自正式试卷；答案与解析取自随卷答案详解"
+      },
+      "case": {
+        "source": "本地购买扫描件《2013 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2013 年下半年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一必答 + 试题二至五选答 2 道；含参考答案"
+      },
+      "essay": {
+        "source": "本地购买扫描件《2013 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2013 年下半年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干、小问与参考要点"
+      },
+      "drop_images": {
+        "p27_010.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p56_025.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p58_027.png": "机构广告或水印（OCR 命中机构推广文案）"
+      }
+    },
+    {
+      "las_key": "2014_答案详解",
+      "label": "2014下",
+      "comprehensive": {
+        "source": "本地购买扫描件《2014 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2014 年下半年 系统架构设计师 · 综合知识真题（75 题）",
+        "subtitle": "题干与选项取自正式试卷；答案与解析取自随卷答案详解"
+      },
+      "case": {
+        "source": "本地购买扫描件《2014 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2014 年下半年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一必答 + 试题二至五选答 2 道；含参考答案"
+      },
+      "essay": {
+        "source": "本地购买扫描件《2014 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2014 年下半年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干、小问与参考要点"
+      },
+      "drop_images": {
+        "p30_015.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p59_028.png": "页尾文字截图，残留浅粉水印（正文已有同样内容）"
+      }
+    },
+    {
+      "las_key": "2015_答案详解",
+      "label": "2015下",
+      "comprehensive": {
+        "source": "本地购买扫描件《2015 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2015 年下半年 系统架构设计师 · 综合知识真题（75 题）",
+        "subtitle": "题干与选项取自正式试卷；答案与解析取自随卷答案详解"
+      },
+      "case": {
+        "source": "本地购买扫描件《2015 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2015 年下半年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一必答 + 试题二至五选答 2 道；含参考答案"
+      },
+      "essay": {
+        "source": "本地购买扫描件《2015 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2015 年下半年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干、小问与参考要点"
+      },
+      "drop_images": {
+        "p43_029.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p55_034.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p60_038.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p34_024.png": "页尾文字截图，残留浅粉水印（正文已有同样内容）"
+      }
+    },
+    {
+      "las_key": "2016_答案详解",
+      "label": "2016下",
+      "comprehensive": {
+        "source": "本地购买扫描件《2016 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2016 年下半年 系统架构设计师 · 综合知识真题（75 题）",
+        "subtitle": "题干与选项取自正式试卷；答案与解析取自随卷答案详解"
+      },
+      "case": {
+        "source": "本地购买扫描件《2016 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2016 年下半年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一必答 + 试题二至五选答 2 道；含参考答案"
+      },
+      "essay": {
+        "source": "本地购买扫描件《2016 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2016 年下半年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干、小问与参考要点"
+      },
+      "drop_images": {
+        "p29_014.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p50_027.png": "机构广告或水印（OCR 命中机构推广文案）"
+      }
+    },
+    {
+      "las_key": "2017_答案详解",
+      "label": "2017下",
+      "comprehensive": {
+        "source": "本地购买扫描件《2017 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2017 年下半年 系统架构设计师 · 综合知识真题（75 题）",
+        "subtitle": "题干与选项取自正式试卷；答案与解析取自随卷答案详解"
+      },
+      "case": {
+        "source": "本地购买扫描件《2017 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2017 年下半年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一必答 + 试题二至五选答 2 道；含参考答案"
+      },
+      "essay": {
+        "source": "本地购买扫描件《2017 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "综合知识 75 题、案例分析 5 题、论文 4 题齐备",
+        "title": "2017 年下半年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干、小问与参考要点"
+      },
+      "drop_images": {
+        "p48_022.png": "机构广告或水印（OCR 命中机构推广文案）"
+      }
+    },
+    {
+      "las_key": "2018_答案详解",
+      "label": "2018下",
+      "case": {
+        "source": "本地购买扫描件《2018 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "案例分析 5 题、论文 4 题齐备；综合知识沿用仓库已有整理",
+        "title": "2018 年下半年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一必答 + 试题二至五选答 2 道；含参考答案"
+      },
+      "essay": {
+        "source": "本地购买扫描件《2018 年下半年系统架构设计师 答案详解》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷答案详解，非本仓库编写",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "案例分析 5 题、论文 4 题齐备；综合知识沿用仓库已有整理",
+        "title": "2018 年下半年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干、小问与参考要点"
+      },
+      "drop_images": {
+        "p37_017.png": "机构广告或水印（OCR 命中机构推广文案）"
+      }
+    },
+    {
+      "las_key": "2019_案例解析",
+      "label": "2019下",
+      "case": {
+        "source": "本地购买扫描件《2019 年系统架构师考试科目二：案例分析真题+解析》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷解析",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "案例分析 5 题齐备",
+        "title": "2019 年下半年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一必答 + 试题二至五选答 2 道；含参考答案"
+      },
+      "drop_images": {
+        "p4_002.png": "机构广告或水印（OCR 命中机构推广文案）"
+      }
+    },
+    {
+      "las_key": "2020_案例解析",
+      "label": "2020",
+      "case": {
+        "source": "本地购买扫描件《2020 年系统架构师真题（案例分析及答案解析）》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自随卷解析",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "案例分析 5 题齐备",
+        "title": "2020 年 系统架构设计师 · 案例分析真题",
+        "subtitle": "含参考答案与解析"
+      },
+      "drop_images": {
+        "p11_006.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p1_001.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p2_002.png": "彩色效用树上叠加斜向机构水印"
+      }
+    },
+    {
+      "las_key": "2021_全卷解析",
+      "label": "2021",
+      "case": {
+        "source": "本地购买扫描件《2021.11 系统架构设计师真题及解析》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自该卷解析",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "案例分析 5 题齐备",
+        "title": "2021 年下半年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一至五，各 25 分；含参考答案"
+      },
+      "essay": {
+        "source": "本地购买扫描件《2021.11 系统架构设计师真题及解析》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "取自该卷解析",
+        "usage": "可用于章节训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "论文 4 题齐备",
+        "title": "2021 年下半年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干与小问"
+      },
+      "drop_images": {
+        "p35_012.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p27_007.png": "图上残留“免费题库”斜向水印"
+      }
+    },
+    {
+      "las_key": "2024下_recall",
+      "label": "2024下",
+      "essay": {
+        "source": "本地购买扫描件《2024.11 系统架构设计师真题回忆-还原》（贡献者已购买并授权转录）",
+        "source_type": "recalled_real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "机构据考生回忆整理，非官方答案",
+        "usage": "仅用于题型趋势与练习；回忆版题面可能与官方原卷存在差异，勿作为唯一依据",
+        "coverage_note": "论文 4 题；综合知识与案例分析仓库已另行整理",
+        "title": "2024 年下半年 系统架构设计师 · 论文真题（回忆版）",
+        "subtitle": "试题一至四，含题干与小问；回忆版转录"
+      },
+      "drop_images": {
+        "p33_011.png": "机构广告或水印（OCR 命中机构推广文案）"
+      }
+    },
+    {
+      "las_key": "2025上_recall",
+      "label": "2025上",
+      "case": {
+        "source": "本地购买扫描件《2025 年上半年系统架构设计师真题回忆》（贡献者已购买并授权转录）",
+        "source_type": "recalled_real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "机构整理的参考要点，非官方答案",
+        "usage": "仅用于题型趋势与练习；回忆版题面可能与官方原卷存在差异，勿作为唯一依据",
+        "coverage_note": "案例分析 5 题；机构据考生回忆整理并还原",
+        "title": "2025 年上半年 系统架构设计师 · 案例分析真题（回忆版）",
+        "subtitle": "试题一至五，含参考答案；回忆还原版，题面可能与官方原卷有差异"
+      },
+      "essay": {
+        "source": "本地购买扫描件《2025 年上半年系统架构设计师真题回忆》（贡献者已购买并授权转录）",
+        "source_type": "recalled_real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "无答案，仅题干与小问",
+        "usage": "仅用于题型趋势与练习；回忆版题面可能与官方原卷存在差异，勿作为唯一依据",
+        "coverage_note": "论文 4 题",
+        "title": "2025 年上半年 系统架构设计师 · 论文真题（回忆版）",
+        "subtitle": "试题一至四任选 1 道；含题干与小问"
+      },
+      "drop_images": {
+        "p24_006.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p25_008.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p26_010.png": "彩色图上叠加斜向机构水印"
+      }
+    },
+    {
+      "las_key": "2022_案例真题",
+      "label": "2022",
+      "case": {
+        "source": "本地购买扫描件《2022 年系统架构设计师真题-案例分析》+《2022 年系统架构设计师真题-答案解析》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "题干取自原卷；参考答案与解析取自同卷答案解析",
+        "usage": "可用于案例专项训练与年份模考；关键数字建议对照原始 PDF 复核",
+        "coverage_note": "案例分析 5 题齐备，参考答案见文末附录",
+        "title": "2022 年 系统架构设计师 · 案例分析真题",
+        "subtitle": "试题一必答 + 试题二至五选答 2 道；文末附参考答案与解析"
+      },
+      "appendices": {
+        "case": {
+          "las_key": "2022_答案解析",
+          "title": "参考答案与解析（取自 2022 答案解析）"
+        }
+      },
+      "drop_images": {
+        "p27_013.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p2_000.png": "机构广告或水印（OCR 命中机构推广文案）"
+      }
+    },
+    {
+      "las_key": "2022_论文写作",
+      "label": "2022",
+      "essay": {
+        "source": "本地购买扫描件《2022 年系统架构设计师真题-论文写作》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "无答案，仅题干与小问",
+        "usage": "用于论文选题与提纲训练",
+        "coverage_note": "论文 4 题",
+        "title": "2022 年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干与小问"
+      },
+      "document_dimension": "essay"
+    },
+    {
+      "las_key": "2019_论文解析",
+      "label": "2019下",
+      "document_dimension": "essay",
+      "essay": {
+        "source": "本地购买扫描件《2019 年系统架构师考试科目三：论文真题+解析》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "含题目解析，取自随卷资料",
+        "usage": "用于论文选题与提纲训练",
+        "coverage_note": "论文 4 题，含解析",
+        "title": "2019 年下半年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干与解析"
+      },
+      "drop_images": {
+        "p2_002.png": "机构广告或水印（OCR 命中机构推广文案）",
+        "p5_005.png": "机构广告或水印（OCR 命中机构推广文案）"
+      }
+    },
+    {
+      "las_key": "2020_论文解析",
+      "label": "2020",
+      "document_dimension": "essay",
+      "essay": {
+        "source": "本地购买扫描件《2020 年系统架构师真题（论文+答案解析）》（贡献者已购买并授权转录）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "含参考要点，取自随卷资料",
+        "usage": "用于论文选题与提纲训练",
+        "coverage_note": "论文 4 题，含参考要点",
+        "title": "2020 年 系统架构设计师 · 论文真题",
+        "subtitle": "试题一至四任选 1 道；含题干与参考要点"
+      },
+      "drop_images": {
+        "p6_004.png": "机构广告或水印（OCR 命中机构推广文案）"
+      }
+    },
+    {
+      "las_key": "2009_案例试卷",
+      "label": "2009下",
+      "filename_suffix": "-原卷",
+      "case": {
+        "source": "本地购买扫描件《2009 年下半年 系统架构设计师 案例分析》（原卷，题干与参考答案分离）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "原卷不含参考答案；作答后请对照同考期的研读版文件评分",
+        "usage": "用于盲练：题干取自原卷，卷面本身无答案",
+        "coverage_note": "案例分析 5 题（原卷题干）",
+        "title": "2009 年下半年 系统架构设计师 · 案例分析原卷（无答案）",
+        "subtitle": "题干与插图取自原卷；参考答案见同考期的研读版文件"
+      }
+    },
+    {
+      "las_key": "2010_案例试卷",
+      "label": "2010下",
+      "filename_suffix": "-原卷",
+      "case": {
+        "source": "本地购买扫描件《2010 年下半年 系统架构设计师 案例分析》（原卷，题干与参考答案分离）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "原卷不含参考答案；作答后请对照同考期的研读版文件评分",
+        "usage": "用于盲练：题干取自原卷，卷面本身无答案",
+        "coverage_note": "案例分析 5 题（原卷题干）",
+        "title": "2010 年下半年 系统架构设计师 · 案例分析原卷（无答案）",
+        "subtitle": "题干与插图取自原卷；参考答案见同考期的研读版文件"
+      }
+    },
+    {
+      "las_key": "2011_案例试卷",
+      "label": "2011下",
+      "filename_suffix": "-原卷",
+      "case": {
+        "source": "本地购买扫描件《2011 年下半年 系统架构设计师 案例分析》（原卷，题干与参考答案分离）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "原卷不含参考答案；作答后请对照同考期的研读版文件评分",
+        "usage": "用于盲练：题干取自原卷，卷面本身无答案",
+        "coverage_note": "案例分析 5 题（原卷题干）",
+        "title": "2011 年下半年 系统架构设计师 · 案例分析原卷（无答案）",
+        "subtitle": "题干与插图取自原卷；参考答案见同考期的研读版文件"
+      }
+    },
+    {
+      "las_key": "2012_案例试卷",
+      "label": "2012下",
+      "filename_suffix": "-原卷",
+      "case": {
+        "source": "本地购买扫描件《2012 年下半年 系统架构设计师 案例分析》（原卷，题干与参考答案分离）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "原卷不含参考答案；作答后请对照同考期的研读版文件评分",
+        "usage": "用于盲练：题干取自原卷，卷面本身无答案",
+        "coverage_note": "案例分析 5 题（原卷题干）",
+        "title": "2012 年下半年 系统架构设计师 · 案例分析原卷（无答案）",
+        "subtitle": "题干与插图取自原卷；参考答案见同考期的研读版文件"
+      }
+    },
+    {
+      "las_key": "2013_案例试卷",
+      "label": "2013下",
+      "filename_suffix": "-原卷",
+      "case": {
+        "source": "本地购买扫描件《2013 年下半年 系统架构设计师 案例分析》（原卷，题干与参考答案分离）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "原卷不含参考答案；作答后请对照同考期的研读版文件评分",
+        "usage": "用于盲练：题干取自原卷，卷面本身无答案",
+        "coverage_note": "案例分析 5 题（原卷题干）",
+        "title": "2013 年下半年 系统架构设计师 · 案例分析原卷（无答案）",
+        "subtitle": "题干与插图取自原卷；参考答案见同考期的研读版文件"
+      }
+    },
+    {
+      "las_key": "2014_案例试卷",
+      "label": "2014下",
+      "filename_suffix": "-原卷",
+      "case": {
+        "source": "本地购买扫描件《2014 年下半年 系统架构设计师 案例分析》（原卷，题干与参考答案分离）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "原卷不含参考答案；作答后请对照同考期的研读版文件评分",
+        "usage": "用于盲练：题干取自原卷，卷面本身无答案",
+        "coverage_note": "案例分析 5 题（原卷题干）",
+        "title": "2014 年下半年 系统架构设计师 · 案例分析原卷（无答案）",
+        "subtitle": "题干与插图取自原卷；参考答案见同考期的研读版文件"
+      }
+    },
+    {
+      "las_key": "2015_案例试卷",
+      "label": "2015下",
+      "filename_suffix": "-原卷",
+      "case": {
+        "source": "本地购买扫描件《2015 年下半年 系统架构设计师 案例分析》（原卷，题干与参考答案分离）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "原卷不含参考答案；作答后请对照同考期的研读版文件评分",
+        "usage": "用于盲练：题干取自原卷，卷面本身无答案",
+        "coverage_note": "案例分析 5 题（原卷题干）",
+        "title": "2015 年下半年 系统架构设计师 · 案例分析原卷（无答案）",
+        "subtitle": "题干与插图取自原卷；参考答案见同考期的研读版文件"
+      }
+    },
+    {
+      "las_key": "2016_案例试卷",
+      "label": "2016下",
+      "filename_suffix": "-原卷",
+      "case": {
+        "source": "本地购买扫描件《2016 年下半年 系统架构设计师 案例分析》（原卷，题干与参考答案分离）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "原卷不含参考答案；作答后请对照同考期的研读版文件评分",
+        "usage": "用于盲练：题干取自原卷，卷面本身无答案",
+        "coverage_note": "案例分析 5 题（原卷题干）",
+        "title": "2016 年下半年 系统架构设计师 · 案例分析原卷（无答案）",
+        "subtitle": "题干与插图取自原卷；参考答案见同考期的研读版文件"
+      }
+    },
+    {
+      "las_key": "2017_案例试卷",
+      "label": "2017下",
+      "filename_suffix": "-原卷",
+      "case": {
+        "source": "本地购买扫描件《2017 年下半年 系统架构设计师 案例分析》（原卷，题干与参考答案分离）",
+        "source_type": "real",
+        "parse_note": "byted-las-document-parse（normal 模式）+ 机械清洗，已剔除页眉、广告条与页码",
+        "answer_note": "原卷不含参考答案；作答后请对照同考期的研读版文件评分",
+        "usage": "用于盲练：题干取自原卷，卷面本身无答案",
+        "coverage_note": "案例分析 5 题（原卷题干）",
+        "title": "2017 年下半年 系统架构设计师 · 案例分析原卷（无答案）",
+        "subtitle": "题干与插图取自原卷；参考答案见同考期的研读版文件"
+      }
+    }
+  ]
+}

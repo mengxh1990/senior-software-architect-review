@@ -73,6 +73,74 @@ python3 scripts/sanitize_bank.py exam-bank/07-software-engineering.md 1 4 6
 输出是 JSON 数组，每项含 `stem` / `options[]` / `correct` / `explanation`。
 `correct` 与 `explanation` **只**用于判分和作答后反馈，**不**在作答前回显。
 
+### Step 2b · 真题抽题（优先于自编题）
+
+`past-papers/comprehensive-by-year/` 里是 20 个考期的综合知识真题（1055 个可用题块），
+**同一套脱敏契约**，用同一个脚本按考点抽题。真题是正式试卷，证据强度高于自编题，
+只要 `recommend` 出来的考点能抽到真题，就优先出真题。
+
+```bash
+# 按 tutor 考点抽（推荐：直接对接 Step 1 的 recommend 结果）
+python3 scripts/sanitize_bank.py --topic K10.DATABASE_MODELING --limit 5
+
+# 指定考期 + §标签
+python3 scripts/sanitize_bank.py --year 2013下 --tag §5 --limit 3
+
+# 只看某份卷子
+python3 scripts/sanitize_bank.py past-papers/comprehensive-by-year/2018下.md --tag §6 --limit 5
+
+# 看各考期覆盖情况
+python3 scripts/sanitize_bank.py --list
+```
+
+返回项比 exam-bank 多三个字段：
+
+| 字段 | 含义 |
+|---|---|
+| `tag` / `tag_label` | 该题块的 §考点标签（2009–2017 为题组级，2018 起为逐题） |
+| `range` | 题号区间，如 `[7, 8]`；**一个题块可能含多个小问**（共享题干） |
+| `candidate_topics` | 由 `curriculum.json` 的 `raw_tags` 推出的 tutor 考点编号，用于 `record --topic` |
+
+抽题注意事项：
+
+- `id` 形如 `past-papers/comprehensive-by-year/2013下.md#7-8`，**record 时原样作为 `--item-id`**；
+- 一个题块含多个小问（如 `#7-8`）时按**一题**呈现与记档，不要拆成两条 record；
+- `--source-type` 按考期来源选择：2009–2022 用 `real`，回忆版考期（2023 下、2024 上/下、2025 上/下、2026 上）用 `recalled_real`；
+- 真题保留试卷原始的答案分布，**不要**套用"自编题正确答案需分散到不同选项"的规则；
+- 2019 下、2020、2023 下的整理版本只覆盖部分题目（26 / 12 / 1 个可用题块），抽不到时退回 `exam-bank/` 或自编题；
+- 题干里的插图引用形如 `![p1_000.png](../assets/2013下/p1_000.webp)`，**呈现时不要贴图片路径**，用文字描述图意或直接说明"原题含图"。
+
+### Step 2c · 案例与论文真题（按题型 / 主题抽题）
+
+案例与论文的主观题也用真题，入口是 [`scripts/paper_practice.py`](../scripts/paper_practice.py)：
+
+```bash
+# 案例：按题型盲练（自动剥离参考答案）
+python3 scripts/paper_practice.py --subject case --type 01 --limit 2
+# 案例：作答后取参考答案
+python3 scripts/paper_practice.py --subject case --year 2013下 --numeral 一 --reveal
+# 论文：按主题取题干与小问
+python3 scripts/paper_practice.py --subject essay --topic 06 --limit 4
+# 看各题型可用量
+python3 scripts/paper_practice.py --list
+```
+
+| 字段 | 含义与用法 |
+|---|---|
+| `practice_mode=blind` | 可以盲练：题干已与参考答案分离 |
+| `practice_mode=read_only` | 题干与参考答案混排（多见于 2009–2018 答案详解转录版），**只能当研读材料，不要出给学员** |
+| `practice_mode=answer_key` | 卷末答案区，工具已排除，不要当题目 |
+| `missing_figure=true` | 该题插图在广告/水印清理时被移除，**仍然可以出题**：按 `figure_note` 用文字描述图意，或提示学员对照原始 PDF；只想出插图完整的题时加 `--skip-missing-figures` |
+| `stem` 里的 `【图 N】` | 对应 `figures` 里的插图，呈现时**不要贴文件路径** |
+| `source_type` | 直接作为 `record --source-type`（正式卷 `real` / 回忆版 `recalled_real`） |
+| `answer_source` | 原卷题没有内嵌答案，作答后到这个路径对应的研读版文件取参考答案 |
+
+用法要点：
+
+- 案例题作答后跑 `--reveal` 取参考答案，按评分点逐项估分并标注"AI 估分"；
+- `--item-id` 用输出的 `id`，`--skill application`（案例）/ `production`（论文成文）；
+- 案例可盲练 79 道（2009 下–2017 下取自 `<考期>-原卷.md` 的无答案题干，2018 下起取自带答案的整理版）、论文 67 道；案例其余 62 道为题干与答案混排的卷子，只作研读与作答后对答案。不够时回退 [`case-types/`](../past-papers/case-types/) 的自编模拟题与 [`paper-topics/`](../past-papers/paper-topics/) 的仿真题。
+
 ## Step 3 · AskUserQuestion 点选出题
 
 学员偏好点选。`AskUserQuestion` 的正确姿势：
@@ -127,7 +195,7 @@ python3 scripts/tutor.py record \
 
 | 场景 | record？ | skill | mode | 能升 pass_ready？ |
 |---|---|---|---|---|
-| 客观题、闭卷、答对、`sure` | ✅ | recognition | diagnostic/practice | 是（累积 6 条证据 + 跨日 2 次） |
+| 客观题（含真题）、闭卷、答对、`sure` | ✅ | recognition | diagnostic/practice | 是（累积 6 条证据 + 跨日 2 次） |
 | 答对但 `guessed` | ✅ | recognition | diagnostic | 否，只算 fragile |
 | 答错 | ✅ | recognition | diagnostic | 否，进 1/3/7/14 复习队列 |
 | 案例独立作答 + 逐项估分 | ✅ | application | practice/mock | 需 2 次 15/25 等价分 |
@@ -189,6 +257,7 @@ record 完再跑 `python3 scripts/tutor.py status` 确认落盘。
 - [ ] 错题给了错因 + 记忆钩子 + 变式题
 - [ ] 没把 `✅` / `**答案**` / `**解析**` 泄给学员
 - [ ] 没有硬贴 exam-bank 原文（一律走 `sanitize_bank.py`）
+- [ ] 出真题时没把 `![...](../assets/...)` 图片路径或 `【解析】` 贴给学员
 
 全部打勾才进入下一轮 `recommend`。
 
@@ -197,7 +266,7 @@ record 完再跑 `python3 scripts/tutor.py status` 确认落盘。
 | 工具 | 位置 | 作用 |
 |---|---|---|
 | CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / recommend / record / doctor |
-| 脱敏器 | [`scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) | 剥 exam-bank 答案，输出结构化 JSON |
+| 脱敏器 | [`scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) | 剥 exam-bank 与真题答案，输出结构化 JSON；支持 `--topic` / `--tag` / `--year` / `--list` 抽题 |
 | 考点表生成 | [`scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) | 由 `curriculum.json` 生成 `topic-map.md` |
 | 教师人格 | [`.claude/agents/senior-architect-pass-coach.md`](../.claude/agents/senior-architect-pass-coach.md) | 覆盖诊断 / 案例 / 论文全流程决策 |
 | 记档协议 | [`PROGRESS_PROTOCOL.md`](./PROGRESS_PROTOCOL.md) | 证据分级、掌握度定义、私隐边界 |
