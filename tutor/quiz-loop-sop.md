@@ -19,35 +19,36 @@
 
 ## 前置检查
 
-进入循环前必须过：
+每个新任务首次进入循环前必须过；同一任务后续答题轮不得重复执行：
 - CWD 在本仓库根，`python3 scripts/tutor.py --help` 正常
 - 已读 [`PROGRESS_PROTOCOL.md`](./PROGRESS_PROTOCOL.md) 与
   [`.claude/agents/senior-architect-pass-coach.md`](../.claude/agents/senior-architect-pass-coach.md)
 - `.study/` 存在（若无，先按 coach 人格建档）
 - 已跑过 `python3 scripts/tutor.py doctor`，三项 PASS
 
-## Step 1 · 引擎推荐下一考点
+## 回合预算与结束条件
+
+- 出题回合只调用一次 `quiz-prepare`；判分回合只调用一次 `quiz-grade`。只有命令失败且直接阻塞本轮时，才允许增加一次修复或诊断调用。
+- 第一次调用必须批量收集推荐、到期错题、候选题、题目元数据和去重信息，不得按题逐次搜索。
+- 非阻塞的诊断状态异常、元数据瑕疵或维护建议不得在训练回合内追查源码；记录后另开仓库维护任务处理。
+- `quiz-grade` 成功返回即表示判分、原子记档和状态更新完成。给出必要反馈后立即结束本轮，不再调用 `status` 或 `diagnose` 复核。
+
+## Step 1 · 一次准备整组题
 
 ```bash
-python3 scripts/tutor.py diagnose --subject comprehensive
-python3 scripts/tutor.py recommend --subject comprehensive --limit 5
-# 若要切换科目：
-python3 scripts/tutor.py recommend --subject case --limit 6
-python3 scripts/tutor.py recommend --subject essay --limit 6
+python3 scripts/tutor.py quiz-prepare --subject comprehensive --limit 5
 ```
 
-有完整模考时，必须先合并逐题作答与 `postmortems.jsonl`：未纠偏错题、
-到期跨日复测、猜对/不确定题依次优先。通用考点排序只用于填补剩余名额。
-同一细考点当天完成确定作答后进入冷却，不继续密集重复。
+该命令在一个进程内完成逐题诊断、推荐、真题优先抽取、当天去重、细考点与
+facet 解析，并把私有答案保存到 `.study/quiz-sessions/`。标准输出只包含可直接
+展示的题干、选项和来源类型，不包含答案或解析。
 
-从输出取**优先级最高、且有 exam-bank 题**的考点。
-"有没有 exam-bank 题"用
-[`tutor/topic-map.md`](./topic-map.md)（脚本自动生成）查。
+## Step 2 · 展示题目
 
-若 recommend 头部考点在 topic-map 的"无 exam-bank 题"清单里（`C01–C04`、
-`P01–P06` 等），需要自编题，并在 record 时打 `--source-type self_authored`。
+直接使用 `quiz-prepare` 返回的 `questions`；不要再次搜索题库或调用
+`sanitize_bank.py`。以下脱敏规则由 `quiz-prepare` 内部执行。
 
-## Step 2 · 题目脱敏
+### 底层脱敏契约
 
 exam-bank 的题目块结构：
 
@@ -167,22 +168,21 @@ python3 scripts/paper_practice.py --list
 - `label: "瀑布顺序描述"` ❌（label 应是选项标识，不是题干）
 - 把 `correct` 或 `✅` 塞进 `description` ❌（泄题）
 
-## Step 4 · 逐题 record 入档
+## Step 4 · 一次判分和记档
 
-每答完一屏，立即按题逐条 record：
+收到整组答案后只调用一次：
 
 ```bash
-python3 scripts/tutor.py record \
-  --attempt-id a-YYYYMMDD-dNN \
-  --topic <K编号.XXX> \
-  --item-id 'exam-bank/<file>.md#<N>' \
-  --skill recognition \
-  --subject comprehensive \
-  --mode diagnostic \
-  --score 0|1 --max-score 1 \
-  --confidence sure|unsure|guess \
-  --source-type simulation|self_authored
+python3 scripts/tutor.py quiz-grade \
+  --quiz-id <quiz-id> \
+  --answers 'C,A,D,BD,B' \
+  --confidences 'sure,sure,sure,sure,sure'
 ```
+
+`quiz-grade` 会先校验整组答案，再用一个锁和一次日志替换提交全部事件，最后更新
+状态、面板和测验清单。任何一题校验失败时整组不写入；重复提交同一测验保持幂等。
+
+单题 `record` 保留给主观题、旧流程兼容和人工修复，不用于正常客观题循环。
 
 自编题必须先登记，登记文件包含稳定 `item_id`、`topic_id`、`concept_id`、
 `question_family_id`、题干和选项：
@@ -222,7 +222,8 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 | 论文限时成文 ≥ 2500 字 + 估分 | ✅ | production | mock | 需 2 篇达安全线 |
 | 学员纯聊天没作答 | ❌ | — | — | — |
 
-record 完再跑 `python3 scripts/tutor.py status` 确认落盘。
+正常客观题循环不得在 `quiz-grade` 后追加 `status` 或 `diagnose`；其 JSON 返回值
+已经包含本轮得分、逐题结果、错因和下次复习时间。
 
 ## Step 5 · 反馈与换科
 

@@ -26,6 +26,32 @@ CONCEPT_OVERRIDES = {
     "exam-bank/01-computer-systems.md#1": ("K18.mips_cpi", "K18.mips_cpi"),
     "exam-bank/21-security.md#1": ("K20.cia_triad", "K20.cia_triad"),
     "exam-bank/23-english-reading.md#3": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
+    "exam-bank/15-microservice-cloud-native.md#1": (
+        "K12.soa_microservices_governance",
+        "K12.soa_microservices_governance",
+    ),
+    "past-papers/comprehensive-by-year/2012下.md#17-17": ("K18.mips_cpi", "K18.mips_cpi"),
+    "past-papers/comprehensive-by-year/2022.md#32": (
+        "K12.soa_microservices_governance",
+        "K12.soa_microservices_governance",
+    ),
+    "past-papers/comprehensive-by-year/2024下.md#1": ("K20.cia_triad", "K20.cia_triad"),
+    "past-papers/comprehensive-by-year/2024下.md#38": (
+        "K03.uml_relationships",
+        "K03.uml_relationships",
+    ),
+    "past-papers/comprehensive-by-year/2025上.md#23": (
+        "K01.deadlock_avoidance",
+        "K01.deadlock_avoidance",
+    ),
+}
+
+ITEM_TOPIC_OVERRIDES = {
+    "past-papers/comprehensive-by-year/2012下.md#17-17": "K18.COMPUTER_ARCH_STORAGE",
+    "past-papers/comprehensive-by-year/2022.md#32": "K12.PATTERNS_SOA_MICROSERVICES",
+    "past-papers/comprehensive-by-year/2024下.md#1": "K20.SECURITY_FOUNDATIONS",
+    "past-papers/comprehensive-by-year/2024下.md#38": "K03.SOFTWARE_DESIGN_UML",
+    "past-papers/comprehensive-by-year/2025上.md#23": "K01.OS_MEMORY_KERNEL",
 }
 
 CONCEPT_LABELS = {
@@ -34,8 +60,15 @@ CONCEPT_LABELS = {
     "K01.deadlock_avoidance": "银行家算法与死锁避免",
     "K18.mips_cpi": "主频、CPI 与 MIPS 计算",
     "K20.cia_triad": "信息安全 CIA 三要素",
+    "K12.soa_microservices_governance": "SOA 与微服务治理方式",
     "K22.cloud_cost_vocabulary": "云计算成本语境词汇",
 }
+
+
+def topic_override(item_id: str) -> str | None:
+    """Return a hand-curated tutor topic for a mislabeled or broad source item."""
+
+    return ITEM_TOPIC_OVERRIDES.get(item_id)
 
 
 @lru_cache(maxsize=1)

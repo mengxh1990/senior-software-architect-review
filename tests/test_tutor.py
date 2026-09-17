@@ -801,6 +801,136 @@ class TutorAcceptanceTest(unittest.TestCase):
                 same_day["question_family_id"], f"{topic_id}.registered.variant"
             )
 
+    def test_quiz_prepare_hides_answers_and_persists_private_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            payload = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-prepare",
+                    "--subject",
+                    "comprehensive",
+                    "--limit",
+                    "5",
+                    "--today",
+                    "2026-09-17",
+                )
+            )
+
+            self.assertEqual(payload["count"], 5)
+            self.assertEqual(len(payload["questions"]), 5)
+            for question in payload["questions"]:
+                self.assertNotIn("correct", question)
+                self.assertNotIn("explanation", question)
+                self.assertEqual(
+                    [option["label"] for option in question["options"]],
+                    sorted(option["label"] for option in question["options"]),
+                )
+
+            manifest_path = (
+                data_dir / "quiz-sessions" / f"{payload['quiz_id']}.json"
+            )
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["status"], "pending")
+            self.assertEqual(len(manifest["questions"]), 5)
+            self.assertTrue(all(question["correct"] for question in manifest["questions"]))
+            self.assertGreater(
+                len({"".join(question["correct"]) for question in manifest["questions"]}),
+                1,
+                "the prepared set should not expose a trivial single-answer pattern",
+            )
+
+    def test_quiz_grade_records_one_atomic_idempotent_batch(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-prepare",
+                    "--limit",
+                    "5",
+                    "--today",
+                    "2026-09-17",
+                )
+            )
+            manifest_path = (
+                data_dir / "quiz-sessions" / f"{prepared['quiz_id']}.json"
+            )
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            answers = ",".join(
+                "".join(question["correct"])
+                for question in manifest["questions"]
+            )
+            graded = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-grade",
+                    "--quiz-id",
+                    prepared["quiz_id"],
+                    "--answers",
+                    answers,
+                    "--at",
+                    "2026-09-17T21:30:00+08:00",
+                )
+            )
+            self.assertEqual(graded["score"], 5)
+            self.assertEqual(graded["max_score"], 5)
+            self.assertEqual(graded["recorded_attempts"], 5)
+            self.assertFalse(graded["idempotent"])
+            self.assertEqual(
+                len((data_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines()),
+                5,
+            )
+
+            after_first_grade = _snapshot_files(data_dir)
+            replayed = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-grade",
+                    "--quiz-id",
+                    prepared["quiz_id"],
+                    "--answers",
+                    answers,
+                    "--at",
+                    "2026-09-17T21:30:00+08:00",
+                )
+            )
+            self.assertEqual(replayed["score"], graded["score"])
+            self.assertEqual(replayed["results"], graded["results"])
+            self.assertEqual(replayed["recorded_attempts"], 0)
+            self.assertTrue(replayed["idempotent"])
+            self.assertEqual(after_first_grade, _snapshot_files(data_dir))
+
+    def test_quiz_grade_rejects_incomplete_answers_before_writing(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-prepare",
+                    "--limit",
+                    "5",
+                    "--today",
+                    "2026-09-17",
+                )
+            )
+            before = _snapshot_files(data_dir)
+            rejected = _run_cli(
+                data_dir,
+                "quiz-grade",
+                "--quiz-id",
+                prepared["quiz_id"],
+                "--answers",
+                "A",
+                expected_returncode=None,
+            )
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("答案数量", rejected.stderr)
+            self.assertEqual(before, _snapshot_files(data_dir))
+
     def test_recognition_mastery_requires_enough_cross_day_evidence(self) -> None:
         topic_id = self._recognition_topic()["id"]
         with tempfile.TemporaryDirectory() as temporary:
@@ -1452,7 +1582,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 [
                     "K08.SOFTWARE_PROCESS_MODELS",
                     "K12.PATTERNS_SOA_MICROSERVICES:design_patterns",
-                    "K12.PATTERNS_SOA_MICROSERVICES:microservices",
+                    "K12.soa_microservices_governance",
                 ],
             )
             self.assertEqual(
@@ -2215,6 +2345,13 @@ class TutorAcceptanceTest(unittest.TestCase):
 
 
 class RepositoryContractTest(unittest.TestCase):
+    def test_project_disables_openviking_plugin(self) -> None:
+        config = (REPO_ROOT / ".codex" / "config.toml").read_text(encoding="utf-8")
+        self.assertEqual(
+            config,
+            '[plugins."openviking-memory@openviking"]\nenabled = false\n',
+        )
+
     def test_2026_recall_source_stays_incomplete_and_non_official(self) -> None:
         source_pdf = (
             REPO_ROOT
