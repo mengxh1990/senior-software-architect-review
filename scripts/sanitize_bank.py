@@ -174,10 +174,6 @@ def candidate_topics(
                 exact.append(topic_id)
             elif candidate.startswith(f"{domain}.") or candidate == domain:
                 prefix.append(topic_id)
-    exact_topics = sorted(set(exact))
-    if "." in tag and exact_topics:
-        return exact_topics
-
     normalized_label = normalize_label(label)
     for topic_id, keywords in DOMAIN_LABEL_TOPIC_RULES.get(domain, ()):
         if any(keyword.casefold() in normalized_label for keyword in keywords):
@@ -186,6 +182,9 @@ def candidate_topics(
         # A detailed source label that cannot be mapped is unknown, not proof
         # that the question belongs to every tutor topic in the same domain.
         return []
+    exact_topics = sorted(set(exact))
+    if "." in tag and exact_topics:
+        return exact_topics
     return exact_topics + sorted(set(prefix) - set(exact_topics))
 
 
