@@ -99,19 +99,20 @@ class SelectionTests(unittest.TestCase):
         base.update(overrides)
         return base
 
-    def test_missing_figure_case_is_skipped_by_default(self) -> None:
-        items = [self._item(missing_figure=True), self._item(id="y")]
-        chosen = practice.select(items, tag=None, year=None, numeral=None, blind_only=True, allow_missing_figures=False)
-        self.assertEqual([i["id"] for i in chosen], ["y"])
-
-    def test_allow_missing_figures_opt_in(self) -> None:
+    def test_missing_figure_case_is_still_served_by_default(self) -> None:
+        """缺图不影响出题：教练用文字描述图意即可。"""
         items = [self._item(missing_figure=True)]
-        chosen = practice.select(items, tag=None, year=None, numeral=None, blind_only=True, allow_missing_figures=True)
+        chosen = practice.select(items, tag=None, year=None, numeral=None, blind_only=True, skip_missing_figures=False)
         self.assertEqual(len(chosen), 1)
+
+    def test_skip_missing_figures_is_opt_in(self) -> None:
+        items = [self._item(missing_figure=True), self._item(id="y")]
+        chosen = practice.select(items, tag=None, year=None, numeral=None, blind_only=True, skip_missing_figures=True)
+        self.assertEqual([i["id"] for i in chosen], ["y"])
 
     def test_read_only_is_excluded_from_blind_practice(self) -> None:
         items = [self._item(practice_mode="read_only")]
-        chosen = practice.select(items, tag=None, year=None, numeral=None, blind_only=True, allow_missing_figures=False)
+        chosen = practice.select(items, tag=None, year=None, numeral=None, blind_only=True, skip_missing_figures=False)
         self.assertEqual(chosen, [])
 
 

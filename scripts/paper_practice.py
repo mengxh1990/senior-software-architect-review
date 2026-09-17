@@ -9,8 +9,9 @@ kind of flow ``sanitize_bank.py`` gives the objective questions:
 * pick by 题型/主题 tag, by year, or list what is available;
 * for 案例, split the question from its 参考答案 and only hand the answer over
   when ``--reveal`` is passed (the learner writes first);
-* drop questions whose figures were removed during the ad/watermark cleanup,
-  unless ``--allow-missing-figures`` is given;
+* flag (but still serve) questions whose figures were removed during the
+  ad/watermark cleanup, so the coach can describe the figure or point at the
+  original PDF; ``--skip-missing-figures`` drops them instead;
 * replace ``![](../assets/...)`` links with ``【图 N】`` markers so no file path
   is ever shown to the learner.
 
@@ -24,6 +25,7 @@ Usage::
     python3 scripts/paper_practice.py --subject case --year 2013下 --numeral 一 --reveal
     python3 scripts/paper_practice.py --subject essay --topic 06 --limit 4
     python3 scripts/paper_practice.py --subject case --list
+    python3 scripts/paper_practice.py --subject case --type 08 --skip-missing-figures
 """
 from __future__ import annotations
 
@@ -49,6 +51,7 @@ QUESTION_BLOCK_RE = re.compile(r"^#{2,4}[ \t]*【?\s*问题\s*\d+\s*】?[^\n]*$"
 TAG_LINE_RE = re.compile(r"^>[ \t]*\*\*(?:题型|主题)\*\*[:：][^\n]*$", re.MULTILINE)
 IMAGE_LINK_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
 REMOVED_FIGURE_MARK = "原图含机构广告或水印，已移除"
+MISSING_FIGURE_NOTE = "原题含插图，该图在广告/水印清理时被移除；出题时请用文字描述图意，或提示学员对照原始 PDF"
 RECALL_YEARS = {"2023下", "2024上", "2024下", "2025上", "2025下", "2026上"}
 
 
@@ -165,6 +168,8 @@ def build_case_items() -> list[dict]:
                 "missing_figure": missing_figure,
                 "questions": len(QUESTION_BLOCK_RE.findall(stem_raw)) or 1,
             }
+            if missing_figure:
+                item["figure_note"] = MISSING_FIGURE_NOTE
             item["practice_mode"] = mode
             item["stem"] = stem_text or ""
             item["answer"] = answer_text
@@ -230,7 +235,7 @@ def build_essay_items() -> list[dict]:
 
 
 def select(items: list[dict], *, tag: str | None, year: str | None, numeral: str | None,
-           blind_only: bool, allow_missing_figures: bool) -> list[dict]:
+           blind_only: bool, skip_missing_figures: bool) -> list[dict]:
     chosen = []
     for item in items:
         if tag and not item["tag"].startswith(tag):
@@ -241,8 +246,8 @@ def select(items: list[dict], *, tag: str | None, year: str | None, numeral: str
             continue
         if blind_only and item["practice_mode"] != "blind":
             continue
-        # 论文题干不依赖插图（被移除的多是页尾文字截图），只有案例题需要按图过滤
-        if not allow_missing_figures and item["subject"] == "case" and item["missing_figure"]:
+        # 缺图默认照常出题（教练用文字描述图意），需要完整插图时才跳过
+        if skip_missing_figures and item["subject"] == "case" and item["missing_figure"]:
             continue
         chosen.append(item)
     return chosen
@@ -250,17 +255,14 @@ def select(items: list[dict], *, tag: str | None, year: str | None, numeral: str
 
 def report(subject: str, items: list[dict]) -> None:
     pool = practice_items(items)
-    blind = [
-        i
-        for i in pool
-        if i["practice_mode"] == "blind" and not (i["subject"] == "case" and i["missing_figure"])
-    ]
-    missing = [i for i in pool if i["subject"] == "case" and i["missing_figure"]]
+    blind = [i for i in pool if i["practice_mode"] == "blind"]
+    missing = [i for i in blind if i["subject"] == "case" and i["missing_figure"]]
     readonly = [i for i in pool if i["practice_mode"] == "read_only"]
     answer_keys = [i for i in items if i["practice_mode"] == "answer_key"]
     print(f"===== {subject} =====")
     print(
-        f"  可盲练 {len(blind)} 道 | 缺图跳过 {len(missing)} 道 | 仅研读 {len(readonly)} 道"
+        f"  可盲练 {len(blind)} 道（其中缺图 {len(missing)} 道，出题时需文字描述图意）"
+        f" | 仅研读 {len(readonly)} 道"
         f" | 答案区 {len(answer_keys)} 段 | 合计 {len(items)} 道"
     )
     by_tag: dict[str, int] = {}
@@ -281,7 +283,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--reveal", action="store_true", help="作答后取参考答案")
     parser.add_argument("--include-readonly", action="store_true")
-    parser.add_argument("--allow-missing-figures", action="store_true")
+    parser.add_argument(
+        "--skip-missing-figures",
+        action="store_true",
+        help="跳过插图被移除的案例题（默认照常出题，仅给出 figure_note 提示）",
+    )
     parser.add_argument("--list", action="store_true")
     args = parser.parse_args(argv)
 
@@ -301,7 +307,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         year=args.year,
         numeral=args.numeral,
         blind_only=not args.include_readonly,
-        allow_missing_figures=args.allow_missing_figures,
+        skip_missing_figures=args.skip_missing_figures,
     )
     if args.limit is not None:
         chosen = chosen[: args.limit]

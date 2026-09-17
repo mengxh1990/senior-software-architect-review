@@ -130,7 +130,7 @@ python3 scripts/paper_practice.py --list
 | `practice_mode=blind` | 可以盲练：题干已与参考答案分离 |
 | `practice_mode=read_only` | 题干与参考答案混排（多见于 2009–2018 答案详解转录版），**只能当研读材料，不要出给学员** |
 | `practice_mode=answer_key` | 卷末答案区，工具已排除，不要当题目 |
-| `missing_figure=true` | 该题插图在广告/水印清理时被移除，默认跳过；确有需要才用 `--allow-missing-figures` |
+| `missing_figure=true` | 该题插图在广告/水印清理时被移除，**仍然可以出题**：按 `figure_note` 用文字描述图意，或提示学员对照原始 PDF；只想出插图完整的题时加 `--skip-missing-figures` |
 | `stem` 里的 `【图 N】` | 对应 `figures` 里的插图，呈现时**不要贴文件路径** |
 | `source_type` | 直接作为 `record --source-type`（正式卷 `real` / 回忆版 `recalled_real`） |
 
@@ -138,7 +138,7 @@ python3 scripts/paper_practice.py --list
 
 - 案例题作答后跑 `--reveal` 取参考答案，按评分点逐项估分并标注"AI 估分"；
 - `--item-id` 用输出的 `id`，`--skill application`（案例）/ `production`（论文成文）；
-- 案例可盲练 25 道、论文 67 道；案例不够时回退 [`case-types/`](../past-papers/case-types/) 的自编模拟题，论文不够时回退 [`paper-topics/`](../past-papers/paper-topics/) 的仿真题。
+- 案例可盲练 29 道（含 4 道缺图题）、论文 67 道；案例不够时回退 [`case-types/`](../past-papers/case-types/) 的自编模拟题，论文不够时回退 [`paper-topics/`](../past-papers/paper-topics/) 的仿真题。
 
 ## Step 3 · AskUserQuestion 点选出题
 
