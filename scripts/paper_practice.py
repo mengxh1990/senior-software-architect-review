@@ -183,14 +183,19 @@ def build_case_items() -> list[dict]:
                 item["note"] = "该卷面未收录参考答案，作答后按评分点自行估分"
             items.append(item)
 
-    # 同一份卷子里有独立答案区时（2022 原卷 + 附录），把答案挂回题目
+    # 同一份卷子里有独立答案区时（2022 原卷 + 附录），说明同号试题的正文
+    # 就是不含答案的原卷题干：放出来盲练，并把答案区的内容挂回去
     for item in items:
-        if item["practice_mode"] != "blind" or item.get("answer"):
+        if item["practice_mode"] == "answer_key":
             continue
         key = answer_keys.get(item["year"], {}).get(item["numeral"])
-        if key:
-            item["answer"] = key
-            item["note"] = "参考答案取自同卷的答案区"
+        if not key:
+            continue
+        if item["practice_mode"] == "read_only":
+            item["practice_mode"] = "blind"
+            item.pop("note", None)
+        item["answer"] = key
+        item["note"] = "参考答案取自同卷的答案区"
     return items
 
 
