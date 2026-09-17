@@ -9,19 +9,23 @@ directory) and never performs network requests.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 import os
+import re
 import statistics
 import subprocess
 import sys
 import tempfile
+import uuid
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterable, Iterator
 
 import question_registry
+import sanitize_bank
 
 
 SCHEMA_VERSION = 1
@@ -45,6 +49,9 @@ WRONG_REASONS = {
     "careless",
     "guessed_correct",
 }
+QUIZ_SCHEMA_VERSION = 1
+QUIZ_SESSIONS_DIR = "quiz-sessions"
+RECALLED_REAL_YEARS = {"2023下", "2024上", "2024下", "2025上", "2025下", "2026上"}
 
 
 class TutorError(RuntimeError):
@@ -480,20 +487,22 @@ def subject_status(subject: dict[str, Any], safe_target: float) -> str:
 
 
 def effective_review_date(
-    next_review: str | None, last_attempt: str | None, minimum_interval: int
+    next_review: str | None,
+    last_attempt: str | None,
+    minimum_interval: int,
+    status: str | None = None,
 ) -> str | None:
-    """Organic review date with the configured minimum interval applied.
+    """Apply the configured review floor only to stable maintenance.
 
     Stored ``next_review_at`` keeps its organic spacing (1/3/14 days). The
-    ``min_review_interval_days`` floor is recomputed at every read site, so
-    raising and later lowering the setting both take effect immediately
-    without rewriting stored state.
+    breadth-oriented ``min_review_interval_days`` floor must never postpone a
+    wrong or fragile item's corrective review.
     """
 
     if not next_review:
         return next_review
     effective = parse_date(next_review)
-    if minimum_interval > 0 and last_attempt:
+    if status == "pass_ready" and minimum_interval > 0 and last_attempt:
         floor = parse_datetime(last_attempt).date() + timedelta(days=minimum_interval)
         if floor > effective:
             effective = floor
@@ -528,6 +537,7 @@ def status_payload(profile: dict[str, Any], state: dict[str, Any]) -> dict[str, 
                 skill_record.get("next_review_at"),
                 skill_record.get("last_attempt_at"),
                 minimum_interval,
+                skill_record.get("status"),
             )
             if effective:
                 effective_dates.append(effective)
@@ -1100,6 +1110,7 @@ def apply_record_event(
             record.get("next_review_at") or next_review.isoformat(),
             record.get("last_attempt_at"),
             minimum_interval,
+            record.get("status"),
         ),
     }
 
@@ -1600,10 +1611,7 @@ def learning_diagnosis(
             if wrong:
                 issue["signal"] = "wrong"
 
-    minimum_interval = int(
-        state.get("strategy", {}).get("min_review_interval_days", 0) or 0
-    )
-    review_interval = max(1, minimum_interval)
+    review_interval = 1
     # One pass resolves every attempt's metadata once; each issue then only
     # filters the strong same-concept candidates instead of rescanning (and
     # re-resolving) the whole event log per issue.
@@ -1930,6 +1938,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
                             review_at,
                             skill_progress.get("last_attempt_at"),
                             minimum_interval,
+                            skill_progress.get("status"),
                         )
                     )
                     <= today
@@ -2139,6 +2148,455 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             f"{index}. [{item['subject']}] {item['topic_id']} {item['name']} "
             f"— {item['reason']}"
         )
+    return 0
+
+
+def quiz_sessions_dir(data_dir: Path) -> Path:
+    return data_dir / QUIZ_SESSIONS_DIR
+
+
+def quiz_session_path(data_dir: Path, quiz_id: str) -> Path:
+    if not re.fullmatch(r"quiz-[0-9A-Za-z._-]+", quiz_id):
+        raise TutorError("quiz-id 格式无效")
+    return quiz_sessions_dir(data_dir) / f"{quiz_id}.json"
+
+
+def paper_source_type(year: str | None) -> str:
+    return "recalled_real" if year in RECALLED_REAL_YEARS else "real"
+
+
+def infer_quiz_facet(topic: dict[str, Any], item: dict[str, Any]) -> str | None:
+    facets = topic.get("facets", [])
+    if not facets:
+        return None
+    text = " ".join(
+        [
+            str(item.get("stem") or ""),
+            str(item.get("source") or ""),
+            str(item.get("tag_label") or ""),
+        ]
+    ).lower()
+    rules = {
+        "K05.TEST_CMMI_PATTERNS": (
+            ("cmmi", ("cmmi", "能力成熟度")),
+            ("design_patterns", ("设计模式", "模式")),
+            ("testing", ("测试", "白盒", "黑盒", "覆盖")),
+        ),
+        "K06.DESIGN_DATA_VIEWS": (
+            ("uml_views", ("uml", "视图", "建模")),
+            ("data_design", ("数据设计", "数据库", "数据模型")),
+            ("high_level_design", ("概要设计", "总体设计", "模块")),
+        ),
+        "K12.PATTERNS_SOA_MICROSERVICES": (
+            ("microservices", ("微服务", "断路器", "熔断", "服务网格", "api 网关")),
+            ("soa", ("soa", "esb", "soap", "wsdl", "面向服务")),
+            ("design_patterns", ("设计模式", "singleton", "工厂", "观察者")),
+        ),
+        "K13.VIEWS_SOA_LAYERING": (
+            ("four_plus_one", ("4+1", "逻辑视图", "进程视图", "物理视图")),
+            ("soa", ("soa", "esb", "面向服务")),
+            ("layering", ("分层", "层次")),
+        ),
+        "K23.PROJECT_MANAGEMENT_METRICS": (
+            ("software_metrics", ("度量", "功能点", "mccabe", "halstead", "loc")),
+            ("project_management", ("项目", "进度", "成本", "挣值", "wbs")),
+        ),
+    }
+    for facet, keywords in rules.get(topic["id"], ()):
+        if any(keyword in text for keyword in keywords):
+            return facet
+    return None
+
+
+def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
+    """Load all objective questions once for a quiz preparation request."""
+
+    merged: dict[str, dict[str, Any]] = {}
+    for paper in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
+        for item in sanitize_bank.parse_paper(paper):
+            if not item.get("options") or not item.get("correct"):
+                continue
+            normalized = dict(item)
+            normalized["source"] = paper.relative_to(REPO_ROOT).as_posix()
+            normalized["source_type"] = paper_source_type(item.get("year"))
+            topics = set(item.get("candidate_topics", []))
+            override = question_registry.topic_override(item["id"])
+            if override:
+                topics.add(override)
+            normalized["candidate_topics"] = sorted(topics)
+            merged[item["id"]] = normalized
+
+    topics_by_resource: dict[str, set[str]] = {}
+    for topic in curriculum["topics"]:
+        for resource in topic.get("resources", []):
+            if resource.startswith("exam-bank/"):
+                topics_by_resource.setdefault(resource, set()).add(topic["id"])
+    for resource, topic_ids in topics_by_resource.items():
+        path = REPO_ROOT / resource
+        if not path.is_file():
+            continue
+        blocks = sanitize_bank.split_blocks(path.read_text(encoding="utf-8"))
+        for number, raw in blocks.items():
+            parsed = sanitize_bank.parse_block(raw)
+            if not parsed.get("options") or not parsed.get("correct"):
+                continue
+            item_id = f"{resource}#{number}"
+            existing = merged.get(item_id, {})
+            candidate_ids = set(existing.get("candidate_topics", [])) | topic_ids
+            merged[item_id] = {
+                **parsed,
+                "id": item_id,
+                "year": None,
+                "tag": None,
+                "tag_label": None,
+                "source": resource,
+                "source_type": "self_authored",
+                "candidate_topics": sorted(candidate_ids),
+            }
+    return list(merged.values())
+
+
+def quiz_question_for_topic(
+    raw: dict[str, Any],
+    topic: dict[str, Any],
+    private_registry: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    topic_id = topic["id"]
+    if topic_id not in raw.get("candidate_topics", []):
+        return None
+    facet = infer_quiz_facet(topic, raw)
+    if topic.get("facets") and facet is None:
+        return None
+    metadata = question_registry.resolve_metadata(
+        {"item_id": raw["id"], "topic_id": topic_id, "facet": facet},
+        private_registry,
+    )
+    return {
+        "item_id": raw["id"],
+        "topic_id": topic_id,
+        "topic_name": topic["name"],
+        "facet": facet,
+        "concept_id": metadata.get("concept_id"),
+        "question_family_id": metadata.get("question_family_id"),
+        "stem": raw["stem"],
+        "options": raw["options"],
+        "correct": sorted(raw["correct"]),
+        "explanation": raw.get("explanation"),
+        "source": raw.get("source"),
+        "source_type": raw["source_type"],
+        "year": raw.get("year"),
+    }
+
+
+def _quiz_candidate_sort_key(
+    item: dict[str, Any], answer_counts: dict[str, int]
+) -> tuple[Any, ...]:
+    signature = "".join(item["correct"])
+    source_rank = {"real": 0, "recalled_real": 1, "self_authored": 2}.get(
+        item["source_type"], 3
+    )
+    year_match = re.match(r"(\d{4})", str(item.get("year") or "0"))
+    year = int(year_match.group(1)) if year_match else 0
+    return (source_rank, answer_counts.get(signature, 0), -year, item["item_id"])
+
+
+def cmd_quiz_prepare(args: argparse.Namespace) -> int:
+    if args.subject != "comprehensive":
+        raise TutorError("quiz-prepare 当前只支持综合知识客观题")
+    curriculum = load_curriculum()
+    topics = topic_map(curriculum)
+    profile, state = load_profile_and_state(args.data_dir)
+    attempts = load_attempts(state_paths(args.data_dir)["attempts"])
+    today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
+    recommendation_args = argparse.Namespace(
+        data_dir=args.data_dir,
+        subject=args.subject,
+        limit=max(args.limit * 4, 20),
+        today=today.isoformat(),
+    )
+    recommendations = build_recommendation_payload(recommendation_args)[
+        "recommendations"
+    ]
+    pool = load_quiz_question_pool(curriculum)
+    private_registry = load_private_question_registry(args.data_dir)
+    attempted_items = {event.get("item_id") for event in attempts}
+    attempted_today = {
+        event.get("item_id")
+        for event in attempts
+        if event.get("at") and parse_datetime(event["at"]).date() == today
+    }
+    selected: list[dict[str, Any]] = []
+    used_items: set[str] = set()
+    used_families: set[str] = set()
+    answer_counts: dict[str, int] = {}
+
+    def choose_for(recommendation: dict[str, Any], allow_repeated: bool) -> bool:
+        topic = topics.get(recommendation["topic_id"])
+        if not topic:
+            return False
+        candidates = []
+        for raw in pool:
+            candidate = quiz_question_for_topic(raw, topic, private_registry)
+            if candidate is None or candidate["item_id"] in used_items:
+                continue
+            if candidate["item_id"] in attempted_today:
+                continue
+            if not allow_repeated and candidate["item_id"] in attempted_items:
+                continue
+            if candidate["item_id"] in set(recommendation.get("avoid_item_ids", [])):
+                continue
+            candidates.append(candidate)
+        wanted_concept = recommendation.get("concept_id")
+        exact = [item for item in candidates if item.get("concept_id") == wanted_concept]
+        if wanted_concept and exact:
+            candidates = exact
+        if not candidates:
+            return False
+        family_fresh = [
+            item
+            for item in candidates
+            if not item.get("question_family_id")
+            or item["question_family_id"] not in used_families
+        ]
+        if family_fresh:
+            candidates = family_fresh
+        chosen = min(candidates, key=lambda item: _quiz_candidate_sort_key(item, answer_counts))
+        chosen["number"] = len(selected) + 1
+        chosen["mode"] = (
+            "review" if recommendation.get("diagnostic_status") else "practice"
+        )
+        prior_reasons = recommendation.get("wrong_reasons") or []
+        chosen["wrong_reason_hint"] = (
+            prior_reasons[0] if prior_reasons else "concept_confusion"
+        )
+        selected.append(chosen)
+        used_items.add(chosen["item_id"])
+        if chosen.get("question_family_id"):
+            used_families.add(chosen["question_family_id"])
+        signature = "".join(chosen["correct"])
+        answer_counts[signature] = answer_counts.get(signature, 0) + 1
+        return True
+
+    for allow_repeated in (False, True):
+        for recommendation in recommendations:
+            if len(selected) >= args.limit:
+                break
+            choose_for(recommendation, allow_repeated)
+        if len(selected) >= args.limit:
+            break
+    if len(selected) < args.limit:
+        raise TutorError(
+            f"只能找到 {len(selected)} 道符合去重和元数据要求的客观题，无法组成 {args.limit} 题"
+        )
+
+    created_at = now_iso()
+    quiz_id = "quiz-" + parse_datetime(created_at).strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:8]
+    manifest = {
+        "schema_version": QUIZ_SCHEMA_VERSION,
+        "quiz_id": quiz_id,
+        "status": "pending",
+        "subject": args.subject,
+        "created_at": created_at,
+        "questions": selected,
+    }
+    path = quiz_session_path(args.data_dir, quiz_id)
+    atomic_write_json(path, manifest)
+    public_questions = [
+        {
+            "number": item["number"],
+            "stem": item["stem"],
+            "options": item["options"],
+            "source_type": item["source_type"],
+            "year": item.get("year"),
+            "topic_name": item["topic_name"],
+        }
+        for item in selected
+    ]
+    payload = {
+        "quiz_id": quiz_id,
+        "subject": args.subject,
+        "count": len(public_questions),
+        "questions": public_questions,
+        "exam_date": profile.get("exam_date"),
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+    return 0
+
+
+def parse_quiz_answers(value: str) -> list[list[str]]:
+    tokens = [token for token in re.split(r"[,，\s]+", value.strip()) if token]
+    answers: list[list[str]] = []
+    for token in tokens:
+        letters = sorted(set(re.findall(r"[A-Z]", token.upper())))
+        if not letters or any(letter not in {"A", "B", "C", "D"} for letter in letters):
+            raise TutorError(f"答案格式无效：{token}")
+        answers.append(letters)
+    return answers
+
+
+def parse_quiz_confidences(value: str | None, count: int) -> list[str]:
+    if not value:
+        return ["sure"] * count
+    values = [token for token in re.split(r"[,，\s]+", value.strip()) if token]
+    if len(values) == 1:
+        values *= count
+    if len(values) != count or any(item not in {"sure", "unsure", "guess"} for item in values):
+        raise TutorError("confidences 必须为 sure/unsure/guess，数量为 1 或与题目数一致")
+    return values
+
+
+def load_quiz_manifest(data_dir: Path, quiz_id: str) -> tuple[Path, dict[str, Any]]:
+    path = quiz_session_path(data_dir, quiz_id)
+    manifest = load_json(path, "客观题会话")
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("schema_version") != QUIZ_SCHEMA_VERSION
+        or manifest.get("quiz_id") != quiz_id
+        or not isinstance(manifest.get("questions"), list)
+        or not manifest["questions"]
+    ):
+        raise TutorError(f"客观题会话损坏：{path}")
+    return path, manifest
+
+
+def cmd_quiz_grade(args: argparse.Namespace) -> int:
+    path, manifest = load_quiz_manifest(args.data_dir, args.quiz_id)
+    answers = parse_quiz_answers(args.answers)
+    questions = manifest["questions"]
+    if len(answers) != len(questions):
+        raise TutorError(f"答案数量为 {len(answers)}，题目数量为 {len(questions)}")
+    confidences = parse_quiz_confidences(args.confidences, len(questions))
+    response_key = {
+        "answers": ["".join(answer) for answer in answers],
+        "confidences": confidences,
+    }
+    if manifest.get("status") == "graded":
+        if manifest.get("response_key") != response_key:
+            raise TutorError(f"quiz-id {args.quiz_id} 已使用不同答案完成")
+        replay = {
+            **manifest["result"],
+            "recorded_attempts": 0,
+            "idempotent": True,
+        }
+        print(json.dumps(replay, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+
+    curriculum = load_curriculum()
+    profile, state = load_profile_and_state(args.data_dir)
+    attempts_path = state_paths(args.data_dir)["attempts"]
+    attempts = load_attempts(attempts_path)
+    existing_by_id = {event["attempt_id"]: event for event in attempts}
+    graded_at = parse_datetime(args.at).isoformat(timespec="seconds")
+    per_question_duration = (
+        max(1, args.duration_seconds // len(questions))
+        if args.duration_seconds is not None
+        else None
+    )
+    events: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
+    for index, (question, selected, confidence) in enumerate(
+        zip(questions, answers, confidences, strict=True), 1
+    ):
+        correct = sorted(question["correct"])
+        is_correct = selected == correct
+        wrong_reasons = []
+        if is_correct and confidence == "guess":
+            wrong_reasons = ["guessed_correct"]
+        elif not is_correct:
+            wrong_reasons = [question.get("wrong_reason_hint") or "concept_confusion"]
+        event = {
+            "attempt_id": f"{args.quiz_id}-q-{index}",
+            "event_type": "practice",
+            "topic_id": question["topic_id"],
+            "item_id": question["item_id"],
+            "facet": question.get("facet"),
+            "at": graded_at,
+            "subject": manifest["subject"],
+            "skill": "recognition",
+            "mode": question.get("mode", "practice"),
+            "score": 1 if is_correct else 0,
+            "max_score": 1,
+            "duration_seconds": per_question_duration,
+            "word_count": None,
+            "complete": False,
+            "confidence": confidence,
+            "wrong_reasons": wrong_reasons,
+            "source_type": question["source_type"],
+            "source": question.get("source"),
+            "feedback_seen": False,
+            "concept_id": question.get("concept_id"),
+            "question_family_id": question.get("question_family_id"),
+            "question_fingerprint": None,
+            "variant_of": None,
+        }
+        validate_record_event(event, curriculum)
+        existing = existing_by_id.get(event["attempt_id"])
+        if existing is not None and events_conflict(existing, event, compare_at=bool(args.at)):
+            raise TutorError(f"attempt-id {event['attempt_id']} 与已记录内容冲突")
+        events.append(event)
+        results.append(
+            {
+                "number": index,
+                "topic_id": question["topic_id"],
+                "concept_id": question.get("concept_id"),
+                "selected": "".join(selected),
+                "correct": "".join(correct),
+                "is_correct": is_correct,
+                "confidence": confidence,
+                "wrong_reasons": wrong_reasons,
+                "explanation": question.get("explanation"),
+            }
+        )
+
+    next_state = copy.deepcopy(state)
+    missing_events = [event for event in events if event["attempt_id"] not in existing_by_id]
+    applied_results = {}
+    for event in missing_events:
+        applied_results[event["attempt_id"]] = apply_record_event(
+            next_state, event, curriculum
+        )
+    if missing_events:
+        write_attempts(attempts_path, [*attempts, *missing_events])
+        save_state_bundle(args.data_dir, profile, next_state, backup=True)
+    minimum_interval = int(
+        next_state.get("strategy", {}).get("min_review_interval_days", 0) or 0
+    )
+    for result, event in zip(results, events, strict=True):
+        topic_record = next_state["topics"][event["topic_id"]]
+        skill_record = topic_record["mastery"]["recognition"]
+        result["topic_status"] = topic_record["status"]
+        result["next_review_at"] = effective_review_date(
+            skill_record.get("next_review_at"),
+            skill_record.get("last_attempt_at"),
+            minimum_interval,
+        )
+        if result["is_correct"] and result["confidence"] == "sure":
+            result["explanation"] = None
+
+    subject = status_payload(profile, next_state)["subjects"][manifest["subject"]]
+    payload = {
+        "quiz_id": args.quiz_id,
+        "score": sum(1 for result in results if result["is_correct"]),
+        "max_score": len(results),
+        "results": results,
+        "recorded_attempts": len(missing_events),
+        "idempotent": not missing_events,
+        "subject_status": {
+            "status": subject["status"],
+            "latest_mock_score": subject.get("latest_mock_score"),
+            "lower_bound_score": subject.get("lower_bound_score"),
+            "evidence_level": subject.get("evidence_level"),
+        },
+    }
+    completed = {
+        **manifest,
+        "status": "graded",
+        "graded_at": graded_at,
+        "response_key": response_key,
+        "result": payload,
+    }
+    atomic_write_json(path, completed)
+    print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
 
@@ -2363,6 +2821,26 @@ def build_parser() -> argparse.ArgumentParser:
     recommend_parser.add_argument("--limit", type=int, default=5)
     recommend_parser.add_argument("--today")
     recommend_parser.set_defaults(func=cmd_recommend)
+
+    quiz_prepare_parser = subparsers.add_parser(
+        "quiz-prepare", help="一次完成客观题诊断、选题和脱敏"
+    )
+    quiz_prepare_parser.add_argument(
+        "--subject", choices=("comprehensive",), default="comprehensive"
+    )
+    quiz_prepare_parser.add_argument("--limit", type=int, default=5)
+    quiz_prepare_parser.add_argument("--today")
+    quiz_prepare_parser.set_defaults(func=cmd_quiz_prepare)
+
+    quiz_grade_parser = subparsers.add_parser(
+        "quiz-grade", help="一次完成客观题判分、批量记档和状态更新"
+    )
+    quiz_grade_parser.add_argument("--quiz-id", required=True)
+    quiz_grade_parser.add_argument("--answers", required=True)
+    quiz_grade_parser.add_argument("--confidences")
+    quiz_grade_parser.add_argument("--duration-seconds", type=int)
+    quiz_grade_parser.add_argument("--at")
+    quiz_grade_parser.set_defaults(func=cmd_quiz_grade)
 
     configure_parser = subparsers.add_parser(
         "configure", help="保存诊断后的案例赛道与论文主题"
