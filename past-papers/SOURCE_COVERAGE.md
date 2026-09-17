@@ -46,7 +46,7 @@
 | 2025 下 | 已结构化 | recalled_real | [2025下.md](./comprehensive-by-year/2025下.md) |
 | 2026 上 | 来源 PDF + 考情概要 | recalled_real | [2026上.md](./comprehensive-by-year/2026上.md) |
 
-2018 下–2026 上的整理带 `§N.M` 知识点标签；2009–2017 的转录版本保留原始题干、选项、答案与解析，未追加标签（可按需在 `tutor/curriculum.json` 之外做二次标注）。
+**知识点标签**：20 个考期全部带标签。2018 下–2026 上沿用原有逐题 `§N.M` 标签；2009–2017 的转录版本按**题组**补 `§N` 标签（题组即试卷中连续的同一考点区间，与仓库既有的 `## 第 N-M 题：[§…]` 分组格式一致），标签表在 [`scripts/comprehensive_topic_tags.json`](../scripts/comprehensive_topic_tags.json)，由 [`scripts/tag_comprehensive_questions.py`](../scripts/tag_comprehensive_questions.py) 落盘，可用 `--preview` 复核题干与原文解析中的考查提示。
 
 ## 案例分析覆盖（19 / 20 考期）
 

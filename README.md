@@ -82,7 +82,7 @@ python3 scripts/serve.py
 
 | 科目 | 题型 | 题数 | 位置 |
 |---|---|---|---|
-| 综合知识 | **历年真题结构化 md**（2018 下起带 §N.M 知识点标签） | **20 个考期** | [`past-papers/comprehensive-by-year/`](./past-papers/comprehensive-by-year/) |
+| 综合知识 | **历年真题结构化 md**（全部带 § 知识点标签：2009 下–2017 下为题组级 §N，2018 下起为逐题 §N.M） | **20 个考期** | [`past-papers/comprehensive-by-year/`](./past-papers/comprehensive-by-year/) |
 | 综合知识 | 选择题题库（自主命题 + 解析） | **320+** | [`exam-bank/`](./exam-bank/) |
 | 案例分析 | 完整模拟题（题干+答案+评分） | **26** | [`past-papers/case-types/`](./past-papers/case-types/) |
 | 案例分析 | **历年真题**（2009 下 – 2026 上，含参考答案） | **19 个考期** | [`past-papers/case-by-year/`](./past-papers/case-by-year/) |
