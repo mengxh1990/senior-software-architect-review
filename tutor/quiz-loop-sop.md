@@ -73,6 +73,43 @@ python3 scripts/sanitize_bank.py exam-bank/07-software-engineering.md 1 4 6
 输出是 JSON 数组，每项含 `stem` / `options[]` / `correct` / `explanation`。
 `correct` 与 `explanation` **只**用于判分和作答后反馈，**不**在作答前回显。
 
+### Step 2b · 真题抽题（优先于自编题）
+
+`past-papers/comprehensive-by-year/` 里是 20 个考期的综合知识真题（1055 个可用题块），
+**同一套脱敏契约**，用同一个脚本按考点抽题。真题是正式试卷，证据强度高于自编题，
+只要 `recommend` 出来的考点能抽到真题，就优先出真题。
+
+```bash
+# 按 tutor 考点抽（推荐：直接对接 Step 1 的 recommend 结果）
+python3 scripts/sanitize_bank.py --topic K10.DATABASE_MODELING --limit 5
+
+# 指定考期 + §标签
+python3 scripts/sanitize_bank.py --year 2013下 --tag §5 --limit 3
+
+# 只看某份卷子
+python3 scripts/sanitize_bank.py past-papers/comprehensive-by-year/2018下.md --tag §6 --limit 5
+
+# 看各考期覆盖情况
+python3 scripts/sanitize_bank.py --list
+```
+
+返回项比 exam-bank 多三个字段：
+
+| 字段 | 含义 |
+|---|---|
+| `tag` / `tag_label` | 该题块的 §考点标签（2009–2017 为题组级，2018 起为逐题） |
+| `range` | 题号区间，如 `[7, 8]`；**一个题块可能含多个小问**（共享题干） |
+| `candidate_topics` | 由 `curriculum.json` 的 `raw_tags` 推出的 tutor 考点编号，用于 `record --topic` |
+
+抽题注意事项：
+
+- `id` 形如 `past-papers/comprehensive-by-year/2013下.md#7-8`，**record 时原样作为 `--item-id`**；
+- 一个题块含多个小问（如 `#7-8`）时按**一题**呈现与记档，不要拆成两条 record；
+- `--source-type` 按考期来源选择：2009–2022 用 `real`，回忆版考期（2023 下、2024 上/下、2025 上/下、2026 上）用 `recalled_real`；
+- 真题保留试卷原始的答案分布，**不要**套用"自编题正确答案需分散到不同选项"的规则；
+- 2019 下、2020、2023 下的整理版本只覆盖部分题目（26 / 12 / 1 个可用题块），抽不到时退回 `exam-bank/` 或自编题；
+- 题干里的插图引用形如 `![p1_000.png](../assets/2013下/p1_000.webp)`，**呈现时不要贴图片路径**，用文字描述图意或直接说明"原题含图"。
+
 ## Step 3 · AskUserQuestion 点选出题
 
 学员偏好点选。`AskUserQuestion` 的正确姿势：
@@ -127,7 +164,7 @@ python3 scripts/tutor.py record \
 
 | 场景 | record？ | skill | mode | 能升 pass_ready？ |
 |---|---|---|---|---|
-| 客观题、闭卷、答对、`sure` | ✅ | recognition | diagnostic/practice | 是（累积 6 条证据 + 跨日 2 次） |
+| 客观题（含真题）、闭卷、答对、`sure` | ✅ | recognition | diagnostic/practice | 是（累积 6 条证据 + 跨日 2 次） |
 | 答对但 `guessed` | ✅ | recognition | diagnostic | 否，只算 fragile |
 | 答错 | ✅ | recognition | diagnostic | 否，进 1/3/7/14 复习队列 |
 | 案例独立作答 + 逐项估分 | ✅ | application | practice/mock | 需 2 次 15/25 等价分 |
@@ -189,6 +226,7 @@ record 完再跑 `python3 scripts/tutor.py status` 确认落盘。
 - [ ] 错题给了错因 + 记忆钩子 + 变式题
 - [ ] 没把 `✅` / `**答案**` / `**解析**` 泄给学员
 - [ ] 没有硬贴 exam-bank 原文（一律走 `sanitize_bank.py`）
+- [ ] 出真题时没把 `![...](../assets/...)` 图片路径或 `【解析】` 贴给学员
 
 全部打勾才进入下一轮 `recommend`。
 
@@ -197,7 +235,7 @@ record 完再跑 `python3 scripts/tutor.py status` 确认落盘。
 | 工具 | 位置 | 作用 |
 |---|---|---|
 | CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / recommend / record / doctor |
-| 脱敏器 | [`scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) | 剥 exam-bank 答案，输出结构化 JSON |
+| 脱敏器 | [`scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) | 剥 exam-bank 与真题答案，输出结构化 JSON；支持 `--topic` / `--tag` / `--year` / `--list` 抽题 |
 | 考点表生成 | [`scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) | 由 `curriculum.json` 生成 `topic-map.md` |
 | 教师人格 | [`.claude/agents/senior-architect-pass-coach.md`](../.claude/agents/senior-architect-pass-coach.md) | 覆盖诊断 / 案例 / 论文全流程决策 |
 | 记档协议 | [`PROGRESS_PROTOCOL.md`](./PROGRESS_PROTOCOL.md) | 证据分级、掌握度定义、私隐边界 |

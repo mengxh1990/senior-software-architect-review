@@ -10,3 +10,4 @@
 - `past-papers/SOURCE_COVERAGE.md` 重写为三科覆盖表，并记录转录来源、准入规则与版权边界；`past-papers/case-by-year/README.md`、`past-papers/essay-by-year/README.md` 提供按年索引。
 - 2009 下–2017 下综合知识补题组级 `§N` 知识点标签：新增 `scripts/tag_comprehensive_questions.py`（`--preview` 复核、`--check` 校验覆盖、`--apply` 落盘）与标签表 `scripts/comprehensive_topic_tags.json`，共 439 个题组，覆盖第 1–75 题无缺口。
 - 真题插图合规清理：逐张 OCR 与像素复核 174 张插图，删除 38 张机构广告图与残留水印图（清单见 `scripts/las_import_manifest.json` 的 `drop_images`，正文原位置保留"已移除"标注），`past-papers/assets/` 收敛到 136 张纯内容图，并新增回归测试防止回填。
+- 真题接入出题流程：`scripts/sanitize_bank.py` 支持解析 `past-papers/comprehensive-by-year/` 的两种真题版式，新增 `--topic`（按 tutor 考点）/ `--tag`（按 §标签）/ `--year` / `--limit` / `--list`，输出与 exam-bank 同一套脱敏契约并附 `tag`、`range`、`candidate_topics`；`tutor/quiz-loop-sop.md` 新增 Step 2b 真题抽题流程，教练人格同步更新客观题来源优先级。
