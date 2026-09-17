@@ -48,6 +48,8 @@
 
 **知识点标签**：20 个考期全部带标签。2018 下–2026 上沿用原有逐题 `§N.M` 标签；2009–2017 的转录版本按**题组**补 `§N` 标签（题组即试卷中连续的同一考点区间，与仓库既有的 `## 第 N-M 题：[§…]` 分组格式一致），标签表在 [`scripts/comprehensive_topic_tags.json`](../scripts/comprehensive_topic_tags.json)，由 [`scripts/tag_comprehensive_questions.py`](../scripts/tag_comprehensive_questions.py) 落盘，可用 `--preview` 复核题干与原文解析中的考查提示。
 
+**案例与论文标签**：案例分析 19 个考期共 101 道题按 [`case-types/`](./case-types/) 的题型编号（案例 01–13）标注，论文 16 个考期共 67 道题按 [`paper-topics/`](./paper-topics/) 的主题编号（论文 01–13）标注，每道题的标签紧跟在标题下方。标签表在 [`scripts/case_essay_tags.json`](../scripts/case_essay_tags.json)，由 [`scripts/tag_case_essay.py`](../scripts/tag_case_essay.py) 落盘（`--preview` / `--check` / `--apply`）。少量不属于既有题型/主题的题目标为 `案例 00` / `论文 00`，便于后续补充对应 playbook。
+
 ## 案例分析覆盖（19 / 20 考期）
 
 | 考期 | 仓库状态 | 来源类型 | 文件 |

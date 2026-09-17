@@ -3,6 +3,8 @@
 > 与 [`essay-questions-by-year.md`](../essay-questions-by-year.md) 的区别：那里是**题目清单 + 主题映射**（速查用），这里是**完整题干与小问**（写作训练用）。
 >
 > 写作模板见 [`paper-topics/`](../paper-topics/)，范文见 [`paper-samples/`](../paper-samples/)。
+>
+> 每道题标题下方都带一行 `> **主题**：论文 NN · …`，编号对应 [`paper-topics/`](../paper-topics/) 的主题；标为 `论文 00` 的是尚未沉淀模板的新技术题。
 
 ## 覆盖状态
 
