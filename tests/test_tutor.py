@@ -397,7 +397,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertIn(45, _values_for_key(status, "daily_minutes"))
             self.assertIn("backend", _values_for_key(status, "background"))
 
-    def test_configured_review_floor_prioritizes_breadth(self) -> None:
+    def test_configured_review_floor_does_not_delay_wrong_answers(self) -> None:
         topic_id = self._recognition_topic()["id"]
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
@@ -437,43 +437,45 @@ class TutorAcceptanceTest(unittest.TestCase):
             after_configure = _find_topic_record(configured, topic_id)
             self.assertEqual(
                 after_configure["mastery"]["recognition"]["next_review_at"],
-                "2026-08-17",
+                "2026-08-11",
             )
 
-            _run_cli(
-                data_dir,
-                "record",
-                "--topic",
-                topic_id,
-                "--skill",
-                "recognition",
-                "--score",
-                "1",
-                "--max-score",
-                "1",
-                "--attempt-id",
-                "breadth-floor-correct",
-                "--at",
-                "2026-08-20T09:00:00+08:00",
-            )
-            after_record = _find_topic_record(self._status(data_dir), topic_id)
-            self.assertEqual(
-                after_record["mastery"]["recognition"]["next_review_at"],
-                "2026-08-27",
-            )
-
-            # Lowering the interval must pull the review date back instead of
-            # leaving it pinned at the previous floor.
+    def test_configured_review_floor_only_applies_to_pass_ready_maintenance(self) -> None:
+        topic_id = self._recognition_topic()["id"]
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
             _run_cli(
                 data_dir,
                 "configure",
                 "--min-review-interval-days",
-                "2",
+                "21",
             )
-            lowered = _find_topic_record(self._status(data_dir), topic_id)
+            for number in range(6):
+                day = 10 if number < 5 else 12
+                _run_cli(
+                    data_dir,
+                    "record",
+                    "--topic",
+                    topic_id,
+                    "--skill",
+                    "recognition",
+                    "--score",
+                    "1",
+                    "--max-score",
+                    "1",
+                    "--attempt-id",
+                    f"pass-ready-floor-{number}",
+                    "--item-id",
+                    f"pass-ready-item-{number}",
+                    "--at",
+                    f"2026-08-{day:02d}T09:{number:02d}:00+08:00",
+                )
+            status = _find_topic_record(self._status(data_dir), topic_id)
+            self.assertEqual(status["mastery"]["recognition"]["status"], "pass_ready")
             self.assertEqual(
-                lowered["mastery"]["recognition"]["next_review_at"],
-                "2026-08-23",
+                status["mastery"]["recognition"]["next_review_at"],
+                "2026-09-02",
             )
 
     def test_every_command_refuses_a_copied_unignored_private_directory(self) -> None:

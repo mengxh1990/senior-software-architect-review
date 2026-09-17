@@ -480,20 +480,22 @@ def subject_status(subject: dict[str, Any], safe_target: float) -> str:
 
 
 def effective_review_date(
-    next_review: str | None, last_attempt: str | None, minimum_interval: int
+    next_review: str | None,
+    last_attempt: str | None,
+    minimum_interval: int,
+    status: str | None = None,
 ) -> str | None:
-    """Organic review date with the configured minimum interval applied.
+    """Apply the configured review floor only to stable maintenance.
 
     Stored ``next_review_at`` keeps its organic spacing (1/3/14 days). The
-    ``min_review_interval_days`` floor is recomputed at every read site, so
-    raising and later lowering the setting both take effect immediately
-    without rewriting stored state.
+    breadth-oriented ``min_review_interval_days`` floor must never postpone a
+    wrong or fragile item's corrective review.
     """
 
     if not next_review:
         return next_review
     effective = parse_date(next_review)
-    if minimum_interval > 0 and last_attempt:
+    if status == "pass_ready" and minimum_interval > 0 and last_attempt:
         floor = parse_datetime(last_attempt).date() + timedelta(days=minimum_interval)
         if floor > effective:
             effective = floor
@@ -528,6 +530,7 @@ def status_payload(profile: dict[str, Any], state: dict[str, Any]) -> dict[str, 
                 skill_record.get("next_review_at"),
                 skill_record.get("last_attempt_at"),
                 minimum_interval,
+                skill_record.get("status"),
             )
             if effective:
                 effective_dates.append(effective)
@@ -1100,6 +1103,7 @@ def apply_record_event(
             record.get("next_review_at") or next_review.isoformat(),
             record.get("last_attempt_at"),
             minimum_interval,
+            record.get("status"),
         ),
     }
 
@@ -1600,10 +1604,7 @@ def learning_diagnosis(
             if wrong:
                 issue["signal"] = "wrong"
 
-    minimum_interval = int(
-        state.get("strategy", {}).get("min_review_interval_days", 0) or 0
-    )
-    review_interval = max(1, minimum_interval)
+    review_interval = 1
     # One pass resolves every attempt's metadata once; each issue then only
     # filters the strong same-concept candidates instead of rescanning (and
     # re-resolving) the whole event log per issue.
@@ -1930,6 +1931,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
                             review_at,
                             skill_progress.get("last_attempt_at"),
                             minimum_interval,
+                            skill_progress.get("status"),
                         )
                     )
                     <= today
