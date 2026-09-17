@@ -417,7 +417,7 @@
   const SUBJECT_LABELS = { comprehensive: '综合知识', case: '案例分析', essay: '论文' };
   const SUBJECT_ORDER = ['comprehensive', 'case', 'essay'];
   const app = document.getElementById('app');
-  let curriculum = [], status = null, activeSubject = 'all', searchTerm = '', sortMode = 'weak';
+  let curriculum = [], status = null, learningPlan = null, learningPlanError = null, activeSubject = 'all', searchTerm = '', sortMode = 'weak';
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -430,25 +430,27 @@
     return Math.max(0, Math.ceil((target.getTime() - Date.now()) / 86400000));
   }
   function topicState(topic) { return status?.topics?.[topic.id] || {}; }
+  function skillForSubject(subject) { return { comprehensive: 'recognition', case: 'application', essay: 'production' }[subject]; }
+  function diagnosisFor(topic) {
+    return learningPlan?.diagnosis?.issues?.find(item => item.topic_id === topic.id && item.status !== 'verified');
+  }
   function progressFor(topic) {
     const current = topicState(topic);
     const mastery = current.mastery || {};
-    const entries = topic.skills.map(skill => mastery[skill]).filter(Boolean);
+    const selectedSkill = activeSubject === 'all' ? null : skillForSubject(activeSubject);
+    const entries = selectedSkill ? [mastery[selectedSkill]].filter(Boolean) : topic.skills.map(skill => mastery[skill]).filter(Boolean);
     const evidence = entries.reduce((sum, item) => sum + Number(item.attempt_count || 0), 0);
-    const covered = entries.length;
-    const average = topic.skills.length ? entries.reduce((sum, item) => sum + Number(item.mastery || 0), 0) / topic.skills.length : 0;
-    const stateStatus = current.status || 'unseen';
-    let levelIndex = 4;
-    if (evidence > 0) {
-      if (stateStatus === 'pass_ready' || (covered === topic.skills.length && average >= .78)) levelIndex = 0;
-      else if (stateStatus === 'fragile' && average >= .68) levelIndex = 1;
-      else if (average >= .34) levelIndex = 2;
-      else levelIndex = 3;
-    }
-    const last = current.last_attempt_at || entries.map(item => item.last_attempt_at).filter(Boolean).sort().pop();
-    const next = current.next_review_at || entries.map(item => item.next_review_at).filter(Boolean).sort().shift();
+    const focusedRecord = selectedSkill ? mastery[selectedSkill] : null;
+    const stateStatus = selectedSkill ? (focusedRecord?.status || 'unseen') : (current.status || 'unseen');
+    const average = selectedSkill ? Number(focusedRecord?.mastery || 0) : null;
+    let levelIndex = { pass_ready: 0, fragile: 1, learning: 2, unseen: 4 }[stateStatus] ?? 4;
+    const diagnosis = diagnosisFor(topic);
+    if (diagnosis?.status === 'pending_remediation' || diagnosis?.status === 'due_review') levelIndex = 3;
+    else if (diagnosis?.status === 'awaiting_review' && levelIndex === 0) levelIndex = 1;
+    const last = selectedSkill ? focusedRecord?.last_attempt_at : (current.last_attempt_at || entries.map(item => item.last_attempt_at).filter(Boolean).sort().pop());
+    const next = selectedSkill ? focusedRecord?.next_review_at : (current.next_review_at || entries.map(item => item.next_review_at).filter(Boolean).sort().shift());
     const coveredSkills = topic.skills.filter(skill => mastery[skill]?.attempt_count).length;
-    return { current, evidence, coveredSkills, average, levelIndex, level: LEVELS[levelIndex], last, next, status: stateStatus };
+    return { current, evidence, coveredSkills, average, levelIndex, level: LEVELS[levelIndex], last, next, status: stateStatus, selectedSkill, diagnosis };
   }
   function subjectScore(key) {
     return status?.subjects?.[key] || {};
@@ -477,7 +479,7 @@
       .sort((left, right) => {
         if (sortMode === 'frequency') return Number(right.topic.frequency_count || 0) - Number(left.topic.frequency_count || 0);
         if (sortMode === 'name') return left.topic.name.localeCompare(right.topic.name, 'zh-CN');
-        return right.progress.levelIndex - left.progress.levelIndex || left.progress.average - right.progress.average || Number(right.topic.frequency_count || 0) - Number(left.topic.frequency_count || 0);
+        return right.progress.levelIndex - left.progress.levelIndex || Number(right.topic.frequency_count || 0) - Number(left.topic.frequency_count || 0);
       });
   }
   function renderTopbar() {
@@ -497,13 +499,22 @@
   }
   function renderScores() { return `<section class="score-grid">${SUBJECT_ORDER.map(renderScoreCard).join('')}</section>`; }
   function renderStageSummary() {
-    const counts = LEVELS.map((_, index) => curriculum.filter(topic => progressFor(topic).levelIndex === index).length);
-    const total = curriculum.length || 1;
-    return `<section class="panel"><div class="panel-heading"><div><div class="eyebrow">Five-stage signal</div><h2>掌握程度分布</h2></div><p>${curriculum.length} 个知识节点</p></div><div class="stage-summary">${LEVELS.map((level, index) => `<div class="stage-summary-item" style="--stage:${level.color}"><span class="stage-summary-count">${counts[index]}</span><span class="stage-summary-label">${level.label}</span><div class="stage-summary-bar"><span style="width:${Math.round(counts[index] / total * 100)}%"></span></div></div>`).join('')}</div></section>`;
+    const relevant = activeSubject === 'all' ? curriculum : curriculum.filter(topic => topic.subjects.includes(activeSubject));
+    const counts = LEVELS.map((_, index) => relevant.filter(topic => progressFor(topic).levelIndex === index).length);
+    const total = relevant.length || 1;
+    return `<section class="panel"><div class="panel-heading"><div><div class="eyebrow">Five-stage signal</div><h2>掌握程度分布</h2></div><p>${relevant.length} 个知识节点</p></div><div class="stage-summary">${LEVELS.map((level, index) => `<div class="stage-summary-item" style="--stage:${level.color}"><span class="stage-summary-count">${counts[index]}</span><span class="stage-summary-label">${level.label}</span><div class="stage-summary-bar"><span style="width:${Math.round(counts[index] / total * 100)}%"></span></div></div>`).join('')}</div></section>`;
   }
   function renderFocus() {
-    const focus = curriculum.map(topic => ({ topic, progress: progressFor(topic) })).sort((left, right) => right.progress.levelIndex - left.progress.levelIndex || left.progress.average - right.progress.average || Number(right.topic.frequency_count || 0) - Number(left.topic.frequency_count || 0)).slice(0, 5);
-    return `<section class="panel focus-panel"><div class="panel-heading"><div><div class="eyebrow">Next useful moves</div><h2>当前优先补齐</h2></div><p>红 → 黄 → 浅黄</p></div><div class="focus-list">${focus.map(({ topic, progress }) => `<div class="focus-item" style="--stage:${progress.level.color}"><span class="focus-dot"></span><div><div class="focus-name">${escapeHtml(topic.name)}</div><div class="focus-meta">${progress.evidence ? `证据 ${progress.evidence} 条 · ${progress.coveredSkills}/${topic.skills.length} 个能力维度` : '尚无有效证据'}</div></div><span class="focus-level">${progress.level.label}</span></div>`).join('')}</div></section>`;
+    const heading = `<section class="panel focus-panel"><div class="panel-heading"><div><div class="eyebrow">Next useful moves</div><h2>当前优先补齐</h2></div><p>${activeSubject === 'all' ? '三科过线优先' : SUBJECT_LABELS[activeSubject]}</p></div>`;
+    let body;
+    if (learningPlanError) {
+      body = `<div class="empty-state">学习计划暂时无法加载：${escapeHtml(learningPlanError)}</div>`;
+    } else {
+      const items = learningPlan?.recommendations || [];
+      const note = learningPlan?.diagnosis_error ? `<div class="empty-state">逐题诊断暂不可用，已回退到通用排序：${escapeHtml(learningPlan.diagnosis_error)}</div>` : '';
+      body = note + (items.length ? items.map(item => { const level = item.diagnostic_status ? LEVELS[item.diagnostic_status === 'awaiting_review' ? 1 : 3] : LEVELS[2]; return `<div class="focus-item" style="--stage:${level.color}"><span class="focus-dot"></span><div><div class="focus-name">${escapeHtml(item.name)}</div><div class="focus-meta">${escapeHtml(item.reason)}</div></div><span class="focus-level">${item.diagnostic_status === 'due_review' ? '到期复测' : item.diagnostic_status === 'pending_remediation' ? '模考缺口' : '计划项'}</span></div>`; }).join('') : (learningPlan ? '<div class="empty-state">当前没有可执行的推荐任务。</div>' : '<div class="empty-state">正在加载当前优先任务…</div>'));
+    }
+    return `${heading}<div class="focus-list">${body}</div></section>`;
   }
   function renderOverview() { return `<section class="overview">${renderStageSummary()}${renderFocus()}</section>`; }
   function renderLegend() { return `<div class="legend" aria-label="掌握程度颜色图例">${LEVELS.map(level => `<span class="legend-item"><i class="legend-swatch" style="--stage:${level.color}"></i>${level.label}</span>`).join('')}</div>`; }
@@ -513,11 +524,14 @@
   }
   function renderTopicCard({ topic, progress }, index) {
     const subjectNames = topic.subjects.map(subject => SUBJECT_LABELS[subject]).join(' · ');
-    const masteryPercent = progress.evidence ? Math.round(progress.average * 100) : 0;
+    const masteryPercent = progress.average == null ? null : Math.round(progress.average * 100);
     const meta = progress.evidence ? `证据 <strong>${progress.evidence}</strong> 条` : '<strong>待开始</strong>';
     const next = progress.next ? `复习 ${formatDate(progress.next)}` : (progress.evidence ? '等待排课' : '尚未安排');
     const chips = topic.skills.map(skill => `<span class="skill-chip">${SKILL_LABELS[skill] || skill}${progress.current.mastery?.[skill] ? ` · ${Math.round(Number(progress.current.mastery[skill].mastery || 0) * 100)}%` : ''}</span>`).join('');
-    return `<article class="topic-card" style="--stage:${progress.level.color}; animation-delay:${Math.min(index, 18) * 24}ms"><div class="topic-top"><span class="node-code">${escapeHtml(topic.id)}</span><span class="stage-pill">${progress.level.label}</span></div><h3>${escapeHtml(topic.name)}</h3><div class="topic-domain">${subjectNames}</div><div class="mastery-row"><span>掌握估计</span><strong>${progress.evidence ? `${masteryPercent}%` : '—'}</strong></div><div class="mastery-bar" aria-label="掌握估计 ${progress.evidence ? masteryPercent : 0}%"><span style="width:${masteryPercent}%"></span></div><div class="topic-meta"><span>${meta}</span><span>${next}</span></div><div class="skill-row">${chips}</div></article>`;
+    const masteryText = activeSubject === 'all' ? '分维度查看' : (progress.evidence ? `${masteryPercent}%` : '—');
+    const masteryWidth = masteryPercent == null ? 0 : masteryPercent;
+    const diagnosis = progress.diagnosis ? `<div class="topic-meta"><span>${escapeHtml(progress.diagnosis.concept_label)}</span><span>${progress.diagnosis.status === 'awaiting_review' ? '等待跨日复测' : progress.diagnosis.status === 'due_review' ? '复测已到期' : '模考缺口待纠偏'}</span></div>` : '';
+    return `<article class="topic-card" style="--stage:${progress.level.color}; animation-delay:${Math.min(index, 18) * 24}ms"><div class="topic-top"><span class="node-code">${escapeHtml(topic.id)}</span><span class="stage-pill">${progress.level.label}</span></div><h3>${escapeHtml(topic.name)}</h3><div class="topic-domain">${subjectNames}</div><div class="mastery-row"><span>${activeSubject === 'all' ? '能力状态' : `${SKILL_LABELS[progress.selectedSkill]}掌握估计`}</span><strong>${masteryText}</strong></div><div class="mastery-bar" aria-label="掌握估计 ${masteryWidth}%"><span style="width:${masteryWidth}%"></span></div><div class="topic-meta"><span>${meta}</span><span>${next}</span></div>${diagnosis}<div class="skill-row">${chips}</div></article>`;
   }
   function renderSyllabus() {
     const topics = filteredTopics();
@@ -525,10 +539,26 @@
   }
   function render() { app.innerHTML = renderTopbar() + `<main class="shell">${renderHero()}${renderScores()}${renderOverview()}${renderSyllabus()}<p class="footnote">状态来自本机 .study/ 的有效证据。红色表示“还没有足够证据”，不等于能力被否定；答题记录会在下次刷新后更新。</p></main>`; bindEvents(); }
   function bindEvents() {
-    app.querySelectorAll('[data-subject]').forEach(button => button.addEventListener('click', () => { activeSubject = button.dataset.subject; render(); }));
+    app.querySelectorAll('[data-subject]').forEach(button => button.addEventListener('click', async () => { activeSubject = button.dataset.subject; learningPlan = null; learningPlanError = null; render(); await loadLearningPlan(); }));
     const search = app.querySelector('.search-input');
     search?.addEventListener('input', event => { searchTerm = event.target.value; render(); const next = app.querySelector('.search-input'); next?.focus(); next?.setSelectionRange(searchTerm.length, searchTerm.length); });
     app.querySelector('.sort-select')?.addEventListener('change', event => { sortMode = event.target.value; render(); });
+  }
+  async function loadLearningPlan() {
+    learningPlanError = null;
+    const query = activeSubject === 'all' ? '?limit=5' : `?subject=${encodeURIComponent(activeSubject)}&limit=5`;
+    try {
+      const response = await fetch(`/api/learning-plan${query}`);
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.error || '学习计划加载失败');
+      learningPlan = payload.data;
+    } catch (error) {
+      // Status and curriculum already rendered fine; degrade the focus panel
+      // instead of replacing the whole dashboard with a generic error.
+      learningPlan = null;
+      learningPlanError = error.message || '学习计划加载失败';
+    }
+    render();
   }
   async function boot() {
     try {
@@ -539,11 +569,12 @@
       if (!curriculumResponse.ok || !curriculumPayload.ok) throw new Error(curriculumPayload.error || '课程目录加载失败');
       status = statusPayload.data;
       curriculum = curriculumPayload.data.topics || [];
-      render();
     } catch (error) {
       app.className = '';
       app.innerHTML = `<section class="error-box"><h1>学习航图暂时无法打开</h1><p>${escapeHtml(error.message)}</p><p>请先确认本地考试服务已启动，再刷新 <code>/dashboard.html</code>。</p></section>`;
+      return;
     }
+    await loadLearningPlan();
   }
   if (window.location.protocol === 'file:') window.location.replace('http://localhost:8420/dashboard.html'); else boot();
   </script>

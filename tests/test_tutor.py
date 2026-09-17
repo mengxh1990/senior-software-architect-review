@@ -186,6 +186,71 @@ def _find_subject_allocation(payload: Any) -> dict[str, float]:
     )
 
 
+def _append_mock_gap_session(
+    data_dir: Path,
+    mock_id: str,
+    *,
+    at: str = "2026-08-10T10:00:00+08:00",
+    wrong_items: Iterable[tuple[str, str, str | None]] = (),
+) -> None:
+    """Append one whole-mock event plus its wrong per-question events.
+
+    Mirrors what the local exam terminal persists for a submitted paper so
+    diagnose/recommend can be exercised without the web server.
+    """
+
+    events = [
+        {
+            "attempt_id": mock_id,
+            "event_type": "mock",
+            "topic_id": None,
+            "item_id": f"paper-{mock_id}",
+            "facet": None,
+            "at": at,
+            "subject": "comprehensive",
+            "skill": "recognition",
+            "mode": "full_mock",
+            "score": 40,
+            "max_score": 75,
+            "duration_seconds": 5400,
+            "word_count": None,
+            "complete": True,
+            "confidence": "sure",
+            "wrong_reasons": [],
+            "source_type": "simulation",
+            "source": f"paper-{mock_id}",
+            "feedback_seen": True,
+        }
+    ]
+    for number, (topic_id, item_id, facet) in enumerate(wrong_items, 1):
+        events.append(
+            {
+                "attempt_id": f"{mock_id}-q-{number:02d}",
+                "event_type": "practice",
+                "topic_id": topic_id,
+                "item_id": item_id,
+                "facet": facet,
+                "at": at,
+                "subject": "comprehensive",
+                "skill": "recognition",
+                "mode": "mock",
+                "score": 0,
+                "max_score": 1,
+                "duration_seconds": 60,
+                "word_count": None,
+                "complete": False,
+                "confidence": "sure",
+                "wrong_reasons": ["knowledge_gap"],
+                "source_type": "simulation",
+                "source": item_id,
+                "feedback_seen": True,
+            }
+        )
+    with (data_dir / "attempts.jsonl").open("a", encoding="utf-8") as handle:
+        for event in events:
+            handle.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+
 def _primary_state_file(data_dir: Path) -> Path:
     """Locate the mutable state document while ignoring backups."""
 
@@ -331,6 +396,85 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertIn("2026-11-07", _values_for_key(status, "exam_date"))
             self.assertIn(45, _values_for_key(status, "daily_minutes"))
             self.assertIn("backend", _values_for_key(status, "background"))
+
+    def test_configured_review_floor_prioritizes_breadth(self) -> None:
+        topic_id = self._recognition_topic()["id"]
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(
+                data_dir,
+                "record",
+                "--topic",
+                topic_id,
+                "--skill",
+                "recognition",
+                "--score",
+                "0",
+                "--max-score",
+                "1",
+                "--attempt-id",
+                "breadth-floor-wrong",
+                "--at",
+                "2026-08-10T09:00:00+08:00",
+                "--wrong-reason",
+                "knowledge_gap",
+            )
+            before = _find_topic_record(self._status(data_dir), topic_id)
+            self.assertEqual(
+                before["mastery"]["recognition"]["next_review_at"],
+                "2026-08-11",
+            )
+
+            _run_cli(
+                data_dir,
+                "configure",
+                "--min-review-interval-days",
+                "7",
+            )
+            configured = self._status(data_dir)
+            self.assertIn(7, _values_for_key(configured, "min_review_interval_days"))
+            after_configure = _find_topic_record(configured, topic_id)
+            self.assertEqual(
+                after_configure["mastery"]["recognition"]["next_review_at"],
+                "2026-08-17",
+            )
+
+            _run_cli(
+                data_dir,
+                "record",
+                "--topic",
+                topic_id,
+                "--skill",
+                "recognition",
+                "--score",
+                "1",
+                "--max-score",
+                "1",
+                "--attempt-id",
+                "breadth-floor-correct",
+                "--at",
+                "2026-08-20T09:00:00+08:00",
+            )
+            after_record = _find_topic_record(self._status(data_dir), topic_id)
+            self.assertEqual(
+                after_record["mastery"]["recognition"]["next_review_at"],
+                "2026-08-27",
+            )
+
+            # Lowering the interval must pull the review date back instead of
+            # leaving it pinned at the previous floor.
+            _run_cli(
+                data_dir,
+                "configure",
+                "--min-review-interval-days",
+                "2",
+            )
+            lowered = _find_topic_record(self._status(data_dir), topic_id)
+            self.assertEqual(
+                lowered["mastery"]["recognition"]["next_review_at"],
+                "2026-08-23",
+            )
 
     def test_every_command_refuses_a_copied_unignored_private_directory(self) -> None:
         with tempfile.TemporaryDirectory() as source_temporary:
@@ -529,6 +673,133 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertNotEqual(rejected.returncode, 0)
             self.assertIn("item-id", rejected.stderr)
             self.assertEqual(self._status(data_dir)["topics"], {})
+
+    def test_registered_question_supplies_concept_metadata_and_rejects_duplicate_content(self) -> None:
+        topic_id = self._recognition_topic()["id"]
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            registration = data_dir / "question.json"
+            registration.write_text(
+                json.dumps(
+                    {
+                        "item_id": "self-authored/registered-001",
+                        "topic_id": topic_id,
+                        "concept_id": f"{topic_id}.registered",
+                        "question_family_id": f"{topic_id}.registered.variant",
+                        "stem": "测试登记题",
+                        "options": ["选项乙", "选项甲"],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            _run_cli(data_dir, "register-question", "--file", str(registration))
+            _run_cli(
+                data_dir,
+                "record",
+                "--topic",
+                topic_id,
+                "--skill",
+                "recognition",
+                "--score",
+                "1",
+                "--max-score",
+                "1",
+                "--attempt-id",
+                "registered-attempt",
+                "--item-id",
+                "self-authored/registered-001",
+                "--at",
+                "2026-08-10T09:00:00+08:00",
+            )
+            event = json.loads(
+                (data_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines()[-1]
+            )
+            self.assertEqual(event["concept_id"], f"{topic_id}.registered")
+            self.assertEqual(
+                event["question_family_id"], f"{topic_id}.registered.variant"
+            )
+            self.assertEqual(len(event["question_fingerprint"]), 64)
+
+            duplicate = data_dir / "duplicate.json"
+            duplicate.write_text(
+                json.dumps(
+                    {
+                        "item_id": "self-authored/registered-duplicate",
+                        "topic_id": topic_id,
+                        "concept_id": f"{topic_id}.registered",
+                        "question_family_id": f"{topic_id}.registered.variant",
+                        "stem": "测试登记题",
+                        "options": ["选项甲", "选项乙"],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            rejected = _run_cli(
+                data_dir,
+                "register-question",
+                "--file",
+                str(duplicate),
+                expected_returncode=None,
+            )
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("不能换 ID 重复计证据", rejected.stderr)
+
+            same_family = data_dir / "same-family.json"
+            same_family.write_text(
+                json.dumps(
+                    {
+                        "item_id": "self-authored/registered-variant-002",
+                        "topic_id": topic_id,
+                        "concept_id": f"{topic_id}.registered",
+                        "question_family_id": f"{topic_id}.registered.variant",
+                        "variant_of": "self-authored/registered-001",
+                        "stem": "同一考法的另一种题干",
+                        "options": ["选项丙", "选项丁"],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            _run_cli(data_dir, "register-question", "--file", str(same_family))
+            # Same-family same-day answers remain valid evidence: the cooldown
+            # is a scheduling rule applied when recommendations are built,
+            # never a reason to refuse recording an attempt.
+            cooled = _run_cli(
+                data_dir,
+                "record",
+                "--topic",
+                topic_id,
+                "--skill",
+                "recognition",
+                "--score",
+                "1",
+                "--max-score",
+                "1",
+                "--attempt-id",
+                "same-family-same-day",
+                "--item-id",
+                "self-authored/registered-variant-002",
+                "--at",
+                "2026-08-10T10:00:00+08:00",
+            )
+            self.assertEqual(cooled.returncode, 0)
+            recorded = [
+                json.loads(line)
+                for line in (data_dir / "attempts.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+            ]
+            same_day = next(
+                event
+                for event in recorded
+                if event["attempt_id"] == "same-family-same-day"
+            )
+            self.assertEqual(
+                same_day["question_family_id"], f"{topic_id}.registered.variant"
+            )
 
     def test_recognition_mastery_requires_enough_cross_day_evidence(self) -> None:
         topic_id = self._recognition_topic()["id"]
@@ -1154,6 +1425,243 @@ class TutorAcceptanceTest(unittest.TestCase):
             items = _recommendation_items(payload)
             self.assertEqual(items[0]["subject"], "comprehensive")
             self.assertTrue(any(item["subject"] == "case" for item in items[1:]))
+
+    def test_diagnosis_merges_same_topic_mock_gaps_into_one_concept(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _append_mock_gap_session(
+                data_dir,
+                "merge-mock-001",
+                wrong_items=[
+                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#1", None),
+                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#2", None),
+                    ("K12.PATTERNS_SOA_MICROSERVICES", "exam-bank/13-design-patterns.md#1", "design_patterns"),
+                    ("K12.PATTERNS_SOA_MICROSERVICES", "exam-bank/15-microservice-cloud-native.md#1", "microservices"),
+                ],
+            )
+            payload = _json_output(
+                _run_cli(data_dir, "diagnose", "--subject", "comprehensive", "--json")
+            )
+            issues = {issue["concept_id"]: issue for issue in payload["issues"]}
+            # Same-topic questions share one stable mergeable concept instead
+            # of a unique synthetic concept per question; declared facets keep
+            # their concepts apart.
+            self.assertEqual(
+                sorted(issues),
+                [
+                    "K08.SOFTWARE_PROCESS_MODELS",
+                    "K12.PATTERNS_SOA_MICROSERVICES:design_patterns",
+                    "K12.PATTERNS_SOA_MICROSERVICES:microservices",
+                ],
+            )
+            self.assertEqual(
+                sorted(issues["K08.SOFTWARE_PROCESS_MODELS"]["source_item_ids"]),
+                [
+                    "exam-bank/07-software-engineering.md#1",
+                    "exam-bank/07-software-engineering.md#2",
+                ],
+            )
+            # The study-item label is human-readable, not a machine id or a
+            # "(N)" header fragment from the source bank.
+            k08_name = next(
+                topic["name"]
+                for topic in self.topics
+                if topic["id"] == "K08.SOFTWARE_PROCESS_MODELS"
+            )
+            self.assertEqual(
+                issues["K08.SOFTWARE_PROCESS_MODELS"]["concept_label"], k08_name
+            )
+            for issue in issues.values():
+                self.assertNotIn(":", issue["concept_label"])
+                self.assertNotRegex(issue["concept_label"], r"^\(\d+\)$")
+
+    def test_diagnostic_gaps_respect_strategic_skips(self) -> None:
+        topic_id = "K08.SOFTWARE_PROCESS_MODELS"
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _append_mock_gap_session(
+                data_dir,
+                "skip-mock-001",
+                wrong_items=[(topic_id, "exam-bank/07-software-engineering.md#1", None)],
+            )
+            baseline = _json_output(
+                _run_cli(
+                    data_dir,
+                    "recommend",
+                    "--json",
+                    "--subject",
+                    "comprehensive",
+                    "--limit",
+                    "5",
+                )
+            )
+            self.assertIn(
+                topic_id,
+                {_recommendation_topic_id(item) for item in _recommendation_items(baseline)},
+            )
+
+            _run_cli(data_dir, "configure", "--skip-topic", f"{topic_id}=低频战略放弃")
+            skipped = _json_output(
+                _run_cli(
+                    data_dir,
+                    "recommend",
+                    "--json",
+                    "--subject",
+                    "comprehensive",
+                    "--limit",
+                    "5",
+                )
+            )
+            self.assertNotIn(
+                topic_id,
+                {_recommendation_topic_id(item) for item in _recommendation_items(skipped)},
+            )
+
+    def test_maintenance_never_evicts_uncorrected_mock_gaps(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            for subject, score, at in (
+                ("case", 70, "2026-06-30T10:00:00+08:00"),
+                ("essay", 70, "2026-08-09T10:00:00+08:00"),
+            ):
+                _run_cli(
+                    data_dir,
+                    "mock",
+                    "--subject",
+                    subject,
+                    "--mock-id",
+                    f"evict-{subject}",
+                    "--paper-id",
+                    f"evict-paper-{subject}",
+                    "--score",
+                    str(score),
+                    "--max-score",
+                    "75",
+                    "--duration-minutes",
+                    "90",
+                    "--complete",
+                    "--at",
+                    at,
+                )
+            _append_mock_gap_session(
+                data_dir,
+                "evict-comprehensive",
+                wrong_items=[
+                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#1", None),
+                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#2", None),
+                    ("K12.PATTERNS_SOA_MICROSERVICES", "exam-bank/13-design-patterns.md#1", "design_patterns"),
+                    ("K09.QUALITY_SCENARIOS", "exam-bank/11-quality-attributes.md#1", None),
+                ],
+            )
+            payload = _json_output(
+                _run_cli(
+                    data_dir,
+                    "recommend",
+                    "--json",
+                    "--limit",
+                    "3",
+                    "--today",
+                    "2026-08-10",
+                )
+            )
+            self.assertEqual(payload["target_subject"], "comprehensive")
+            self.assertEqual(payload["maintenance_subject"], "case")
+            items = _recommendation_items(payload)
+            # All three slots are uncorrected mock gaps; the best-effort
+            # maintenance item must not replace the last one.
+            self.assertEqual(len(items), 3)
+            self.assertTrue(all(item.get("diagnostic_status") for item in items))
+            self.assertTrue(all(item["subject"] == "comprehensive" for item in items))
+
+    def test_recommend_survives_corrupt_postmortems_with_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _append_mock_gap_session(
+                data_dir,
+                "corrupt-postmortem-001",
+                wrong_items=[
+                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#1", None)
+                ],
+            )
+            (data_dir / "postmortems.jsonl").write_text(
+                "{not json}\n", encoding="utf-8"
+            )
+            payload = _json_output(
+                _run_cli(
+                    data_dir,
+                    "recommend",
+                    "--json",
+                    "--subject",
+                    "comprehensive",
+                    "--limit",
+                    "5",
+                )
+            )
+            self.assertTrue(_recommendation_items(payload))
+            self.assertTrue(payload.get("diagnosis_error"))
+            self.assertEqual(payload.get("diagnosis", {}).get("issues"), [])
+
+    def test_record_replay_stays_idempotent_when_enrichment_keys_appear(self) -> None:
+        topic_id = self._recognition_topic()["id"]
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            common = (
+                "record",
+                "--topic",
+                topic_id,
+                "--skill",
+                "recognition",
+                "--score",
+                "1",
+                "--max-score",
+                "1",
+                "--item-id",
+                "exam-bank/07-software-engineering.md#9",
+                "--at",
+                "2026-08-10T09:00:00+08:00",
+            )
+            _run_cli(
+                data_dir,
+                *common,
+                "--attempt-id",
+                "legacy-replay-001",
+            )
+            # A replay that now carries the derived metadata (as if recorded
+            # by the newer terminal) is the same answer, not a conflict.
+            enriched = _run_cli(
+                data_dir,
+                *common,
+                "--attempt-id",
+                "legacy-replay-001",
+                "--concept-id",
+                f"{topic_id}.legacy",
+                "--question-family-id",
+                f"{topic_id}.legacy",
+            )
+            self.assertIn("幂等跳过", enriched.stdout)
+
+            # The reverse direction: a stored enriched event replayed without
+            # the optional flags must also stay idempotent.
+            _run_cli(
+                data_dir,
+                *common,
+                "--attempt-id",
+                "enriched-replay-001",
+                "--concept-id",
+                f"{topic_id}.enriched",
+            )
+            plain = _run_cli(
+                data_dir,
+                *common,
+                "--attempt-id",
+                "enriched-replay-001",
+            )
+            self.assertIn("幂等跳过", plain.stdout)
 
     def test_mock_is_complete_75_point_evidence_and_idempotent(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -1803,6 +2311,14 @@ class RepositoryContractTest(unittest.TestCase):
                     f"broken local reference in {document}: {raw_target}",
                 )
         self.assertGreater(local_reference_count, 0, "agent docs need local references")
+
+    def test_dashboard_uses_backend_status_without_average_mastery_shortcut(self) -> None:
+        source = (REPO_ROOT / "tutor" / "app" / "dashboard.html").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("average >= .78", source)
+        self.assertIn("focusedRecord?.status", source)
+        self.assertIn("/api/learning-plan", source)
 
     def test_exam_bank_questions_have_matching_answers(self) -> None:
         bank_files = sorted(

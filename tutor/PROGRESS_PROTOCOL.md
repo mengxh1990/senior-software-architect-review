@@ -19,6 +19,7 @@
 | `state.json` | 可重建的当前状态与三科证据摘要 |
 | `attempts.jsonl` | 只追加的原始作答事件 |
 | `postmortems.jsonl` | 只追加的考后错因补充，与可信交卷记录关联 |
+| `question-registry.json` | 私有自编题登记、细考点、题型族、变式来源与内容指纹 |
 | `dashboard.md` | 便于人阅读的进度面板 |
 | `paper-project.md` | 论文项目素材，可能含敏感信息 |
 
@@ -69,6 +70,8 @@ unseen → learning → fragile → pass_ready
   "attempt_id": "a-20260810-k19-001",
   "topic_id": "K19.ATAM_TACTICS",
   "item_id": "exam-bank/12-atam-evaluation.md#3",
+  "concept_id": "K19.atam_tradeoff_point",
+  "question_family_id": "K19.atam_points.variant",
   "facet": null,
   "at": "2026-08-10T20:30:00+08:00",
   "subject": "comprehensive",
@@ -88,6 +91,7 @@ unseen → learning → fragile → pass_ready
 
 - `attempt_id` 全局唯一；重复写入必须幂等，内容冲突必须拒绝。
 - `item_id` 必填并稳定标识一道独立题目；不得用新的 `attempt_id` 兜底。复做同一 `item_id` 可以验证遗忘，但不能冒充多个独立掌握证据。
+- 自编题先登记题干、选项、稳定细考点 `concept_id`、题型族 `question_family_id` 和内容指纹；同内容换 ID 不得作为新证据。同一细考点的变式用 `variant_of` 关联来源题。
 - `curriculum.json` 声明了 `facets` 的聚合考点，在识别/应用训练中必须记录合法 `facet`；达到题数但未覆盖全部子主题时仍不能 `pass_ready`。
 - `source_type` 只能明确标记为 `official_outline`、`real`、`recalled_real`、`self_authored` 或 `simulation`，不得把模拟题称为真题。
 - 用户输入无效、尚未回答或只阅读讲解时，不写掌握证据。
@@ -125,6 +129,8 @@ careless, guessed_correct
 - 最近 3 次且条件一致：`high`。
 
 ## 7. 排课优先级
+
+存在完整模考时，先把该场逐题事件与 `postmortems.jsonl` 合并，形成具体薄弱点队列：未纠偏错题 → 到期跨日复测 → 猜对或不确定题 → 通用考点排序。完成当日纠偏的细考点进入冷却，不能继续用同题或同题型密集刷题。
 
 先确定科目瓶颈，再确定考点：
 

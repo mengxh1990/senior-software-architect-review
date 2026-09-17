@@ -15,7 +15,7 @@ import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
@@ -325,13 +325,16 @@ class ExamHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self) -> None:
-        path = urlsplit(self.path).path
+        parsed = urlsplit(self.path)
+        path = parsed.path
         if not self._guard(allow_document_navigation=path in {"/", "/index.html"}):
             return
         if path == "/api/status":
             self._handle_status()
         elif path == "/api/curriculum":
             self._handle_curriculum()
+        elif path == "/api/learning-plan":
+            self._handle_learning_plan(parse_qs(parsed.query))
         elif path == "/api/mock-paper":
             self._handle_mock_paper()
         elif path in {"/questions.json", "/api/questions"}:
@@ -371,6 +374,34 @@ class ExamHandler(SimpleHTTPRequestHandler):
             json_response(self, {"ok": True, "data": public_curriculum()})
         except tutor.TutorError as error:
             json_response(self, {"ok": False, "error": str(error)}, 500)
+
+    def _handle_learning_plan(self, query: dict[str, list[str]]) -> None:
+        try:
+            subject = query.get("subject", [None])[0]
+            if subject is not None and subject not in tutor.SUBJECTS:
+                raise RequestError("subject 无效")
+            raw_limit = query.get("limit", ["5"])[0]
+            try:
+                limit = int(raw_limit)
+            except ValueError as error:
+                raise RequestError("limit 必须是整数") from error
+            if not 1 <= limit <= 20:
+                raise RequestError("limit 必须在 1-20 之间")
+            args = argparse.Namespace(
+                data_dir=self.data_dir,
+                subject=subject,
+                limit=limit,
+                today=None,
+                json=True,
+            )
+            json_response(
+                self,
+                {"ok": True, "data": tutor.build_recommendation_payload(args)},
+            )
+        except RequestError as error:
+            json_response(self, {"ok": False, "error": str(error)}, 400)
+        except tutor.TutorError as error:
+            json_response(self, {"ok": False, "error": str(error)}, 409)
 
     def _handle_mock_paper(self) -> None:
         try:
@@ -429,6 +460,10 @@ class ExamHandler(SimpleHTTPRequestHandler):
                     "question_id": result["id"],
                     "selected_answer": result["selected"],
                     "correct_answer": result["correct_answer"],
+                    "concept_id": item["concept_id"],
+                    "question_family_id": item["question_family_id"],
+                    "question_fingerprint": item["question_fingerprint"],
+                    "variant_of": None,
                 }
             )
         mock_event = {
