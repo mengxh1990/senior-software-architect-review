@@ -256,6 +256,41 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertIn("K10.DATABASE_MODELING", sanitize_bank.candidate_topics("§5.2", topic_tags))
         self.assertIn("K01.OS_MEMORY_KERNEL", sanitize_bank.candidate_topics("§1", topic_tags))
 
+    def test_domain_level_labels_narrow_to_the_intended_tutor_topic(self) -> None:
+        topic_tags = sanitize_bank.load_topic_tags()
+        self.assertEqual(
+            sanitize_bank.candidate_topics(
+                "§4", topic_tags, label="软件工程—UML用例关系"
+            ),
+            ["K03.SOFTWARE_DESIGN_UML"],
+        )
+        self.assertEqual(
+            sanitize_bank.candidate_topics(
+                "§4", topic_tags, label="软件工程—需求变更控制"
+            ),
+            ["K16.REQUIREMENTS_MANAGEMENT"],
+        )
+        self.assertEqual(
+            sanitize_bank.candidate_topics(
+                "§6", topic_tags, label="系统架构—SOA与ESB"
+            ),
+            ["K12.PATTERNS_SOA_MICROSERVICES"],
+        )
+
+    def test_shipped_domain_level_question_uses_detailed_label_mapping(self) -> None:
+        items = sanitize_bank.parse_paper(
+            REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2009下.md"
+        )
+        by_id = {item["id"]: item for item in items}
+        self.assertEqual(
+            by_id["past-papers/comprehensive-by-year/2009下.md#32-32"]["candidate_topics"],
+            ["K03.SOFTWARE_DESIGN_UML"],
+        )
+        self.assertEqual(
+            by_id["past-papers/comprehensive-by-year/2009下.md#38-38"]["candidate_topics"],
+            ["K11.COMPONENTS_4PLUS1"],
+        )
+
     def test_optional_images_do_not_break_option_parsing(self) -> None:
         text = self.TRANSCRIPT.replace(
             "【答案】C", "![p1_000.png](../assets/2013下/p1_000.webp)\n\n【答案】C", 1

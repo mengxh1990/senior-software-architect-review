@@ -88,6 +88,57 @@ DOMAIN_NAMES = {
     13: "专业英语",
 }
 
+# Older papers carry only domain-level tags such as ``§4`` and ``§6``.  Their
+# human-readable labels are much more specific, so use those labels to avoid
+# advertising every topic in the same domain as an equally valid candidate.
+DOMAIN_LABEL_TOPIC_RULES = {
+    "§1": (
+        ("K07.REALTIME_EMBEDDED", ("嵌入式", "实时系统", "实时操作系统", "rtos")),
+        ("K02.NETWORK_PROTOCOLS", ("网络", "协议", "通信", "域名解析")),
+        ("K14.OS_SCHEDULING_FILES", ("磁盘调度", "文件系统", "文件索引", "调度算法")),
+        ("K01.OS_MEMORY_KERNEL", ("操作系统", "进程", "线程", "死锁", "pv操作", "页式", "存储管理")),
+        ("K18.COMPUTER_ARCH_STORAGE", ("计算机系统", "存储系统", "处理器", "cpu", "mips", "指令", "总线", "性能")),
+    ),
+    "§2": (("K24.INFORMATION_SYSTEMS", ("信息系统", "erp", "crm", "电子政务", "商业智能", "企业信息", "系统集成")),),
+    "§3": (("K20.SECURITY_FOUNDATIONS", ("信息安全", "安全", "加密", "认证", "pki", "kerberos", "攻击")),),
+    "§4": (
+        ("K03.SOFTWARE_DESIGN_UML", ("uml", "面向对象", "内聚", "耦合", "类图", "用例")),
+        ("K05.TEST_CMMI_PATTERNS", ("测试", "cmmi", "质量保证", "设计模式")),
+        ("K15.STRUCTURED_ANALYSIS_DFD", ("结构化", "dfd", "数据流图")),
+        ("K16.REQUIREMENTS_MANAGEMENT", ("需求", "基线", "变更控制")),
+        ("K23.PROJECT_MANAGEMENT_METRICS", ("项目", "范围", "进度", "成本", "挣值", "配置项", "活动定义", "度量")),
+        ("K08.SOFTWARE_PROCESS_MODELS", ("软件过程", "开发模型", "rup", "敏捷", "原型", "迭代")),
+        ("K06.DESIGN_DATA_VIEWS", ("概要设计", "数据设计", "界面设计", "输入设计", "输出设计", "详细设计")),
+    ),
+    "§5": (("K10.DATABASE_MODELING", ("数据库", "关系", "范式", "sql", "事务", "索引")),),
+    "§6": (
+        ("K12.PATTERNS_SOA_MICROSERVICES", ("微服务", "soa", "esb", "web服务", "soap", "wsdl", "设计模式")),
+        ("K21.MESSAGING_CACHE", ("消息", "缓存", "中间件")),
+        ("K26.ARCH_EVOLUTION", ("演化", "迁移", "维护")),
+        ("K11.COMPONENTS_4PLUS1", ("构件", "4+1")),
+        ("K13.VIEWS_SOA_LAYERING", ("分层", "层次", "架构视图")),
+        ("K04.ARCH_STYLES_ABSD", ("架构风格", "absd", "dssa", "架构需求", "架构设计", "架构复审", "架构定义", "架构作用", "架构描述")),
+    ),
+    "§7": (
+        ("K19.ATAM_TACTICS", ("atam", "saam", "架构评估", "四类点", "敏感点", "权衡点")),
+        ("K09.QUALITY_SCENARIOS", ("质量属性", "质量场景", "质量战术", "质量策略")),
+    ),
+    "§8": (("K25.RELIABILITY_ENGINEERING", ("可靠性", "容错", "故障")),),
+    "§9": (("K26.ARCH_EVOLUTION", ("演化", "迁移", "维护", "遗留")),),
+    "§10": (("K27.EMERGING_TECH", ("人工智能", "云计算", "物联网", "区块链", "边缘计算", "数字孪生", "cps", "大模型")),),
+    "§11": (("K17.IP_COPYRIGHT", ("知识产权", "标准", "著作权", "商标", "专利", "商业秘密")),),
+    "§12": (("K28.MATH_OPERATIONS", ("应用数学", "概率", "图论", "运筹", "线性规划", "决策")),),
+    "§13": (("K22.ENGLISH_READING", ("专业英语", "英语", "阅读")),),
+}
+
+ITEM_TOPIC_OVERRIDES = {
+    "past-papers/comprehensive-by-year/2012下.md#17-17": "K18.COMPUTER_ARCH_STORAGE",
+    "past-papers/comprehensive-by-year/2022.md#32": "K12.PATTERNS_SOA_MICROSERVICES",
+    "past-papers/comprehensive-by-year/2024下.md#1": "K20.SECURITY_FOUNDATIONS",
+    "past-papers/comprehensive-by-year/2024下.md#38": "K03.SOFTWARE_DESIGN_UML",
+    "past-papers/comprehensive-by-year/2025上.md#23": "K01.OS_MEMORY_KERNEL",
+}
+
 
 def load_topic_tags(curriculum_path: Path = CURRICULUM_PATH) -> Dict[str, List[str]]:
     """Return ``topic id -> [§tags]`` from ``curriculum.json``."""
@@ -102,8 +153,17 @@ def load_topic_tags(curriculum_path: Path = CURRICULUM_PATH) -> Dict[str, List[s
     return mapping
 
 
-def candidate_topics(tag: str, topic_tags: Dict[str, List[str]]) -> List[str]:
-    """Tutor topics that cover a paper's ``§N[.M]`` tag (domain fallback)."""
+def candidate_topics(
+    tag: str,
+    topic_tags: Dict[str, List[str]],
+    *,
+    label: str = "",
+    item_id: str = "",
+) -> List[str]:
+    """Tutor topics for a paper item, preferring precise item/label evidence."""
+    override = ITEM_TOPIC_OVERRIDES.get(item_id)
+    if override:
+        return [override]
     if not tag:
         return []
     domain = tag.split(".")[0]
@@ -114,8 +174,23 @@ def candidate_topics(tag: str, topic_tags: Dict[str, List[str]]) -> List[str]:
                 exact.append(topic_id)
             elif candidate.startswith(f"{domain}.") or candidate == domain:
                 prefix.append(topic_id)
-    ordered = sorted(set(exact)) + sorted(set(prefix) - set(exact))
-    return ordered
+    exact_topics = sorted(set(exact))
+    if "." in tag and exact_topics:
+        return exact_topics
+
+    normalized_label = normalize_label(label)
+    for topic_id, keywords in DOMAIN_LABEL_TOPIC_RULES.get(domain, ()):
+        if any(keyword.casefold() in normalized_label for keyword in keywords):
+            return [topic_id]
+    if normalized_label:
+        # A detailed source label that cannot be mapped is unknown, not proof
+        # that the question belongs to every tutor topic in the same domain.
+        return []
+    return exact_topics + sorted(set(prefix) - set(exact_topics))
+
+
+def normalize_label(value: str) -> str:
+    return re.sub(r"\s+", "", value).casefold()
 
 
 def _split_option_line(line: str) -> List[str]:
@@ -264,7 +339,12 @@ def parse_paper(path: Path) -> List[Dict]:
     items = curated_items if len(curated_items) > len(transcript_items) else transcript_items
     topic_tags = load_topic_tags()
     for item in items:
-        item["candidate_topics"] = candidate_topics(item.get("tag", ""), topic_tags)
+        item["candidate_topics"] = candidate_topics(
+            item.get("tag", ""),
+            topic_tags,
+            label=item.get("tag_label", ""),
+            item_id=item["id"],
+        )
     return items
 
 
