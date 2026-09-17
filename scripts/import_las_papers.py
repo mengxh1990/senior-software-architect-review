@@ -14,6 +14,10 @@ Exam text (stems, options, answers, explanations) is copied verbatim from the
 parser output. The importer never paraphrases or "fixes" content, so anything
 that reaches the repo is traceable to the source PDF.
 
+Run order matters: this script rewrites the 综合知识 transcripts from scratch,
+so after a re-import run ``python3 scripts/tag_comprehensive_questions.py
+--apply`` to restore the §N topic tags.
+
 Usage::
 
     python3 scripts/import_las_papers.py \
@@ -233,8 +237,18 @@ def signature_distance(left: Sequence[float], right: Sequence[float]) -> float:
     return sum(abs(a - b) for a, b in zip(left, right)) / len(left)
 
 
-def plan_images(image_paths: Iterable[Path], distance_threshold: float = 6.0) -> dict[str, ImageDecision]:
-    """Classify every extracted image, dropping banners and repeated stamps."""
+def plan_images(
+    image_paths: Iterable[Path],
+    distance_threshold: float = 6.0,
+    extra_drops: dict[str, str] | None = None,
+) -> dict[str, ImageDecision]:
+    """Classify every extracted image, dropping banners and repeated stamps.
+
+    ``extra_drops`` carries reviewed removals from the manifest: images that
+    survived the shape/duplicate rules but still carry a watermark or an
+    advertiser's promotion (verified by OCR). Their file name maps to the
+    reason that is recorded in the import report.
+    """
     from PIL import Image
 
     paths = [p for p in image_paths if p.exists()]
@@ -265,6 +279,12 @@ def plan_images(image_paths: Iterable[Path], distance_threshold: float = 6.0) ->
         decision = classify_image(width, height, duplicates.get(name, 1))
         decision.name = name
         decisions[name] = decision
+    for name, reason in (extra_drops or {}).items():
+        if name in decisions:
+            decisions[name].keep = False
+            decisions[name].reason = f"reviewed-removal: {reason}"
+        else:
+            decisions[name] = ImageDecision(name, 0, 0, False, f"reviewed-removal: {reason}")
     return decisions
 
 
@@ -311,15 +331,20 @@ def heading_indices(lines: Sequence[str]) -> list[tuple[int, str, str]]:
     return found
 
 
-def rewrite_image_links(text: str, kept: dict[str, str]) -> str:
-    """Point Markdown image links at their new repo-relative location."""
+def rewrite_image_links(text: str, kept: dict[str, str], noted: dict[str, str] | None = None) -> str:
+    """Point Markdown image links at their new repo-relative location.
+
+    Names in ``noted`` are replaced by a visible note instead of being dropped
+    silently, because the reader needs to know a figure existed there.
+    """
+    noted = noted or {}
 
     def replace(match: re.Match[str]) -> str:
         target = match.group(1).strip()
         name = Path(target).name
         replacement = kept.get(name)
         if replacement is None:
-            return ""
+            return noted.get(name, "")
         return f"![{name}]({replacement})"
 
     rewritten = IMAGE_LINK_RE.sub(replace, text)
@@ -495,7 +520,9 @@ class ParsedDocument:
     images_dir: Path
 
 
-def load_document(las_root: Path, las_key: str) -> ParsedDocument | None:
+def load_document(
+    las_root: Path, las_key: str, extra_drops: dict[str, str] | None = None
+) -> ParsedDocument | None:
     """Read a parsed LAS document and classify its figures."""
     source_dir = las_root / las_key
     result_md = source_dir / "result.md"
@@ -508,7 +535,7 @@ def load_document(las_root: Path, las_key: str) -> ParsedDocument | None:
         las_key=las_key,
         text=text,
         sections=split_sections(text),
-        decisions=plan_images(image_paths) if image_paths else {},
+        decisions=plan_images(image_paths, extra_drops=extra_drops) if image_paths else {},
         images_dir=images_dir,
     )
 
@@ -523,7 +550,8 @@ def whole_document_body(text: str) -> str:
 
 def import_one(index: int, las_root: Path, repo_root: Path, dry_run: bool = False) -> dict:
     """Import one parsed document into the repo layout."""
-    document = load_document(las_root, index["las_key"])
+    reviewed_drops: dict[str, str] = index.get("drop_images") or {}
+    document = load_document(las_root, index["las_key"], extra_drops=reviewed_drops)
     if document is None:
         return {
             "las_key": index["las_key"],
@@ -560,13 +588,16 @@ def import_one(index: int, las_root: Path, repo_root: Path, dry_run: bool = Fals
         """Rewrite figure links and normalise headings for one section."""
         raw = getattr(source.sections, dimension)
         kept: dict[str, str] = {}
+        noted: dict[str, str] = {}
         for name in extract_image_names(raw):
             decision = source.decisions.get(name)
             if decision is not None and not decision.keep:
+                if decision.reason.startswith("reviewed-removal"):
+                    noted[name] = "*（原图含机构广告或水印，已移除）*"
                 continue
             kept[name] = f"../assets/{index['label']}/{Path(name).stem}{IMAGE_OUTPUT_SUFFIX}"
             to_store.append((source.images_dir / name, name))
-        return normalize_section_headings(rewrite_image_links(raw, kept), dimension)
+        return normalize_section_headings(rewrite_image_links(raw, kept, noted), dimension)
 
     for dimension, (folder, meta) in dimensions.items():
         if not meta or not getattr(sections, dimension).strip():
@@ -574,7 +605,7 @@ def import_one(index: int, las_root: Path, repo_root: Path, dry_run: bool = Fals
         body = prepare_body(document, dimension)
         appendix = appendices.get(dimension)
         if appendix:
-            appendix_doc = load_document(las_root, appendix["las_key"])
+            appendix_doc = load_document(las_root, appendix["las_key"], extra_drops=reviewed_drops)
             if appendix_doc is not None and getattr(appendix_doc.sections, dimension).strip():
                 appendix_body = prepare_body(appendix_doc, dimension)
                 heading = appendix.get("title", "参考答案与解析")

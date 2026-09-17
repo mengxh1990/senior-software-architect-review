@@ -237,6 +237,40 @@ class LinkRewriteTests(unittest.TestCase):
         body = "![](images/a.png)\n![](https://example.com/b.png)\n![](images/a.png)"
         self.assertEqual(importer.extract_image_names(body), ["a.png"])
 
+    def test_reviewed_removal_leaves_a_visible_note(self) -> None:
+        body = "题干\n\n![](images/p1_002.png)\n"
+        noted = {"p1_002.png": "*（原图含机构广告或水印，已移除）*"}
+        rewritten = importer.rewrite_image_links(body, {}, noted)
+        self.assertIn("原图含机构广告或水印，已移除", rewritten)
+        self.assertNotIn("p1_002.png", rewritten)
+
+
+class ReviewedRemovalTests(unittest.TestCase):
+    def test_manifest_removals_are_marked_for_deletion(self) -> None:
+        from pathlib import Path
+
+        decisions = importer.plan_images([], extra_drops={"p1_002.png": "机构广告"})
+        self.assertFalse(decisions["p1_002.png"].keep)
+        self.assertTrue(decisions["p1_002.png"].reason.startswith("reviewed-removal"))
+
+    def test_shipped_manifest_has_no_leftover_advert_images(self) -> None:
+        """Every reviewed removal must be recorded, and assets must not contain them."""
+        import json
+
+        manifest = json.loads((REPO_ROOT / "scripts" / "las_import_manifest.json").read_text(encoding="utf-8"))
+        drops = {
+            (document["label"], Path(name).stem)
+            for document in manifest["documents"]
+            for name in (document.get("drop_images") or {})
+        }
+        self.assertGreaterEqual(len(drops), 30, "广告/水印剔除清单不应为空")
+        for label, stem in drops:
+            with self.subTest(asset=f"{label}/{stem}"):
+                self.assertFalse(
+                    (REPO_ROOT / "past-papers" / "assets" / label / f"{stem}.webp").exists(),
+                    f"{label}/{stem} 属于广告或水印图，必须已从仓库删除",
+                )
+
 
 class HeadingNormalizationTests(unittest.TestCase):
     def test_case_headings_become_markdown(self) -> None:
