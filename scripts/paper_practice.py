@@ -49,6 +49,7 @@ ANSWER_MARKER_RE = re.compile(
 # 它是"问题→答案→解析"结构中的解析标记，用它切分会把答案留在题干里。
 QUESTION_BLOCK_RE = re.compile(r"^#{2,4}[ \t]*【?\s*问题\s*\d+\s*】?[^\n]*$", re.MULTILINE)
 TAG_LINE_RE = re.compile(r"^>[ \t]*\*\*(?:题型|主题)\*\*[:：][^\n]*$", re.MULTILINE)
+APPENDIX_DIVIDER_RE = re.compile(r"^#{1,3}[ \t]*参考答案[^\n]*$", re.MULTILINE)
 IMAGE_LINK_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
 REMOVED_FIGURE_MARK = "原图含机构广告或水印，已移除"
 MISSING_FIGURE_NOTE = "原题含插图，该图在广告/水印清理时被移除；出题时请用文字描述图意，或提示学员对照原始 PDF"
@@ -150,15 +151,25 @@ def build_case_items() -> list[dict]:
     tag_map = tagger.load_tag_map().get("case") or {}
     for path in tagger.iter_papers("case"):
         text = path.read_text(encoding="utf-8")
-        tags = tag_map.get(path.stem) or []
+        verbatim_paper = path.stem.endswith("-原卷")
+        base_year = path.stem.split("-原卷")[0] if verbatim_paper else path.stem
+        tags = tag_map.get(base_year) or []
+        # 整卷唯一的「参考答案与解析」分隔标题属于卷末附录；每道题各有一个
+        # 「参考答案」标题的文件（如 2026 上）不能裁，否则会切掉答案标记
+        appendix_divider = len(APPENDIX_DIVIDER_RE.findall(text)) == 1
         for index, (numeral, title, body) in enumerate(tagger.split_questions(text)):
             tag = tags[index] if index < len(tags) else {"tag": "", "label": ""}
+            if appendix_divider:
+                body = APPENDIX_DIVIDER_RE.split(body)[0]
             stem_raw, figures, missing_figure = normalise_body(body)
             mode, stem_text, answer_text = classify(stem_raw)
+            if verbatim_paper and mode == "read_only":
+                # 原卷（题干与答案天然分离）卷面本身不含答案，可直接盲练
+                mode, stem_text, answer_text = "blind", stem_raw, None
             item = {
                 "id": f"past-papers/case-by-year/{path.stem}.md#试题{numeral}",
                 "subject": "case",
-                "year": path.stem,
+                "year": base_year,
                 "numeral": numeral,
                 "title": title,
                 "tag": tag.get("tag", ""),
@@ -181,6 +192,9 @@ def build_case_items() -> list[dict]:
                 item["note"] = "题干与参考答案混排且无标记，仅用于研读；盲练请换用 practice_mode=blind 的题"
             elif answer_text is None:
                 item["note"] = "该卷面未收录参考答案，作答后按评分点自行估分"
+            if verbatim_paper:
+                item["answer_source"] = f"past-papers/case-by-year/{path.stem.split('-原卷')[0]}.md#{item['id'].split('#')[1]}"
+                item["note"] = "题干取自原卷（无答案）；作答后到 answer_source 指向的研读版文件取参考答案再估分"
             items.append(item)
 
     # 同一份卷子里有独立答案区时（2022 原卷 + 附录），说明同号试题的正文

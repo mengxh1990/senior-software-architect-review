@@ -55,6 +55,7 @@ WATERMARK_LINE_PATTERNS: tuple[str, ...] = (
     r"^CamScanner\s*.*$",
     r"^第\s*\d+\s*页\s*(,|，|/|\()?\s*共\s*\d+\s*页\s*\)?$",
     r"^\d{4}\s*年.*试卷\s*第\s*\d+\s*页.*$",
+    r"^\d{4}\s*年?.*第\s*\d+\s*页.*$",
     r"^==+\s*\d+\s*==+$",
     r"^\d+\s*/\s*\d+$",
 )
@@ -613,6 +614,8 @@ def import_one(index: int, las_root: Path, repo_root: Path, dry_run: bool = Fals
                 report.setdefault("appendices", {})[dimension] = appendix["las_key"]
         header = render_header(meta, dimension, meta["title"], meta["subtitle"])
         target = repo_root / "past-papers" / folder / f"{index['label']}.md"
+        if index.get("filename_suffix"):
+            target = target.with_name(f"{index['label']}{index['filename_suffix']}.md")
         report["written"].append(str(target.relative_to(repo_root)))
         report.setdefault("stats", {})[dimension] = summarize(body, dimension)
         if not dry_run:

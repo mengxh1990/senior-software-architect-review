@@ -60,6 +60,11 @@ def iter_papers(kind: str) -> Iterable[Path]:
     return sorted(path for path in PAPERS[kind].glob("*.md") if path.name != "README.md")
 
 
+def tag_key(stem: str) -> str:
+    """``2013下-原卷`` 复用 ``2013下`` 的题型标签。"""
+    return stem.split("-原卷")[0] if "-原卷" in stem else stem
+
+
 def parse_heading(line: str) -> tuple[str, str] | None:
     """Return ``(numeral, title)`` when the line really is a question heading.
 
@@ -67,7 +72,11 @@ def parse_heading(line: str) -> tuple[str, str] | None:
     title carrying sentence punctuation (other than a trailing full stop) or
     starting with a connective is rejected.
     """
-    match = HEADING_RE.match(line.strip())
+    candidate = line.strip()
+    # 部分原卷把题号写成粗体（**试题二**）而不是 Markdown 标题
+    if candidate.startswith("**") and candidate.endswith("**") and len(candidate) > 4:
+        candidate = candidate[2:-2].strip()
+    match = HEADING_RE.match(candidate)
     if not match:
         return None
     numeral, title = match.group(2), match.group(3).strip()
@@ -83,15 +92,17 @@ def parse_heading(line: str) -> tuple[str, str] | None:
 
 def split_questions(text: str) -> list[tuple[str, str, str]]:
     """Return ``(numeral, title, body)`` for every question heading."""
-    matches: list[tuple[re.Match[str], tuple[str, str]]] = []
-    for match in HEADING_RE.finditer(text):
-        parsed = parse_heading(match.group(0))
+    # 逐行判定（与 apply_tags 同一套规则），这样 **试题二** 这类写法也能识别
+    lines = text.splitlines()
+    matches: list[tuple[int, tuple[str, str]]] = []
+    for index, line in enumerate(lines):
+        parsed = parse_heading(line)
         if parsed:
-            matches.append((match, parsed))
+            matches.append((index, parsed))
     out: list[tuple[str, str, str]] = []
-    for position, (match, (numeral, title)) in enumerate(matches):
-        end = matches[position + 1][0].start() if position + 1 < len(matches) else len(text)
-        out.append((numeral, title, text[match.end() : end]))
+    for position, (index, (numeral, title)) in enumerate(matches):
+        end = matches[position + 1][0] if position + 1 < len(matches) else len(lines)
+        out.append((numeral, title, "\n".join(lines[index + 1 : end])))
     return out
 
 
@@ -134,7 +145,7 @@ def validate_tag_map(tag_map: dict) -> list[str]:
     problems: list[str] = []
     for kind in ("case", "essay"):
         entries = tag_map.get(kind) or {}
-        files = {path.stem for path in iter_papers(kind)}
+        files = {tag_key(path.stem) for path in iter_papers(kind)}
         missing_files = sorted(files - set(entries))
         if missing_files:
             problems.append(f"{kind} 缺少标签：{', '.join(missing_files)}")
@@ -144,6 +155,7 @@ def validate_tag_map(tag_map: dict) -> list[str]:
                 problems.append(f"{kind}/{year}: 文件不存在")
                 continue
             expected = split_questions(path.read_text(encoding="utf-8"))
+            questions = entries.get(tag_key(year)) or questions
             if len(questions) != len(expected):
                 problems.append(
                     f"{kind}/{year}: 标签 {len(questions)} 条，实际试题 {len(expected)} 道"
@@ -210,15 +222,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             print("\n".join(problems), file=sys.stderr)
             return 1
         for kind in ("case", "essay"):
-            for year, questions in sorted((tag_map.get(kind) or {}).items()):
-                path = PAPERS[kind] / f"{year}.md"
+            entries = tag_map.get(kind) or {}
+            # 遍历目录里的全部试卷：`<考期>-原卷` 复用同考期的题型标签
+            for path in iter_papers(kind):
+                questions = entries.get(tag_key(path.stem))
+                if not questions:
+                    continue
                 text = path.read_text(encoding="utf-8")
                 # 有的卷首说明也写着“题型：5 道大题”，只按数量判断是否已标注
                 if len(TAG_LINE_RE.findall(text)) >= len(questions):
-                    print(f"{kind}/{year}: 已含标签，跳过")
                     continue
                 path.write_text(apply_tags(kind, text, questions), encoding="utf-8")
-                print(f"{kind}/{year}: 写入 {len(questions)} 条标签")
+                print(f"{kind}/{path.stem}: 写入 {len(questions)} 条标签")
         return 0
 
     parser.print_help()

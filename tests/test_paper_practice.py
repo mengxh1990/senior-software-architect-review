@@ -123,7 +123,9 @@ class ShippedPaperSafetyTests(unittest.TestCase):
             if item["practice_mode"] != "blind":
                 continue
             stem = item["stem"]
-            if re.search(r"参考答案|答案解析|本题考查|答案[:：]", stem):
+            # 「备选答案」是填空题的候选项，属于题干本身，不算泄题
+            probe = stem.replace("备选答案", "")
+            if re.search(r"参考答案|答案解析|本题考查|答案[:：]", probe):
                 leaks.append(item["id"])
         self.assertEqual(leaks, [], f"这些盲练题的题干疑似含答案：{leaks}")
 

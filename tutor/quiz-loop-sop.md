@@ -133,12 +133,13 @@ python3 scripts/paper_practice.py --list
 | `missing_figure=true` | 该题插图在广告/水印清理时被移除，**仍然可以出题**：按 `figure_note` 用文字描述图意，或提示学员对照原始 PDF；只想出插图完整的题时加 `--skip-missing-figures` |
 | `stem` 里的 `【图 N】` | 对应 `figures` 里的插图，呈现时**不要贴文件路径** |
 | `source_type` | 直接作为 `record --source-type`（正式卷 `real` / 回忆版 `recalled_real`） |
+| `answer_source` | 原卷题没有内嵌答案，作答后到这个路径对应的研读版文件取参考答案 |
 
 用法要点：
 
 - 案例题作答后跑 `--reveal` 取参考答案，按评分点逐项估分并标注"AI 估分"；
 - `--item-id` 用输出的 `id`，`--skill application`（案例）/ `production`（论文成文）；
-- 案例可盲练 29 道（含 4 道缺图题）、论文 67 道；案例不够时回退 [`case-types/`](../past-papers/case-types/) 的自编模拟题，论文不够时回退 [`paper-topics/`](../past-papers/paper-topics/) 的仿真题。
+- 案例可盲练 79 道（2009 下–2017 下取自 `<考期>-原卷.md` 的无答案题干，2018 下起取自带答案的整理版）、论文 67 道；案例其余 62 道为题干与答案混排的卷子，只作研读与作答后对答案。不够时回退 [`case-types/`](../past-papers/case-types/) 的自编模拟题与 [`paper-topics/`](../past-papers/paper-topics/) 的仿真题。
 
 ## Step 3 · AskUserQuestion 点选出题
 
