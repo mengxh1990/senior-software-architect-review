@@ -110,6 +110,36 @@ python3 scripts/sanitize_bank.py --list
 - 2019 下、2020、2023 下的整理版本只覆盖部分题目（26 / 12 / 1 个可用题块），抽不到时退回 `exam-bank/` 或自编题；
 - 题干里的插图引用形如 `![p1_000.png](../assets/2013下/p1_000.webp)`，**呈现时不要贴图片路径**，用文字描述图意或直接说明"原题含图"。
 
+### Step 2c · 案例与论文真题（按题型 / 主题抽题）
+
+案例与论文的主观题也用真题，入口是 [`scripts/paper_practice.py`](../scripts/paper_practice.py)：
+
+```bash
+# 案例：按题型盲练（自动剥离参考答案）
+python3 scripts/paper_practice.py --subject case --type 01 --limit 2
+# 案例：作答后取参考答案
+python3 scripts/paper_practice.py --subject case --year 2013下 --numeral 一 --reveal
+# 论文：按主题取题干与小问
+python3 scripts/paper_practice.py --subject essay --topic 06 --limit 4
+# 看各题型可用量
+python3 scripts/paper_practice.py --list
+```
+
+| 字段 | 含义与用法 |
+|---|---|
+| `practice_mode=blind` | 可以盲练：题干已与参考答案分离 |
+| `practice_mode=read_only` | 题干与参考答案混排（多见于 2009–2018 答案详解转录版），**只能当研读材料，不要出给学员** |
+| `practice_mode=answer_key` | 卷末答案区，工具已排除，不要当题目 |
+| `missing_figure=true` | 该题插图在广告/水印清理时被移除，默认跳过；确有需要才用 `--allow-missing-figures` |
+| `stem` 里的 `【图 N】` | 对应 `figures` 里的插图，呈现时**不要贴文件路径** |
+| `source_type` | 直接作为 `record --source-type`（正式卷 `real` / 回忆版 `recalled_real`） |
+
+用法要点：
+
+- 案例题作答后跑 `--reveal` 取参考答案，按评分点逐项估分并标注"AI 估分"；
+- `--item-id` 用输出的 `id`，`--skill application`（案例）/ `production`（论文成文）；
+- 案例可盲练 25 道、论文 67 道；案例不够时回退 [`case-types/`](../past-papers/case-types/) 的自编模拟题，论文不够时回退 [`paper-topics/`](../past-papers/paper-topics/) 的仿真题。
+
 ## Step 3 · AskUserQuestion 点选出题
 
 学员偏好点选。`AskUserQuestion` 的正确姿势：
