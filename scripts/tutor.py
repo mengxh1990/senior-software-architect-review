@@ -2506,6 +2506,41 @@ def quiz_session_path(data_dir: Path, quiz_id: str) -> Path:
     return quiz_sessions_dir(data_dir) / f"{quiz_id}.json"
 
 
+def quiz_questions_served_on(data_dir: Path, day: date) -> tuple[set[str], set[str]]:
+    """Items and fine concepts already handed to the learner on ``day``.
+
+    Prepared-but-ungraded sessions count: the questions were shown, so serving
+    them again the same day is a repeat even though no attempt exists yet.
+    """
+
+    items: set[str] = set()
+    concepts: set[str] = set()
+    directory = quiz_sessions_dir(data_dir)
+    if not directory.is_dir():
+        return items, concepts
+    for path in sorted(directory.glob("*.json")):
+        try:
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise TutorError(f"客观题会话损坏：{path}") from error
+        created_at = manifest.get("created_at")
+        questions = manifest.get("questions")
+        if not isinstance(created_at, str) or not isinstance(questions, list):
+            raise TutorError(f"客观题会话损坏：{path}")
+        if parse_datetime(created_at).date() != day:
+            continue
+        for question in questions:
+            if not isinstance(question, dict) or not isinstance(
+                question.get("item_id"), str
+            ):
+                raise TutorError(f"客观题会话损坏：{path}")
+            items.add(question["item_id"])
+            concept_id = question.get("concept_id")
+            if isinstance(concept_id, str) and concept_id:
+                concepts.add(concept_id)
+    return items, concepts
+
+
 def paper_source_type(year: str | None) -> str:
     return "recalled_real" if year in RECALLED_REAL_YEARS else "real"
 
@@ -2676,17 +2711,35 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
     pool = load_quiz_question_pool(curriculum)
     private_registry = load_private_question_registry(args.data_dir)
     attempted_items = {event.get("item_id") for event in attempts}
-    attempted_today = {
+    served_today_items = {
         event.get("item_id")
         for event in attempts
         if event.get("at") and parse_datetime(event["at"]).date() == today
     }
+    session_items, cooled_today_concepts = quiz_questions_served_on(
+        args.data_dir, today
+    )
+    served_today_items |= session_items
+    for event in attempts:
+        if not event.get("at") or parse_datetime(event["at"]).date() != today:
+            continue
+        concept_id = question_registry.resolve_metadata(event, private_registry).get(
+            "concept_id"
+        )
+        if concept_id:
+            cooled_today_concepts.add(concept_id)
     selected: list[dict[str, Any]] = []
     used_items: set[str] = set()
     used_families: set[str] = set()
+    used_concepts: set[str] = set()
     answer_counts: dict[str, int] = {}
+    chosen_recommendations: list[dict[str, Any]] = []
 
-    def choose_for(recommendation: dict[str, Any], allow_repeated: bool) -> bool:
+    def choose_for(
+        recommendation: dict[str, Any],
+        allow_repeated: bool,
+        allow_cooled: bool,
+    ) -> bool:
         topic = topics.get(recommendation["topic_id"])
         if not topic:
             return False
@@ -2695,7 +2748,7 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
             candidate = quiz_question_for_topic(raw, topic, private_registry)
             if candidate is None or candidate["item_id"] in used_items:
                 continue
-            if candidate["item_id"] in attempted_today:
+            if candidate["item_id"] in served_today_items:
                 continue
             if not allow_repeated and candidate["item_id"] in attempted_items:
                 continue
@@ -2703,11 +2756,27 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
                 continue
             candidates.append(candidate)
         wanted_concept = recommendation.get("concept_id")
-        exact = [item for item in candidates if item.get("concept_id") == wanted_concept]
-        if wanted_concept and exact:
+        if wanted_concept:
+            exact = [
+                item for item in candidates if item.get("concept_id") == wanted_concept
+            ]
+            if not exact:
+                # A fine-grained gap is only served by its own concept; a
+                # same-topic item would turn the objective into a false claim.
+                return False
             candidates = exact
         if not candidates:
             return False
+        if not allow_cooled:
+            cooled = cooled_today_concepts | used_concepts
+            fresh = [
+                item for item in candidates if item.get("concept_id") not in cooled
+            ]
+            if not fresh:
+                # Every remaining item of this recommendation was already
+                # tested today; another recommendation gets the slot first.
+                return False
+            candidates = fresh
         family_fresh = [
             item
             for item in candidates
@@ -2726,18 +2795,26 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
             prior_reasons[0] if prior_reasons else "concept_confusion"
         )
         selected.append(chosen)
+        chosen_recommendations.append(recommendation)
         used_items.add(chosen["item_id"])
         if chosen.get("question_family_id"):
             used_families.add(chosen["question_family_id"])
+        if chosen.get("concept_id"):
+            used_concepts.add(chosen["concept_id"])
         signature = "".join(chosen["correct"])
         answer_counts[signature] = answer_counts.get(signature, 0) + 1
         return True
 
-    for allow_repeated in (False, True):
-        for recommendation in recommendations:
+    # Same-day freshness comes first: an item or fine concept already served
+    # today is only reused after every untouched recommendation had its turn.
+    for allow_cooled in (False, True):
+        for allow_repeated in (False, True):
+            for recommendation in recommendations:
+                if len(selected) >= args.limit:
+                    break
+                choose_for(recommendation, allow_repeated, allow_cooled)
             if len(selected) >= args.limit:
                 break
-            choose_for(recommendation, allow_repeated)
         if len(selected) >= args.limit:
             break
     if len(selected) < args.limit:
@@ -2818,10 +2895,20 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
     days_left = None
     if exam_date:
         days_left = (parse_date(exam_date) - today).days
-    primary = recommendations[0] if recommendations else None
+    # Announce a recommendation that actually contributed a question; the
+    # primary entry may be a diagnostic gap whose items are all avoided.
+    primary = (
+        chosen_recommendations[0]
+        if chosen_recommendations
+        else (recommendations[0] if recommendations else None)
+    )
     objective = "训练本组考点"
     if primary is not None:
-        verb = "复测" if any(item.get("review_due") for item in recommendations) else "训练"
+        verb = (
+            "复测"
+            if any(item.get("review_due") for item in chosen_recommendations)
+            else "训练"
+        )
         objective = f"{verb}{primary['name']}（{primary['reason']}）"
         if len(covered_topics) > 1:
             objective += f"，同批覆盖 {len(covered_topics) - 1} 个考点"

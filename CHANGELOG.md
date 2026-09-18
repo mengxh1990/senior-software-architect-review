@@ -4,6 +4,7 @@
 
 ### Added
 
+- 当天排课去重补漏：`quiz-prepare` 把当天已生成但未判分的 `quiz-sessions/*.json` 也算作“已经考过”，同一天不再重复出同一道题；同一细考点当天考过即进入冷却，有可用新题时让位给其他考点、确实无题可出时才按序放宽，细考点缺口不再用同一大考点的题顶替，`objective` 只播报真正出了题的推荐，不再出现“复测某细考点”却一题未出的假象。`quiz-loop-sop.md` 自检清单补充：向考生说明作答格式只能用占位符（如 `1_ 2_ 3_ 4_ 5_`），不得用真实字母组合举例。
 - 封闭教学运行时（端到端性能优化 V2 的 P0）：`quiz-grade` 支持 `X` 表示"明确不会"（`response_state=conceded`，0 分、`knowledge_gap`、`confidence=null`，计入复习队列，不再需要伪造选项或让考生补答），支持 `--invalidate 题号=原因` 把坏题排除出本组（不写 attempt、不计掌握度）与 `--audit 题号=说明` 把题库疑点写入 `.study/quiz-audit-queue.jsonl`；判分返回值直接给出完整教学包（`explanation`、`wrong_reasons`、`memory_hook`、同细考点 `variant_question`、`next_review_at`），讲解阶段不再读 manifest、题库或知识库。
 - 题目质量门禁：`sanitize_bank` 新增解析清洗（剥离下一题标题、答案残片与资源路径）与 `assess_quality`（题干完整、选项完整、答案合法、盲练安全、图表可用、解析隔离），候选题带 `quality_status` / `quality_issues` / `requires_figure` / `requires_table`；`quiz-prepare` 只选 `ready` 的题，尚不能通过公开输出可靠呈现的本地图片题也会被拦下，人工确认的坏题写入 `scripts/quiz_quality_exclusions.json` 永久排除，`doctor` 新增 `question-bank` 检查报告可出题数与拦截原因。全量真题 1055 道可用题中 996 道通过门禁，59 道被拦下（含 2021 页式地址变换这类缺表题）。
 - 题库质量修复与过滤：旧版真题的单行/全角空格选项、跨行紧凑选项和字面 `*` 选项现在可正确解析；`2014下#53`、`2025上#30` 等题恢复完整 A–D 选项。英语阅读填空通过 `contexts` 以共享短文方式呈现，不再给考生裸 `(N)` 编号；数据库与嵌入式题中可恢复的前题依赖已改为独立题干。门禁新增完整 A–D、上下文、跨多独立小题题组和源图/表资源检查：尚无逐小题记档模型的旧版多题组、缺图/缺表、无可信上下文题一律跳过，不再错误压成一题作答。
