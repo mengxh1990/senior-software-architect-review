@@ -81,6 +81,9 @@ unseen → learning → fragile → pass_ready
   "max_score": 1,
   "duration_seconds": 42,
   "confidence": "unsure",
+  "response_state": "answered",
+  "selected_answer": "B",
+  "correct_answer": "B",
   "wrong_reasons": [],
   "source_type": "self_authored",
   "feedback_seen": false
@@ -90,6 +93,8 @@ unseen → learning → fragile → pass_ready
 要求：
 
 - `attempt_id` 全局唯一；重复写入必须幂等，内容冲突必须拒绝。
+- `response_state` 只有 `answered` 与 `conceded` 两种取值，缺失时按 `answered` 处理。`conceded` 表示考生明确表示"不会"，是有效的负向知识证据：得 0 分、错因固定为 `knowledge_gap`、`confidence` 为 `null`，并进入 1/3/7/14 复习队列；它**不**等于猜测，也不允许用伪造的错误选项代替。完全没有回应（既没答也没说不会）不写事件。
+- 题目本身无效（缺关键图表、答案不在选项中、题干被解析污染）时不写事件：判分时用 `--invalidate` 排除该题，只对有效题记档；题库疑点用 `--audit` 写入 `.study/quiz-audit-queue.jsonl`，由独立维护任务处理。
 - `item_id` 必填并稳定标识一道独立题目；不得用新的 `attempt_id` 兜底。复做同一 `item_id` 可以验证遗忘，但不能冒充多个独立掌握证据。
 - 自编题先登记题干、选项、稳定细考点 `concept_id`、题型族 `question_family_id` 和内容指纹；同内容换 ID 不得作为新证据。同一细考点的变式用 `variant_of` 关联来源题。
 - `curriculum.json` 声明了 `facets` 的聚合考点，在识别/应用训练中必须记录合法 `facet`；达到题数但未覆盖全部子主题时仍不能 `pass_ready`。
@@ -106,6 +111,8 @@ calculation, application, missing_keyword, weak_tradeoff,
 weak_project_detail, no_metric, expression, time_management,
 careless, guessed_correct
 ```
+
+`knowledge_gap` 同时用于"明确不会"的 `conceded` 事件：它表示这个概念还没建立，而不是读题失误或计算错误。
 
 ## 6. 三科分数证据
 

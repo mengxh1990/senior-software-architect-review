@@ -247,6 +247,7 @@ def new_state(curriculum: dict[str, Any], created_at: str) -> dict[str, Any]:
             "case_tracks_configured": False,
             "essay_themes_configured": False,
             "strategic_skips": {},
+            "subject_policies": {},
         },
         "subjects": {subject: blank_subject() for subject in SUBJECTS},
         "topics": {},
@@ -306,6 +307,22 @@ def validate_state(state: Any) -> dict[str, Any]:
         for topic_id, reason in skips.items()
     ):
         raise TutorError("state.json strategy.strategic_skips 必须是字符串映射")
+    policies = strategy.get("subject_policies", {})
+    if not isinstance(policies, dict):
+        raise TutorError("state.json strategy.subject_policies 必须是对象")
+    for subject_name, policy in policies.items():
+        if subject_name not in SUBJECTS or not isinstance(policy, dict):
+            raise TutorError("state.json strategy.subject_policies 包含无效科目")
+        if policy.get("mode") not in ("active", "manual_trigger"):
+            raise TutorError(
+                f"state.json strategy.subject_policies.{subject_name}.mode 无效"
+            )
+        if policy.get("reason") is not None and not isinstance(policy["reason"], str):
+            raise TutorError(
+                f"state.json strategy.subject_policies.{subject_name}.reason 必须是字符串"
+            )
+        if policy.get("updated_at") is not None:
+            parse_datetime(policy["updated_at"])
     applied_ids = state.get("applied_attempt_ids")
     if not isinstance(applied_ids, list) or any(
         not isinstance(item, str) or not item for item in applied_ids
@@ -895,8 +912,17 @@ def validate_record_event(event: dict[str, Any], curriculum: dict[str, Any]) -> 
     subject = event.get("subject")
     if subject not in topic.get("subjects", []):
         raise TutorError(f"考点 {topic_id} 不属于科目 {subject}")
-    if event.get("confidence") not in ("guess", "unsure", "sure"):
+    confidence = event.get("confidence")
+    if confidence is None:
+        # Only an explicit "不会" may omit confidence: it is negative evidence
+        # about knowledge, not a guess about an option.
+        if event.get("response_state") != "conceded":
+            raise TutorError("confidence 无效")
+    elif confidence not in ("guess", "unsure", "sure"):
         raise TutorError("confidence 无效")
+    response_state = event.get("response_state")
+    if response_state is not None and response_state not in ("answered", "conceded"):
+        raise TutorError("response_state 无效")
     if event.get("mode") not in ("diagnostic", "practice", "review", "mock", "full_timed"):
         raise TutorError("mode 无效")
     if event.get("mode") == "full_timed" and skill != "production":
@@ -1456,25 +1482,46 @@ def topic_mastery(state: dict[str, Any], topic_id: str, skill: str) -> float:
 def select_target_subject(
     state: dict[str, Any], allocations: dict[str, float]
 ) -> str:
+    paused = manual_trigger_subjects(state)
     critical = [
         subject
         for subject in SUBJECTS
-        if state["subjects"][subject].get("lower_bound_score") is None
-        or float(state["subjects"][subject]["lower_bound_score"]) < 45
+        if subject not in paused
+        and (
+            state["subjects"][subject].get("lower_bound_score") is None
+            or float(state["subjects"][subject]["lower_bound_score"]) < 45
+        )
     ]
-    candidates = critical or list(SUBJECTS)
+    candidates = critical or [subject for subject in SUBJECTS if subject not in paused]
+    # A learner may pause every subject on purpose; recommending something is
+    # still better than failing, and the pause only suppresses auto-selection.
+    candidates = candidates or list(SUBJECTS)
     return max(
         candidates,
         key=lambda subject: (allocations[subject], -SUBJECTS.index(subject)),
     )
 
 
+def manual_trigger_subjects(state: dict[str, Any]) -> set[str]:
+    """Subjects the learner only wants to train on an explicit request."""
+
+    policies = state.get("strategy", {}).get("subject_policies", {})
+    if not isinstance(policies, dict):
+        return set()
+    return {
+        subject
+        for subject, policy in policies.items()
+        if isinstance(policy, dict) and policy.get("mode") == "manual_trigger"
+    }
+
+
 def select_maintenance_subject(
     state: dict[str, Any], target_subject: str, today: date
 ) -> str | None:
+    paused = manual_trigger_subjects(state)
     overdue: list[tuple[int, str]] = []
     for subject in SUBJECTS:
-        if subject == target_subject:
+        if subject == target_subject or subject in paused:
             continue
         last_practiced = state["subjects"][subject].get("last_practiced_at")
         if not last_practiced:
@@ -1895,6 +1942,9 @@ def weakpoints_payload(
     )
     return {
         "subject": subject,
+        "subject_policy": state.get("strategy", {})
+        .get("subject_policies", {})
+        .get(subject),
         "today": today.isoformat(),
         "days": days,
         "due": due[:limit],
@@ -1971,9 +2021,16 @@ def cmd_weakpoints(args: argparse.Namespace) -> int:
         "建议动作",
     ]
     counts = payload["counts"]
+    policy = payload.get("subject_policy")
     print(
         f"{payload['subject']} 薄弱点（近 {payload['days']} 天，截至 {payload['today']}；只读，不写档）"
     )
+    if isinstance(policy, dict) and policy.get("mode") == "manual_trigger":
+        print(
+            "注意：该科已设为 manual_trigger，只有考生明确要求时才训练（"
+            + str(policy.get("reason") or "")
+            + "）"
+        )
     for title, key in (
         ("到期与逾期", "due"),
         ("近期正确率（低→高）", "recent"),
@@ -2039,9 +2096,11 @@ def cmd_configure(args: argparse.Namespace) -> int:
         and args.skip_topic is None
         and args.unskip_topic is None
         and args.min_review_interval_days is None
+        and args.subject_policy is None
     ):
         raise TutorError(
             "至少提供路线选项或 --skip-topic TOPIC=原因 / --unskip-topic TOPIC"
+            " / --subject-policy 科目=模式"
         )
     curriculum = load_curriculum()
     topics = topic_map(curriculum)
@@ -2097,6 +2156,28 @@ def cmd_configure(args: argparse.Namespace) -> int:
         # output), so changing the value in either direction takes effect
         # immediately without rewriting stored review dates.
         state["strategy"]["min_review_interval_days"] = args.min_review_interval_days
+    policies = state["strategy"].setdefault("subject_policies", {})
+    if not isinstance(policies, dict):
+        raise TutorError("state.json subject_policies 无效")
+    for specification in args.subject_policy or []:
+        subject_name, separator, mode = specification.partition("=")
+        subject_name = subject_name.strip()
+        mode = mode.strip()
+        if not separator or subject_name not in SUBJECTS:
+            raise TutorError(
+                "subject-policy 必须使用 科目=模式，科目取 "
+                + "/".join(SUBJECTS)
+            )
+        if mode not in ("active", "manual_trigger"):
+            raise TutorError("subject-policy 模式只支持 active / manual_trigger")
+        if mode == "active":
+            policies.pop(subject_name, None)
+        else:
+            policies[subject_name] = {
+                "mode": mode,
+                "reason": args.subject_policy_reason or "由 configure 设定",
+                "updated_at": now_iso(),
+            }
     save_state_bundle(args.data_dir, profile, state, backup=True)
     print(
         "已更新个人路线：案例 "
@@ -2104,6 +2185,14 @@ def cmd_configure(args: argparse.Namespace) -> int:
         + "；论文 "
         + (", ".join(state["strategy"].get("essay_themes", [])) or "待诊断")
         + f"；战略放弃 {len(skips)} 个"
+        + "；学科策略 "
+        + (
+            ", ".join(
+                f"{subject}={policy.get('mode')}"
+                for subject, policy in sorted(policies.items())
+            )
+            or "全部主动"
+        )
     )
     return 0
 
@@ -2126,6 +2215,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
     configured_case_tracks = set(strategy.get("case_tracks", []))
     configured_essay_themes = set(strategy.get("essay_themes", []))
     strategic_skips = set(strategy.get("strategic_skips", {}))
+    paused_subjects = set() if args.subject else manual_trigger_subjects(state)
     minimum_interval = int(strategy.get("min_review_interval_days", 0) or 0)
     cold_start_groups = curriculum.get("strategy", {}).get(
         "comprehensive_cold_start_groups", []
@@ -2165,6 +2255,10 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         chosen_subject = target_subject if target_subject in subjects else max(
             subjects, key=lambda subject: allocations.get(subject, 0)
         )
+        # A paused subject stays out of the plan unless the caller asked for it
+        # explicitly with --subject.
+        if not args.subject and chosen_subject in paused_subjects:
+            continue
         skill = {
             "comprehensive": "recognition",
             "case": "application",
@@ -2460,7 +2554,12 @@ def infer_quiz_facet(topic: dict[str, Any], item: dict[str, Any]) -> str | None:
 
 
 def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
-    """Load all objective questions once for a quiz preparation request."""
+    """Load all objective questions once for a quiz preparation request.
+
+    Every item carries the quality verdict from ``sanitize_bank``; questions
+    that are not ``ready`` stay in the pool so doctor can report them, but
+    ``quiz_question_for_topic`` never offers them to a quiz.
+    """
 
     merged: dict[str, dict[str, Any]] = {}
     for paper in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
@@ -2486,17 +2585,14 @@ def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
         path = REPO_ROOT / resource
         if not path.is_file():
             continue
-        blocks = sanitize_bank.split_blocks(path.read_text(encoding="utf-8"))
-        for number, raw in blocks.items():
-            parsed = sanitize_bank.parse_block(raw)
+        for parsed in sanitize_bank.parse_exam_bank(path):
             if not parsed.get("options") or not parsed.get("correct"):
                 continue
-            item_id = f"{resource}#{number}"
+            item_id = parsed["id"]
             existing = merged.get(item_id, {})
             candidate_ids = set(existing.get("candidate_topics", [])) | topic_ids
-            merged[item_id] = {
+            normalized = {
                 **parsed,
-                "id": item_id,
                 "year": None,
                 "tag": None,
                 "tag_label": None,
@@ -2504,6 +2600,7 @@ def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
                 "source_type": "self_authored",
                 "candidate_topics": sorted(candidate_ids),
             }
+            merged[item_id] = normalized
     return list(merged.values())
 
 
@@ -2513,6 +2610,11 @@ def quiz_question_for_topic(
     private_registry: dict[str, dict[str, Any]],
 ) -> dict[str, Any] | None:
     topic_id = topic["id"]
+    # The quality gate is absolute: an item that is missing its figure, table
+    # or a legal answer key never reaches a quiz, and the coach never repairs
+    # it live.
+    if raw.get("quality_status") != "ready":
+        return None
     if topic_id not in raw.get("candidate_topics", []):
         return None
     facet = infer_quiz_facet(topic, raw)
@@ -2530,6 +2632,9 @@ def quiz_question_for_topic(
         "concept_id": metadata.get("concept_id"),
         "question_family_id": metadata.get("question_family_id"),
         "stem": raw["stem"],
+        "context_id": raw.get("context_id"),
+        "context_title": raw.get("context_title"),
+        "context": raw.get("context"),
         "options": raw["options"],
         "correct": sorted(raw["correct"]),
         "explanation": raw.get("explanation"),
@@ -2656,6 +2761,7 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         {
             "number": item["number"],
             "stem": item["stem"],
+            "context_id": item.get("context_id"),
             "options": item["options"],
             "source_type": item["source_type"],
             "year": item.get("year"),
@@ -2663,12 +2769,74 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         }
         for item in selected
     ]
+    public_contexts: list[dict[str, str]] = []
+    seen_context_ids: set[str] = set()
+    for item in selected:
+        context_id = item.get("context_id")
+        context = item.get("context")
+        if not context_id or not context or context_id in seen_context_ids:
+            continue
+        public_contexts.append(
+            {
+                "id": context_id,
+                "title": item.get("context_title") or "题目上下文",
+                "text": context,
+            }
+        )
+        seen_context_ids.add(context_id)
+    covered_topics: list[dict[str, str]] = []
+    for item in selected:
+        if all(topic["topic_id"] != item["topic_id"] for topic in covered_topics):
+            covered_topics.append(
+                {"topic_id": item["topic_id"], "name": item["topic_name"]}
+            )
+    weakpoints = weakpoints_payload(
+        args.data_dir, args.subject, today, days=21, limit=100
+    )
+    rows_by_topic: dict[str, dict[str, Any]] = {}
+    for section in ("due", "recent", "uncovered"):
+        for row in weakpoints[section]:
+            rows_by_topic.setdefault(row["topic_id"], row)
+    evidence_summary: list[str] = []
+    for topic in covered_topics:
+        row = rows_by_topic.get(topic["topic_id"])
+        if row is None:
+            continue
+        if row["recent_attempts"]:
+            evidence_summary.append(
+                f"{topic['topic_id']} 近 21 天正确率 {row['recent_accuracy']:.0%}"
+                f"（{row['recent_attempts']} 题，蒙对/不确定 {row['guess_correct']}/{row['unsure_correct']}）"
+            )
+        if row["overdue_days"] is not None and row["overdue_days"] >= 0:
+            evidence_summary.append(
+                f"{topic['topic_id']} 已到复习日（逾期 {row['overdue_days']} 天）"
+            )
+    evidence_summary.append(
+        "本组覆盖：" + "、".join(topic["name"] for topic in covered_topics)
+    )
+    exam_date = profile.get("exam_date")
+    days_left = None
+    if exam_date:
+        days_left = (parse_date(exam_date) - today).days
+    primary = recommendations[0] if recommendations else None
+    objective = "训练本组考点"
+    if primary is not None:
+        verb = "复测" if any(item.get("review_due") for item in recommendations) else "训练"
+        objective = f"{verb}{primary['name']}（{primary['reason']}）"
+        if len(covered_topics) > 1:
+            objective += f"，同批覆盖 {len(covered_topics) - 1} 个考点"
     payload = {
         "quiz_id": quiz_id,
         "subject": args.subject,
+        "selected_subject": args.subject,
         "count": len(public_questions),
         "questions": public_questions,
-        "exam_date": profile.get("exam_date"),
+        "contexts": public_contexts,
+        "exam_date": exam_date,
+        "days_left": days_left,
+        "daily_minutes": profile.get("daily_minutes"),
+        "objective": objective,
+        "evidence_summary": evidence_summary,
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
@@ -2678,7 +2846,15 @@ def parse_quiz_answers(value: str) -> list[list[str]]:
     tokens = [token for token in re.split(r"[,，\s]+", value.strip()) if token]
     answers: list[list[str]] = []
     for token in tokens:
-        letters = sorted(set(re.findall(r"[A-Z]", token.upper())))
+        normalized = token.upper()
+        letters = sorted(set(re.findall(r"[A-Z]", normalized)))
+        if "X" in letters:
+            # "不会" is a first-class answer state, but it must never be mixed
+            # with option letters: AX would silently look like a choice.
+            if letters != ["X"] or normalized.count("X") != 1:
+                raise TutorError(f"X（明确不会）不能与其他选项混写：{token}")
+            answers.append(["X"])
+            continue
         if not letters or any(letter not in {"A", "B", "C", "D"} for letter in letters):
             raise TutorError(f"答案格式无效：{token}")
         answers.append(letters)
@@ -2694,6 +2870,184 @@ def parse_quiz_confidences(value: str | None, count: int) -> list[str]:
     if len(values) != count or any(item not in {"sure", "unsure", "guess"} for item in values):
         raise TutorError("confidences 必须为 sure/unsure/guess，数量为 1 或与题目数一致")
     return values
+
+
+QUIZ_INVALIDATION_REASONS = (
+    "missing_required_figure",
+    "missing_required_table",
+    "missing_figure_asset",
+    "figure_not_renderable",
+    "answer_marker_leak",
+    "explanation_leak",
+    "empty_stem",
+    "missing_options",
+    "incomplete_option_set",
+    "missing_required_context",
+    "multi_question_group",
+    "duplicate_options",
+    "answer_not_in_options",
+    "unclear_stem",
+    "wrong_answer_key",
+)
+
+
+def parse_quiz_marks(
+    value: str | None,
+    count: int,
+    *,
+    label: str,
+    allowed: Iterable[str] = (),
+) -> dict[int, str]:
+    """Parse ``--invalidate/--audit`` values written as ``4=reason``."""
+
+    marks: dict[int, str] = {}
+    if not value:
+        return marks
+    for token in [item for item in re.split(r"[,，;；]+", value.strip()) if item.strip()]:
+        number_text, separator, reason_text = token.partition("=")
+        if not separator:
+            raise TutorError(f"{label} 需要写成 题号=原因：{token}")
+        try:
+            number = int(number_text.strip())
+        except ValueError as error:
+            raise TutorError(f"{label} 的题号必须是数字：{token}") from error
+        if not 1 <= number <= count:
+            raise TutorError(f"{label} 的题号超出范围：{token}")
+        reason = reason_text.strip()
+        if not reason:
+            raise TutorError(f"{label} 缺少原因：{token}")
+        if allowed and reason not in allowed:
+            raise TutorError(
+                f"{label} 原因无效：{reason}（可用：" + ", ".join(sorted(allowed)) + "）"
+            )
+        marks[number] = reason
+    return marks
+
+
+def comparable_existing_event(
+    existing: dict[str, Any], candidate: dict[str, Any]
+) -> dict[str, Any]:
+    """Let a quiz graded before the response-state fields existed replay cleanly."""
+
+    filled = dict(existing)
+    for key in ("response_state", "selected_answer", "correct_answer"):
+        if key not in filled:
+            filled[key] = candidate.get(key)
+    return filled
+
+
+def variant_question_payload(candidate: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "item_id": candidate["item_id"],
+        "topic_id": candidate["topic_id"],
+        "stem": candidate["stem"],
+        "context_id": candidate.get("context_id"),
+        "context_title": candidate.get("context_title"),
+        "context": candidate.get("context"),
+        "options": candidate["options"],
+        "answer": "".join(candidate["correct"]),
+        "source_type": candidate["source_type"],
+    }
+
+
+def pick_variant_question(
+    question: dict[str, Any],
+    pool: list[dict[str, Any]],
+    topics: dict[str, dict[str, Any]],
+    private_registry: dict[str, dict[str, Any]],
+    blocked_items: set[str],
+) -> dict[str, Any] | None:
+    """Pick one fresh, quality-gated question on the same concept.
+
+    The variant comes from the verified pool instead of being written on the
+    spot, so the coaching round never needs to search the question bank.
+    """
+
+    topic = topics.get(question.get("topic_id"))
+    if not topic:
+        return None
+    wanted_concept = question.get("concept_id")
+    if not wanted_concept:
+        return None
+    for raw in pool:
+        candidate = quiz_question_for_topic(raw, topic, private_registry)
+        if candidate is None:
+            continue
+        if candidate["item_id"] == question.get("item_id"):
+            continue
+        if candidate["item_id"] in blocked_items:
+            continue
+        if candidate.get("concept_id") == wanted_concept:
+            return variant_question_payload(candidate)
+    return None
+
+
+def append_quiz_audit_entries(
+    data_dir: Path,
+    quiz_id: str,
+    audits: dict[int, str],
+    questions: list[dict[str, Any]],
+    at: str,
+) -> None:
+    """Idempotently queue question-bank suspicions for a maintenance task."""
+
+    path = data_dir / "quiz-audit-queue.jsonl"
+    entries: list[dict[str, Any]] = []
+    existing_by_key: dict[tuple[str, int], dict[str, Any]] = {}
+    if path.exists():
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8").splitlines(), 1
+        ):
+            if not line.strip():
+                continue
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError as error:
+                raise TutorError(
+                    f"quiz-audit-queue.jsonl 第 {line_number} 行损坏"
+                ) from error
+            if (
+                not isinstance(entry, dict)
+                or not isinstance(entry.get("quiz_id"), str)
+                or not isinstance(entry.get("number"), int)
+            ):
+                raise TutorError(
+                    f"quiz-audit-queue.jsonl 第 {line_number} 行缺少 quiz_id/number"
+                )
+            key = (entry["quiz_id"], entry["number"])
+            if key in existing_by_key:
+                raise TutorError(
+                    f"quiz-audit-queue.jsonl 存在重复审计项：{key[0]}#{key[1]}"
+                )
+            entries.append(entry)
+            existing_by_key[key] = entry
+
+    for number, note in sorted(audits.items()):
+        question = questions[number - 1]
+        candidate = {
+            "at": at,
+            "quiz_id": quiz_id,
+            "number": number,
+            "item_id": question.get("item_id"),
+            "topic_id": question.get("topic_id"),
+            "note": note,
+            "status": "open",
+        }
+        key = (quiz_id, number)
+        existing = existing_by_key.get(key)
+        if existing is not None:
+            comparable_keys = ("item_id", "topic_id", "note")
+            if any(existing.get(name) != candidate.get(name) for name in comparable_keys):
+                raise TutorError(f"审计项 {quiz_id}#{number} 与已记录内容冲突")
+            continue
+        entries.append(candidate)
+        existing_by_key[key] = candidate
+
+    content = "".join(
+        json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n"
+        for entry in entries
+    )
+    atomic_write_text(path, content)
 
 
 def load_quiz_manifest(data_dir: Path, quiz_id: str) -> tuple[Path, dict[str, Any]]:
@@ -2717,10 +3071,25 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
     if len(answers) != len(questions):
         raise TutorError(f"答案数量为 {len(answers)}，题目数量为 {len(questions)}")
     confidences = parse_quiz_confidences(args.confidences, len(questions))
+    invalidations = parse_quiz_marks(
+        args.invalidate,
+        len(questions),
+        label="--invalidate",
+        allowed=QUIZ_INVALIDATION_REASONS,
+    )
+    audits = parse_quiz_marks(args.audit, len(questions), label="--audit")
     response_key = {
         "answers": ["".join(answer) for answer in answers],
         "confidences": confidences,
     }
+    if invalidations:
+        response_key["invalidations"] = {
+            str(number): reason for number, reason in sorted(invalidations.items())
+        }
+    if audits:
+        response_key["audits"] = {
+            str(number): note for number, note in sorted(audits.items())
+        }
     if manifest.get("status") == "graded":
         if manifest.get("response_key") != response_key:
             raise TutorError(f"quiz-id {args.quiz_id} 已使用不同答案完成")
@@ -2733,10 +3102,12 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
         return 0
 
     curriculum = load_curriculum()
+    topics = topic_map(curriculum)
     profile, state = load_profile_and_state(args.data_dir)
     attempts_path = state_paths(args.data_dir)["attempts"]
     attempts = load_attempts(attempts_path)
     existing_by_id = {event["attempt_id"]: event for event in attempts}
+    private_registry = load_private_question_registry(args.data_dir)
     graded_at = parse_datetime(args.at).isoformat(timespec="seconds")
     per_question_duration = (
         max(1, args.duration_seconds // len(questions))
@@ -2749,12 +3120,36 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
         zip(questions, answers, confidences, strict=True), 1
     ):
         correct = sorted(question["correct"])
+        invalid_reason = invalidations.get(index)
+        if invalid_reason:
+            # A broken question is not learner evidence: no attempt is written
+            # and the rest of the batch still grades normally.
+            results.append(
+                {
+                    "number": index,
+                    "topic_id": question["topic_id"],
+                    "concept_id": question.get("concept_id"),
+                    "response_state": "invalidated",
+                    "selected": None,
+                    "correct": None,
+                    "is_correct": None,
+                    "counted": False,
+                    "invalid_reason": invalid_reason,
+                    "message": "题目无效，本题不计分",
+                }
+            )
+            continue
+        conceded = selected == ["X"]
         is_correct = selected == correct
-        wrong_reasons = []
-        if is_correct and confidence == "guess":
-            wrong_reasons = ["guessed_correct"]
-        elif not is_correct:
+        if conceded:
+            wrong_reasons = ["knowledge_gap"]
+            event_confidence = None
+        elif is_correct:
+            wrong_reasons = ["guessed_correct"] if confidence == "guess" else []
+            event_confidence = confidence
+        else:
             wrong_reasons = [question.get("wrong_reason_hint") or "concept_confusion"]
+            event_confidence = confidence
         event = {
             "attempt_id": f"{args.quiz_id}-q-{index}",
             "event_type": "practice",
@@ -2765,12 +3160,15 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
             "subject": manifest["subject"],
             "skill": "recognition",
             "mode": question.get("mode", "practice"),
-            "score": 1 if is_correct else 0,
+            "score": 0 if conceded else (1 if is_correct else 0),
             "max_score": 1,
             "duration_seconds": per_question_duration,
             "word_count": None,
             "complete": False,
-            "confidence": confidence,
+            "confidence": event_confidence,
+            "response_state": "conceded" if conceded else "answered",
+            "selected_answer": None if conceded else "".join(selected),
+            "correct_answer": "".join(correct),
             "wrong_reasons": wrong_reasons,
             "source_type": question["source_type"],
             "source": question.get("source"),
@@ -2782,7 +3180,11 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
         }
         validate_record_event(event, curriculum)
         existing = existing_by_id.get(event["attempt_id"])
-        if existing is not None and events_conflict(existing, event, compare_at=bool(args.at)):
+        if existing is not None and events_conflict(
+            comparable_existing_event(existing, event),
+            event,
+            compare_at=bool(args.at),
+        ):
             raise TutorError(f"attempt-id {event['attempt_id']} 与已记录内容冲突")
         events.append(event)
         results.append(
@@ -2790,12 +3192,17 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
                 "number": index,
                 "topic_id": question["topic_id"],
                 "concept_id": question.get("concept_id"),
-                "selected": "".join(selected),
+                "response_state": event["response_state"],
+                "selected": None if conceded else "".join(selected),
                 "correct": "".join(correct),
                 "is_correct": is_correct,
-                "confidence": confidence,
+                "counted": True,
+                "confidence": event_confidence,
                 "wrong_reasons": wrong_reasons,
                 "explanation": question.get("explanation"),
+                "memory_hook": (
+                    private_registry.get(question["item_id"], {}) or {}
+                ).get("memory_hook"),
             }
         )
 
@@ -2806,14 +3213,26 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
         applied_results[event["attempt_id"]] = apply_record_event(
             next_state, event, curriculum
         )
-    if missing_events:
-        write_attempts(attempts_path, [*attempts, *missing_events])
-        save_state_bundle(args.data_dir, profile, next_state, backup=True)
     minimum_interval = int(
         next_state.get("strategy", {}).get("min_review_interval_days", 0) or 0
     )
-    for result, event in zip(results, events, strict=True):
-        topic_record = next_state["topics"][event["topic_id"]]
+    counted_results = [result for result in results if result["counted"]]
+    wrong_results = [
+        result for result in counted_results if result["is_correct"] is False
+    ]
+    # The variant pool is only loaded when a wrong answer actually needs one.
+    variant_pool = load_quiz_question_pool(curriculum) if wrong_results else []
+    blocked_items = {question["item_id"] for question in questions} | {
+        event.get("item_id") for event in attempts
+    }
+    for result in counted_results:
+        topic_record = next_state["topics"].get(result["topic_id"]) or state["topics"].get(
+            result["topic_id"]
+        )
+        if not topic_record:
+            result["topic_status"] = None
+            result["next_review_at"] = None
+            continue
         skill_record = topic_record["mastery"]["recognition"]
         result["topic_status"] = topic_record["status"]
         result["next_review_at"] = effective_review_date(
@@ -2823,12 +3242,33 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
         )
         if result["is_correct"] and result["confidence"] == "sure":
             result["explanation"] = None
+        if result["is_correct"] is False:
+            result["variant_question"] = pick_variant_question(
+                questions[result["number"] - 1],
+                variant_pool,
+                topics,
+                private_registry,
+                blocked_items,
+            )
+        else:
+            result["variant_question"] = None
+
+    if audits:
+        for result in results:
+            if result["number"] in audits:
+                result["needs_audit"] = True
+                result["audit_note"] = audits[result["number"]]
 
     subject = status_payload(profile, next_state)["subjects"][manifest["subject"]]
     payload = {
         "quiz_id": args.quiz_id,
-        "score": sum(1 for result in results if result["is_correct"]),
-        "max_score": len(results),
+        "score": sum(1 for result in counted_results if result["is_correct"]),
+        "max_score": len(counted_results),
+        "counted_questions": len(counted_results),
+        "invalidated_count": len(results) - len(counted_results),
+        "conceded_count": sum(
+            1 for result in counted_results if result["response_state"] == "conceded"
+        ),
         "results": results,
         "recorded_attempts": len(missing_events),
         "idempotent": not missing_events,
@@ -2846,6 +3286,17 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
         "response_key": response_key,
         "result": payload,
     }
+    # Resolve every fallible read and build the complete response before
+    # committing learner evidence. The audit queue is maintenance metadata, so
+    # write it first and make that write idempotent; a retry after any later
+    # failure cannot duplicate it.
+    if audits:
+        append_quiz_audit_entries(
+            args.data_dir, args.quiz_id, audits, questions, graded_at
+        )
+    if missing_events:
+        write_attempts(attempts_path, [*attempts, *missing_events])
+        save_state_bundle(args.data_dir, profile, next_state, backup=True)
     atomic_write_json(path, completed)
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
@@ -2964,6 +3415,52 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
         }
     )
     healthy = healthy and ignored
+
+    try:
+        pool = load_quiz_question_pool(load_curriculum())
+        ready = [item for item in pool if item.get("quality_status") == "ready"]
+        blocked = [item for item in pool if item.get("quality_status") != "ready"]
+        reason_counts: dict[str, int] = {}
+        for item in blocked:
+            for issue in item.get("quality_issues", []):
+                name = issue.split(":", 1)[0]
+                reason_counts[name] = reason_counts.get(name, 0) + 1
+        top_reasons = ", ".join(
+            f"{name} {count}"
+            for name, count in sorted(
+                reason_counts.items(), key=lambda item: (-item[1], item[0])
+            )[:4]
+        )
+        audit_path = data_dir / "quiz-audit-queue.jsonl"
+        open_audits = (
+            len(
+                [
+                    line
+                    for line in audit_path.read_text(encoding="utf-8").splitlines()
+                    if line.strip()
+                ]
+            )
+            if audit_path.exists()
+            else 0
+        )
+        ok = bool(ready)
+        checks.append(
+            {
+                "name": "question-bank",
+                "healthy": ok,
+                "message": (
+                    f"可出题 {len(ready)} 道，质量门禁拦下 {len(blocked)} 道"
+                    + (f"（{top_reasons}）" if top_reasons else "")
+                    + f"，待维护核对 {open_audits} 条"
+                ),
+            }
+        )
+        healthy = healthy and ok
+    except (TutorError, ValueError) as error:
+        checks.append(
+            {"name": "question-bank", "healthy": False, "message": str(error)}
+        )
+        healthy = False
     return healthy, checks
 
 
@@ -3089,6 +3586,14 @@ def build_parser() -> argparse.ArgumentParser:
     quiz_grade_parser.add_argument("--quiz-id", required=True)
     quiz_grade_parser.add_argument("--answers", required=True)
     quiz_grade_parser.add_argument("--confidences")
+    quiz_grade_parser.add_argument(
+        "--invalidate",
+        help="把坏题排除出本组，写成 题号=原因（如 4=missing_required_table）",
+    )
+    quiz_grade_parser.add_argument(
+        "--audit",
+        help="标记需要维护核对的题，写成 题号=说明（如 3=答案键疑似有误）",
+    )
     quiz_grade_parser.add_argument("--duration-seconds", type=int)
     quiz_grade_parser.add_argument("--at")
     quiz_grade_parser.set_defaults(func=cmd_quiz_grade)
@@ -3101,6 +3606,12 @@ def build_parser() -> argparse.ArgumentParser:
     configure_parser.add_argument("--skip-topic", action="append")
     configure_parser.add_argument("--unskip-topic", action="append")
     configure_parser.add_argument("--min-review-interval-days", type=int)
+    configure_parser.add_argument(
+        "--subject-policy",
+        action="append",
+        help="学科启停策略，写成 科目=模式（manual_trigger / active）",
+    )
+    configure_parser.add_argument("--subject-policy-reason")
     configure_parser.set_defaults(func=cmd_configure)
 
     record_parser = subparsers.add_parser("record", help="记录一次有效作答")

@@ -164,6 +164,11 @@ def validate_entry(entry: Any) -> dict[str, Any]:
     variant_of = normalized.get("variant_of")
     if variant_of is not None and (not isinstance(variant_of, str) or not variant_of.strip()):
         raise ValueError("variant_of 必须是非空字符串")
+    memory_hook = normalized.get("memory_hook")
+    if memory_hook is not None and (
+        not isinstance(memory_hook, str) or not memory_hook.strip()
+    ):
+        raise ValueError("memory_hook 必须是非空字符串")
     return normalized
 
 

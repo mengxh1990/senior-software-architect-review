@@ -1609,6 +1609,8 @@ class TutorAcceptanceTest(unittest.TestCase):
                 self.assertNotRegex(issue["concept_label"], r"^\(\d+\)$")
 
     def test_weakpoints_ranks_overdue_and_recent_topics_readonly(self) -> None:
+        """The read-only weakpoint ranking must stay side-effect free."""
+
         topic_id = self._recognition_topic()["id"]
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
@@ -1721,6 +1723,393 @@ class TutorAcceptanceTest(unittest.TestCase):
             ]
             self.assertEqual(1, narrow_recent[0]["recent_attempts"])
             self.assertEqual(1.0, narrow_recent[0]["recent_accuracy"])
+
+    def _prepare_quiz(self, data_dir: Path, limit: int = 5) -> dict[str, Any]:
+        return _json_output(
+            _run_cli(
+                data_dir,
+                "quiz-prepare",
+                "--subject",
+                "comprehensive",
+                "--limit",
+                str(limit),
+            )
+        )
+
+    def test_quiz_grade_treats_explicit_x_as_conceded_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir)
+            quiz_id = prepared["quiz_id"]
+
+            graded = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-grade",
+                    "--quiz-id",
+                    quiz_id,
+                    "--answers",
+                    "X,X,X,X,X",
+                    "--confidences",
+                    "sure,sure,sure,sure,sure",
+                )
+            )
+            self.assertEqual(0, graded["score"])
+            self.assertEqual(5, graded["conceded_count"])
+            first = graded["results"][0]
+            self.assertEqual("conceded", first["response_state"])
+            self.assertIsNone(first["selected"])
+            self.assertEqual(["knowledge_gap"], first["wrong_reasons"])
+
+            attempts = [
+                json.loads(line)
+                for line in (data_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            conceded = [event for event in attempts if event.get("response_state") == "conceded"]
+            self.assertEqual(5, len(conceded))
+            self.assertIsNone(conceded[0]["confidence"])
+            self.assertIsNone(conceded[0]["selected_answer"])
+            self.assertEqual(0, conceded[0]["score"])
+            self.assertEqual(["knowledge_gap"], conceded[0]["wrong_reasons"])
+
+            # Replaying the same explicit "不会" stays idempotent, a different
+            # answer set is rejected, and X may not be mixed with option letters.
+            replay = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-grade",
+                    "--quiz-id",
+                    quiz_id,
+                    "--answers",
+                    "X,X,X,X,X",
+                    "--confidences",
+                    "sure,sure,sure,sure,sure",
+                )
+            )
+            self.assertTrue(replay["idempotent"])
+            self.assertEqual(0, replay["recorded_attempts"])
+            self.assertEqual(
+                len(attempts),
+                len(
+                    [
+                        line
+                        for line in (data_dir / "attempts.jsonl")
+                        .read_text(encoding="utf-8")
+                        .splitlines()
+                        if line.strip()
+                    ]
+                ),
+            )
+            _run_cli(
+                data_dir,
+                "quiz-grade",
+                "--quiz-id",
+                quiz_id,
+                "--answers",
+                "A,A,A,A,A",
+                expected_returncode=2,
+            )
+            _run_cli(
+                data_dir,
+                "quiz-grade",
+                "--quiz-id",
+                quiz_id,
+                "--answers",
+                "AX,X,X,X,X",
+                expected_returncode=2,
+            )
+
+    def test_quiz_grade_invalidates_broken_questions_without_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir)
+            quiz_id = prepared["quiz_id"]
+
+            graded = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-grade",
+                    "--quiz-id",
+                    quiz_id,
+                    "--answers",
+                    "A,A,X,A,A",
+                    "--invalidate",
+                    "3=missing_required_table",
+                    "--audit",
+                    "1=答案键疑似有误",
+                )
+            )
+            self.assertEqual(1, graded["invalidated_count"])
+            self.assertEqual(4, graded["counted_questions"])
+            self.assertEqual(4, graded["max_score"])
+            invalidated = graded["results"][2]
+            self.assertEqual("invalidated", invalidated["response_state"])
+            self.assertFalse(invalidated["counted"])
+            self.assertIsNone(invalidated["selected"])
+            self.assertIsNone(invalidated["correct"])
+            self.assertEqual(
+                "题目无效，本题不计分", invalidated["message"]
+            )
+            self.assertTrue(graded["results"][0]["needs_audit"])
+            queue_lines = [
+                json.loads(line)
+                for line in (data_dir / "quiz-audit-queue.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if line.strip()
+            ]
+            self.assertEqual(1, len(queue_lines))
+            self.assertEqual("open", queue_lines[0]["status"])
+
+            attempts = [
+                json.loads(line)
+                for line in (data_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            self.assertEqual(4, len(attempts), "an invalidated question writes no attempt")
+            self.assertFalse(
+                any(event["attempt_id"].endswith("-q-3") for event in attempts),
+                "the invalidated question must not be recorded",
+            )
+
+            # Simulate a crash after the evidence/audit writes but before the
+            # completed manifest replacement. Recovery must not duplicate the
+            # maintenance queue entry.
+            manifest_path = data_dir / "quiz-sessions" / f"{quiz_id}.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["status"] = "pending"
+            manifest_path.write_text(
+                json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True)
+                + "\n",
+                encoding="utf-8",
+            )
+            recovered = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-grade",
+                    "--quiz-id",
+                    quiz_id,
+                    "--answers",
+                    "A,A,X,A,A",
+                    "--invalidate",
+                    "3=missing_required_table",
+                    "--audit",
+                    "1=答案键疑似有误",
+                )
+            )
+            self.assertTrue(recovered["idempotent"])
+            queue_lines = [
+                line
+                for line in (data_dir / "quiz-audit-queue.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if line.strip()
+            ]
+            self.assertEqual(1, len(queue_lines))
+            _run_cli(
+                data_dir,
+                "quiz-grade",
+                "--quiz-id",
+                quiz_id,
+                "--answers",
+                "A,A,X,A,A",
+                "--invalidate",
+                "3=bogus_reason",
+                expected_returncode=2,
+            )
+
+    def test_variant_question_does_not_fall_back_to_another_concept(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir, limit=1)
+            manifest_path = (
+                data_dir / "quiz-sessions" / f"{prepared['quiz_id']}.json"
+            )
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["questions"][0]["concept_id"] = "test.no_matching_concept"
+            manifest_path.write_text(
+                json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True)
+                + "\n",
+                encoding="utf-8",
+            )
+            correct = "".join(manifest["questions"][0]["correct"])
+            wrong = next(letter for letter in "ABCD" if letter != correct)
+            graded = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-grade",
+                    "--quiz-id",
+                    prepared["quiz_id"],
+                    "--answers",
+                    wrong,
+                )
+            )
+            self.assertFalse(graded["results"][0]["is_correct"])
+            self.assertIsNone(
+                graded["results"][0]["variant_question"],
+                "a different concept in the same topic is not a valid variant",
+            )
+
+    def test_quiz_grade_audit_failure_does_not_commit_learner_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir, limit=1)
+            (data_dir / "quiz-audit-queue.jsonl").write_text(
+                "not-json\n", encoding="utf-8"
+            )
+            before = _snapshot_files(data_dir)
+            _run_cli(
+                data_dir,
+                "quiz-grade",
+                "--quiz-id",
+                prepared["quiz_id"],
+                "--answers",
+                "A",
+                "--audit",
+                "1=答案键疑似有误",
+                expected_returncode=2,
+            )
+            self.assertEqual(
+                before,
+                _snapshot_files(data_dir),
+                "a maintenance-queue failure must happen before learner evidence commits",
+            )
+
+    def test_quiz_grade_returns_a_self_contained_teaching_package(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir)
+            graded = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-grade",
+                    "--quiz-id",
+                    prepared["quiz_id"],
+                    "--answers",
+                    "A,A,A,A,A",
+                )
+            )
+            attempted_ids = {
+                json.loads(line)["item_id"]
+                for line in (data_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            }
+            wrong = [result for result in graded["results"] if result["is_correct"] is False]
+            self.assertTrue(wrong, "an all-A answer set must produce wrong answers")
+            for result in graded["results"]:
+                for key in ("response_state", "wrong_reasons", "next_review_at"):
+                    self.assertIn(key, result)
+                self.assertIn("variant_question", result)
+                self.assertIn("memory_hook", result)
+                variant = result["variant_question"]
+                if result["is_correct"] is False:
+                    if variant is not None:
+                        self.assertNotIn(variant["item_id"], attempted_ids)
+                        self.assertTrue(variant["stem"])
+                        self.assertTrue(variant["answer"])
+                else:
+                    self.assertIsNone(variant)
+                explanation = result.get("explanation")
+                if explanation:
+                    self.assertNotIn("✅", explanation)
+                    self.assertNotIn("](", explanation)
+
+    def test_quiz_prepare_returns_objective_and_evidence_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir)
+            self.assertEqual("comprehensive", prepared["selected_subject"])
+            self.assertTrue(prepared["objective"])
+            self.assertIsInstance(prepared["evidence_summary"], list)
+            self.assertTrue(prepared["evidence_summary"])
+            self.assertIsInstance(prepared["days_left"], int)
+            self.assertGreater(prepared["days_left"], 0)
+            self.assertEqual(45, prepared["daily_minutes"])
+
+    def test_subject_policy_blocks_automatic_recommendation_only(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            for subject in ("comprehensive", "case"):
+                _run_cli(
+                    data_dir,
+                    "mock",
+                    "--subject",
+                    subject,
+                    "--mock-id",
+                    f"m-{subject}",
+                    "--paper-id",
+                    f"p-{subject}",
+                    "--score",
+                    "60",
+                    "--max-score",
+                    "75",
+                    "--duration-minutes",
+                    "120",
+                    "--complete",
+                )
+            unpaused = _json_output(
+                _run_cli(data_dir, "recommend", "--json", "--limit", "10")
+            )
+            self.assertIn(
+                "essay",
+                {item["subject"] for item in _recommendation_items(unpaused)},
+                "the unmeasured essay subject should be the automatic target",
+            )
+            _run_cli(
+                data_dir,
+                "configure",
+                "--subject-policy",
+                "essay=manual_trigger",
+                "--subject-policy-reason",
+                "考生要求主动触发",
+            )
+            paused = _json_output(
+                _run_cli(data_dir, "recommend", "--json", "--limit", "10")
+            )
+            self.assertNotIn(
+                "essay",
+                {item["subject"] for item in _recommendation_items(paused)},
+                "a manual_trigger subject must not be auto-selected",
+            )
+            explicit = _json_output(
+                _run_cli(
+                    data_dir, "recommend", "--json", "--limit", "5", "--subject", "essay"
+                )
+            )
+            self.assertIn(
+                "essay",
+                {item["subject"] for item in _recommendation_items(explicit)},
+                "an explicit --subject request still trains the paused subject",
+            )
+            _run_cli(data_dir, "configure", "--subject-policy", "essay=active")
+            reactivated = _json_output(
+                _run_cli(data_dir, "recommend", "--json", "--limit", "10")
+            )
+            self.assertIn(
+                "essay",
+                {item["subject"] for item in _recommendation_items(reactivated)},
+            )
+
+    def test_doctor_reports_the_question_quality_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            payload = _json_output(_run_cli(data_dir, "doctor", "--json"))
+            bank = [
+                check for check in payload["checks"] if check["name"] == "question-bank"
+            ]
+            self.assertEqual(1, len(bank))
+            self.assertTrue(bank[0]["healthy"])
+            self.assertIn("可出题", bank[0]["message"])
+            self.assertIn("质量门禁拦下", bank[0]["message"])
 
     def test_diagnostic_gaps_respect_strategic_skips(self) -> None:
         topic_id = "K08.SOFTWARE_PROCESS_MODELS"
