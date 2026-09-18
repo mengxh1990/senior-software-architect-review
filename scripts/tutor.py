@@ -18,6 +18,7 @@ import statistics
 import subprocess
 import sys
 import tempfile
+import unicodedata
 import uuid
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
@@ -1737,6 +1738,256 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
     return 0
 
 
+def weakpoint_action(row: dict[str, Any]) -> str:
+    """Pick one deterministic next action for a weakpoint row."""
+
+    if int(row.get("attempt_count", 0)) == 0:
+        return "未覆盖：先做一次诊断"
+    overdue = row.get("overdue_days")
+    if overdue is not None and overdue >= 0:
+        return f"到期复测（逾期 {overdue} 天）" if overdue else "今天到期：复测"
+    accuracy = row.get("recent_accuracy")
+    if accuracy is not None and int(row.get("recent_attempts", 0)) >= 3 and accuracy < 0.6:
+        return "近期正确率偏低：定向补练"
+    if int(row.get("guess_correct", 0)) or int(row.get("unsure_correct", 0)):
+        return "有蒙对/不确定：加一道变式确认"
+    if row.get("status") == "pass_ready":
+        return "已达标：维持低频复测"
+    return "继续练习"
+
+
+def weakpoints_payload(
+    data_dir: Path,
+    subject: str,
+    today: date,
+    *,
+    days: int = 21,
+    limit: int = 10,
+) -> dict[str, Any]:
+    """Rank one subject's overdue, recently weak and uncovered topics.
+
+    Read-only by contract: it loads curriculum, state and the attempt log and
+    never writes to ``.study/``, so it is safe to call inside a training round.
+    """
+
+    if subject not in SUBJECTS:
+        raise TutorError(f"未知科目：{subject}")
+    if days <= 0:
+        raise TutorError("days 必须大于 0")
+    curriculum = load_curriculum()
+    topics = topic_map(curriculum)
+    _, state = load_profile_and_state(data_dir)
+    attempts = load_attempts(state_paths(data_dir)["attempts"])
+    minimum_interval = int(
+        state.get("strategy", {}).get("min_review_interval_days", 0) or 0
+    )
+    cutoff = today - timedelta(days=days)
+
+    window: dict[tuple[str, str], dict[str, Any]] = {}
+    for event in attempts:
+        if event.get("event_type") != "practice" or event.get("subject") != subject:
+            continue
+        topic_id = event.get("topic_id")
+        skill = event.get("skill")
+        if not topic_id or not skill or not event.get("at"):
+            continue
+        attempted_on = parse_datetime(event["at"]).date()
+        if attempted_on < cutoff or attempted_on > today:
+            continue
+        bucket = window.setdefault(
+            (topic_id, skill),
+            {
+                "recent_attempts": 0,
+                "recent_score": 0.0,
+                "recent_max_score": 0.0,
+                "guess_correct": 0,
+                "unsure_correct": 0,
+            },
+        )
+        bucket["recent_attempts"] += 1
+        bucket["recent_score"] += float(event.get("score", 0) or 0)
+        bucket["recent_max_score"] += float(event.get("max_score", 0) or 0)
+        if _event_ratio(event) >= 1.0:
+            if event.get("confidence") == "guess":
+                bucket["guess_correct"] += 1
+            elif event.get("confidence") == "unsure":
+                bucket["unsure_correct"] += 1
+
+    rows: list[dict[str, Any]] = []
+    for topic_id, topic in topics.items():
+        topic_record = state.get("topics", {}).get(topic_id)
+        mastery = (
+            topic_record.get("mastery")
+            if isinstance(topic_record, dict)
+            and isinstance(topic_record.get("mastery"), dict)
+            else {}
+        )
+        for skill in topic.get("skills", []):
+            if choose_subject_for_skill(topic, skill) != subject:
+                continue
+            record = mastery.get(skill)
+            record = record if isinstance(record, dict) else {}
+            bucket = window.get((topic_id, skill)) or {}
+            recent_attempts = int(bucket.get("recent_attempts", 0))
+            recent_score = float(bucket.get("recent_score", 0) or 0)
+            recent_max_score = float(bucket.get("recent_max_score", 0) or 0)
+            last_attempt_at = record.get("last_attempt_at")
+            status = str(record.get("status") or "unseen")
+            next_review_at = effective_review_date(
+                record.get("next_review_at"),
+                last_attempt_at,
+                minimum_interval,
+                status,
+            )
+            row = {
+                "topic_id": topic_id,
+                "topic_name": topic.get("name") or topic_id,
+                "skill": skill,
+                "status": status,
+                "mastery": round(float(record.get("mastery", 0.0) or 0.0), 4),
+                "attempt_count": int(record.get("attempt_count", 0) or 0),
+                "recent_attempts": recent_attempts,
+                "recent_accuracy": (
+                    round(recent_score / recent_max_score, 4)
+                    if recent_max_score > 0
+                    else None
+                ),
+                "recent_score": round(recent_score, 2),
+                "recent_max_score": round(recent_max_score, 2),
+                "guess_correct": int(bucket.get("guess_correct", 0)),
+                "unsure_correct": int(bucket.get("unsure_correct", 0)),
+                "last_attempt_at": last_attempt_at,
+                "next_review_at": next_review_at,
+                "overdue_days": (
+                    (today - parse_date(next_review_at)).days
+                    if next_review_at
+                    else None
+                ),
+                "frequency_count": topic.get("frequency_count"),
+                "priority_weight": topic.get("priority_weight"),
+            }
+            row["action"] = weakpoint_action(row)
+            rows.append(row)
+
+    due = sorted(
+        (
+            row
+            for row in rows
+            if row["overdue_days"] is not None and row["overdue_days"] >= 0
+        ),
+        key=lambda row: (-row["overdue_days"], row["mastery"], row["topic_id"]),
+    )
+    recent = sorted(
+        (row for row in rows if row["recent_attempts"] > 0),
+        key=lambda row: (
+            row["recent_accuracy"] if row["recent_accuracy"] is not None else 1.0,
+            -row["recent_attempts"],
+            row["topic_id"],
+        ),
+    )
+    uncovered = sorted(
+        (row for row in rows if row["attempt_count"] == 0),
+        key=lambda row: (
+            -float(row.get("priority_weight") or 0),
+            -float(row.get("frequency_count") or 0),
+            row["topic_id"],
+        ),
+    )
+    return {
+        "subject": subject,
+        "today": today.isoformat(),
+        "days": days,
+        "due": due[:limit],
+        "recent": recent[:limit],
+        "uncovered": uncovered[:limit],
+        "counts": {
+            "due": len(due),
+            "recent": len(recent),
+            "uncovered": len(uncovered),
+        },
+    }
+
+
+def display_width(text: str) -> int:
+    """Terminal width of one cell, counting CJK glyphs as two columns."""
+
+    return sum(
+        2 if unicodedata.east_asian_width(character) in "WF" else 1
+        for character in text
+    )
+
+
+def render_table(headers: list[str], rows: list[list[str]]) -> list[str]:
+    widths = [display_width(header) for header in headers]
+    for row in rows:
+        for index, cell in enumerate(row):
+            widths[index] = max(widths[index], display_width(cell))
+
+    def render(cells: list[str]) -> str:
+        padded = [
+            cell + " " * max(0, widths[index] - display_width(cell))
+            for index, cell in enumerate(cells)
+        ]
+        return "  ".join(padded).rstrip()
+
+    lines = [render(headers), "  ".join("-" * width for width in widths)]
+    lines.extend(render(row) for row in rows)
+    return lines
+
+
+def cmd_weakpoints(args: argparse.Namespace) -> int:
+    today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
+    payload = weakpoints_payload(
+        args.data_dir, args.subject, today, days=args.days, limit=args.limit
+    )
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+
+    def row_cells(row: dict[str, Any]) -> list[str]:
+        accuracy = row["recent_accuracy"]
+        guessed = f"{row['guess_correct']}/{row['unsure_correct']}"
+        return [
+            row["topic_id"],
+            row["topic_name"],
+            f"{accuracy * 100:.0f}%" if accuracy is not None else "-",
+            str(row["recent_attempts"]),
+            guessed,
+            str(row["last_attempt_at"])[:10] if row["last_attempt_at"] else "-",
+            str(row["overdue_days"]) if row["overdue_days"] is not None else "-",
+            f"{row['mastery']:.2f}",
+            row["action"],
+        ]
+
+    headers = [
+        "考点 ID",
+        "考点",
+        "近期正确率",
+        "样本",
+        "蒙对/不确定",
+        "最近作答",
+        "逾期(天)",
+        "掌握度",
+        "建议动作",
+    ]
+    counts = payload["counts"]
+    print(
+        f"{payload['subject']} 薄弱点（近 {payload['days']} 天，截至 {payload['today']}；只读，不写档）"
+    )
+    for title, key in (
+        ("到期与逾期", "due"),
+        ("近期正确率（低→高）", "recent"),
+        ("未覆盖考点", "uncovered"),
+    ):
+        rows = payload[key]
+        print(f"\n[{title}] 共 {counts[key]} 项，显示 {len(rows)} 项")
+        if not rows:
+            print("  （无）")
+            continue
+        print("\n".join(render_table(headers, [row_cells(row) for row in rows])))
+    return 0
+
+
 def cmd_register_question(args: argparse.Namespace) -> int:
     curriculum = load_curriculum()
     topics = topic_map(curriculum)
@@ -2891,6 +3142,18 @@ def build_parser() -> argparse.ArgumentParser:
     diagnose_parser.add_argument("--today")
     diagnose_parser.add_argument("--json", action="store_true")
     diagnose_parser.set_defaults(func=cmd_diagnose)
+
+    weakpoints_parser = subparsers.add_parser(
+        "weakpoints", help="按考点列出到期、近期正确率与未覆盖薄弱点（只读）"
+    )
+    weakpoints_parser.add_argument(
+        "--subject", choices=SUBJECTS, default="comprehensive"
+    )
+    weakpoints_parser.add_argument("--days", type=int, default=21)
+    weakpoints_parser.add_argument("--limit", type=int, default=10)
+    weakpoints_parser.add_argument("--today")
+    weakpoints_parser.add_argument("--json", action="store_true")
+    weakpoints_parser.set_defaults(func=cmd_weakpoints)
 
     register_parser = subparsers.add_parser(
         "register-question", help="把自编题的细考点与题型身份登记到私人目录"

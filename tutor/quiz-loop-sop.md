@@ -29,9 +29,11 @@
 ## 回合预算与结束条件
 
 - 出题回合只调用一次 `quiz-prepare`；判分回合只调用一次 `quiz-grade`。只有命令失败且直接阻塞本轮时，才允许增加一次修复或诊断调用。
+- `quiz-prepare` 每轮只调用一次。返回题目存在元数据瑕疵（缺图、缺表、组合答案不清、题干截断）时，当场用文字补全或说明，不得重跑命令换取新题。
+- 同一轮同时要求"看薄弱点 + 安排训练"时，先用一次批量只读调用算出薄弱点（优先 `python3 scripts/tutor.py weakpoints --subject <科目>`），再出题；两段之间不插入探索性调用。分析结论只用于解释与排期，不用于手工挑题。
 - 第一次调用必须批量收集推荐、到期错题、候选题、题目元数据和去重信息，不得按题逐次搜索。
 - 非阻塞的诊断状态异常、元数据瑕疵或维护建议不得在训练回合内追查源码；记录后另开仓库维护任务处理。
-- `quiz-grade` 成功返回即表示判分、原子记档和状态更新完成。给出必要反馈后立即结束本轮，不再调用 `status` 或 `diagnose` 复核。
+- `quiz-grade` 成功返回即表示判分、原子记档和状态更新完成。收到整组答案后只调用一次 `quiz-grade`，判分前后都不得追加 `status` 或 `diagnose`；给出必要反馈后立即结束本轮。
 
 ## Step 1 · 一次准备整组题
 
@@ -70,7 +72,7 @@ C. 选项文本
 
 `✅` / 整行 `**...**` / `**答案**：X` / `**解析**：` 都是内联的。**绝对不要直接把这段贴给用户**。
 
-用 `scripts/sanitize_bank.py` 剥离：
+`quiz-prepare` 内部用 `scripts/sanitize_bank.py` 剥离（下面这条命令只是契约示例，不在答题循环内调用）：
 
 ```bash
 python3 scripts/sanitize_bank.py exam-bank/07-software-engineering.md 1 4 6
@@ -79,13 +81,17 @@ python3 scripts/sanitize_bank.py exam-bank/07-software-engineering.md 1 4 6
 输出是 JSON 数组，每项含 `stem` / `options[]` / `correct` / `explanation`。
 `correct` 与 `explanation` **只**用于判分和作答后反馈，**不**在作答前回显。
 
-### Step 2b · 真题抽题（优先于自编题）
+### Step 2b · 真题抽题契约（由 `quiz-prepare` 内部执行）
 
 `past-papers/comprehensive-by-year/` 里是 20 个考期的综合知识真题（1055 个可用题块），
-**同一套脱敏契约**，用同一个脚本按考点抽题。真题是正式试卷，证据强度高于自编题，
-只要 `recommend` 出来的考点能抽到真题，就优先出真题。
+**同一套脱敏契约**。`quiz-prepare` 已按"真题优先、自编题兜底"抽题并完成脱敏，
+本节只说明它内部使用的契约；下面的命令仅用于题库维护、抽查与人工修复，
+**不在答题循环内调用**。
+
+真题是正式试卷，证据强度高于自编题，只要推荐器给出的考点能抽到真题，就优先出真题。
 
 ```bash
+# 仅题库维护/抽查时使用
 # 按 tutor 考点抽（推荐：直接对接 Step 1 的 recommend 结果）
 python3 scripts/sanitize_bank.py --topic K10.DATABASE_MODELING --limit 5
 
@@ -243,7 +249,8 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 
 3. **一道变式题**（口头答）
 
-反馈完再走 `recommend` 换下一考点；连续答对 2 组后主动提"换科"。
+反馈完直接进入下一轮 `quiz-prepare`（推荐与选题已含在命令内，不再单独调用
+`recommend`）；连续答对 2 组后主动提"换科"。
 
 ## Boundaries
 
@@ -277,17 +284,17 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 - [ ] 未重复原题、同题型或当天已经纠偏的细考点
 - [ ] 错题给了错因 + 记忆钩子 + 变式题
 - [ ] 没把 `✅` / `**答案**` / `**解析**` 泄给学员
-- [ ] 没有硬贴 exam-bank 原文（一律走 `sanitize_bank.py`）
+- [ ] 没有硬贴 exam-bank 原文（一律走 `quiz-prepare`）
 - [ ] 出真题时没把 `![...](../assets/...)` 图片路径或 `【解析】` 贴给学员
 
-全部打勾才进入下一轮 `recommend`。
+全部打勾才进入下一轮 `quiz-prepare`。
 
 ## 相关工具
 
 | 工具 | 位置 | 作用 |
 |---|---|---|
-| CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / recommend / record / doctor |
-| 脱敏器 | [`scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) | 剥 exam-bank 与真题答案，输出结构化 JSON；支持 `--topic` / `--tag` / `--year` / `--list` 抽题 |
+| CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / weakpoints / recommend / quiz-prepare / quiz-grade / record / doctor |
+| 脱敏器 | [`scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) | 题库维护、抽查与人工修复用；支持 `--topic` / `--tag` / `--year` / `--list`，不在答题循环内调用 |
 | 考点表生成 | [`scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) | 由 `curriculum.json` 生成 `topic-map.md` |
 | 教师人格 | [`.claude/agents/senior-architect-pass-coach.md`](../.claude/agents/senior-architect-pass-coach.md) | 覆盖诊断 / 案例 / 论文全流程决策 |
 | 记档协议 | [`PROGRESS_PROTOCOL.md`](./PROGRESS_PROTOCOL.md) | 证据分级、掌握度定义、私隐边界 |
