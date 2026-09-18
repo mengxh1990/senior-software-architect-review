@@ -128,6 +128,21 @@ class SanitizeBankSyntheticTests(unittest.TestCase):
         self.assertEqual(item["correct"], ["A"])
         self.assertEqual(item["explanation"], "ok")
 
+    def test_compact_options_keep_full_width_spaces_and_literal_star(self) -> None:
+        options = sanitize_bank._parse_options(
+            ["(5) A. 甲　B. 乙", "C. 丙 D. 丁"]
+        )
+        self.assertEqual(
+            [(option["label"], option["text"]) for option in options],
+            [("A", "甲"), ("B", "乙"), ("C", "丙"), ("D", "丁")],
+        )
+
+        symbols = sanitize_bank._parse_options(["A. +  B. *  C. ○  D. ⊕"])
+        self.assertEqual(
+            [(option["label"], option["text"]) for option in symbols],
+            [("A", "+"), ("B", "*"), ("C", "○"), ("D", "⊕")],
+        )
+
 
 class SanitizeBankCliTests(unittest.TestCase):
     """The CLI path is what the coach actually invokes."""
@@ -166,6 +181,268 @@ if __name__ == "__main__":
 
 class PastPaperParsingTests(unittest.TestCase):
     """真题（past-papers）走同一套脱敏契约，必须同样不泄答案。"""
+
+    def test_explanation_cleaning_drops_next_question_and_asset_paths(self) -> None:
+        polluted = (
+            "本题考查存储管理。\n\n"
+            "![p1_001.png](../assets/2013下/p1_001.webp)\n\n"
+            "【答案】C\n\n"
+            "### 5. 数据库设计的需求分析阶段\n"
+            "【解析】下一题的解析不该出现在这里。"
+        )
+        cleaned = sanitize_bank.clean_explanation(polluted)
+        self.assertIsNotNone(cleaned)
+        self.assertIn("存储管理", cleaned)
+        for leak in ("###", "【答案】", "【解析】", "](", "下一题"):
+            self.assertNotIn(leak, cleaned)
+
+    def test_quality_gate_accepts_a_clean_question(self) -> None:
+        verdict = sanitize_bank.assess_quality(
+            {
+                "id": "exam-bank/x.md#1",
+                "stem": "瀑布模型的主要缺点是（1）。",
+                "options": [
+                    {"label": "A", "text": "需求变更成本高"},
+                    {"label": "B", "text": "迭代成本较高"},
+                    {"label": "C", "text": "阶段边界清晰"},
+                    {"label": "D", "text": "交付物明确"},
+                ],
+                "correct": ["A"],
+                "explanation": "瀑布模型按阶段顺序推进。",
+            }
+        )
+        self.assertEqual("ready", verdict["quality_status"])
+        self.assertEqual([], verdict["quality_issues"])
+
+    def test_quality_gate_flags_missing_figure_table_and_answer_key(self) -> None:
+        verdict = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/x.md#1",
+                "stem": "下图给出了进程页表结构，逻辑地址 1111 存放在（1）号物理页；各工序费用如下表所示。",
+                "options": [
+                    {"label": "A", "text": "9"},
+                    {"label": "B", "text": "2"},
+                ],
+                "correct": ["C"],
+                "explanation": None,
+            }
+        )
+        self.assertEqual("invalid", verdict["quality_status"])
+        self.assertIn("missing_required_figure", verdict["quality_issues"])
+        self.assertIn("missing_required_table", verdict["quality_issues"])
+        self.assertIn("answer_not_in_options", verdict["quality_issues"])
+        self.assertTrue(verdict["requires_figure"])
+
+    def test_quality_gate_requires_complete_option_set_and_context(self) -> None:
+        incomplete = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/x.md#incomplete",
+                "stem": "数据流图中，选择正确符号。",
+                "options": [
+                    {"label": "A", "text": "+"},
+                    {"label": "C", "text": "○"},
+                    {"label": "D", "text": "⊕"},
+                ],
+                "correct": ["D"],
+                "explanation": None,
+            }
+        )
+        self.assertIn("incomplete_option_set", incomplete["quality_issues"])
+
+        missing_context = sanitize_bank.assess_quality(
+            {
+                "id": "exam-bank/x.md#context",
+                "stem": "(1)",
+                "options": [
+                    {"label": "A", "text": "a"},
+                    {"label": "B", "text": "b"},
+                    {"label": "C", "text": "c"},
+                    {"label": "D", "text": "d"},
+                ],
+                "correct": ["A"],
+                "explanation": None,
+            }
+        )
+        self.assertIn("missing_required_context", missing_context["quality_issues"])
+        with_context = sanitize_bank.assess_quality(
+            {
+                **{
+                    "id": "exam-bank/x.md#context",
+                    "stem": "(1)",
+                    "options": [
+                        {"label": "A", "text": "a"},
+                        {"label": "B", "text": "b"},
+                        {"label": "C", "text": "c"},
+                        {"label": "D", "text": "d"},
+                    ],
+                    "correct": ["A"],
+                    "explanation": None,
+                },
+                "context": "A shared passage gives the missing context.",
+            }
+        )
+        self.assertEqual("ready", with_context["quality_status"])
+
+    def test_quality_gate_blocks_repository_image_links_until_renderable(self) -> None:
+        verdict = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/x.md#figure",
+                "stem": "根据下图选择正确答案。![流程图](https://example.com/flow.png)",
+                "options": [
+                    {"label": "A", "text": "第一项"},
+                    {"label": "B", "text": "第二项"},
+                ],
+                "correct": ["A"],
+                "explanation": None,
+            }
+        )
+        self.assertEqual("invalid", verdict["quality_status"])
+        self.assertIn("figure_not_renderable", verdict["quality_issues"])
+
+    def test_compound_figure_terms_are_not_treated_as_missing_figures(self) -> None:
+        for stem in (
+            "在 UML 用例图中，参与者之间存在（ ）关系。",
+            "4+1 视图中，描述并发与同步特征的是（ ）。",
+            "数据流图中，可以产生 b 数据和 c 数据的符号是（ ）。",
+            "在 UML 状态图中，（）表示瞬时行为。",
+        ):
+            self.assertFalse(sanitize_bank.references_figure(stem), stem)
+        self.assertTrue(sanitize_bank.references_figure("查询过程如下图所示。"))
+
+    def test_answer_marker_in_stem_is_never_ready(self) -> None:
+        verdict = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/x.md#2",
+                "stem": "前趋图正确的前趋关系描述 A/B/C/D（略） 答案：C | 考点：§1.3",
+                "options": [
+                    {"label": "A", "text": "第一组"},
+                    {"label": "B", "text": "第二组"},
+                ],
+                "correct": ["A"],
+                "explanation": None,
+            }
+        )
+        self.assertEqual("invalid", verdict["quality_status"])
+        self.assertIn("answer_marker_leak", verdict["quality_issues"])
+
+    def test_maintainer_exclusion_always_wins(self) -> None:
+        item = {
+            "id": "past-papers/x.md#3",
+            "stem": "页面大小 4K，逻辑地址 1B1AH 变换后的物理地址是（3）。",
+            "options": [
+                {"label": "A", "text": "1B1AH"},
+                {"label": "B", "text": "6B1AH"},
+                {"label": "C", "text": "3B1AH"},
+                {"label": "D", "text": "8B1AH"},
+            ],
+            "correct": ["B"],
+            "explanation": "页内 12 位=B1A，页号 1→物理块号 6。",
+        }
+        self.assertEqual(
+            "ready", sanitize_bank.assess_quality(item)["quality_status"]
+        )
+        excluded = sanitize_bank.assess_quality(
+            item, exclusions={item["id"]: "missing_required_table"}
+        )
+        self.assertEqual("invalid", excluded["quality_status"])
+        self.assertIn("excluded:missing_required_table", excluded["quality_issues"])
+
+    def test_shipped_corpus_separates_ready_from_incomplete_questions(self) -> None:
+        items = []
+        for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
+            items.extend(sanitize_bank.parse_paper(path))
+        usable = [item for item in items if item.get("options") and item.get("correct")]
+        ready = [item for item in usable if item["quality_status"] == "ready"]
+        blocked = [item for item in usable if item["quality_status"] != "ready"]
+        self.assertGreater(len(ready), 800, "quality gate must leave a broad safe bank")
+        self.assertGreater(len(blocked), 0, "known incomplete questions must be blocked")
+        for item in ready:
+            self.assertNotIn("✅", item["stem"])
+            self.assertNotRegex(item["stem"], r"答案\s*[:：]")
+            self.assertNotIn("](", item["stem"])
+            self.assertEqual(
+                ["A", "B", "C", "D"],
+                [option["label"] for option in item["options"]],
+            )
+            self.assertFalse(item.get("question_count", 1) > 1)
+        by_id = {item["id"]: item for item in usable}
+        excluded = by_id["past-papers/comprehensive-by-year/2021.md#1"]
+        self.assertEqual("invalid", excluded["quality_status"])
+        self.assertIn("excluded:missing_required_table", excluded["quality_issues"])
+
+    def test_english_passage_questions_keep_shared_context_without_duplication(self) -> None:
+        path = REPO_ROOT / "exam-bank" / "23-english-reading.md"
+        items = sanitize_bank.parse_exam_bank(path)
+        first = next(item for item in items if item["id"].endswith("#1"))
+        self.assertEqual("(1)", first["stem"])
+        self.assertEqual("Passage 1 — Cloud Computing & Service Models", first["context_title"])
+        self.assertIn("Cloud computing", first["context"])
+        self.assertEqual("ready", first["quality_status"])
+        self.assertTrue(first["requires_context"])
+
+    def test_curated_followup_strategy_question_gets_previous_context(self) -> None:
+        path = REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2018下.md"
+        items = {item["id"]: item for item in sanitize_bank.parse_paper(path)}
+        followup = items["past-papers/comprehensive-by-year/2018下.md#59"]
+        self.assertEqual("ready", followup["quality_status"])
+        self.assertEqual("关联题干", followup["context_title"])
+        self.assertIn("断电后 15 秒", followup["context"])
+        untrusted = items["past-papers/comprehensive-by-year/2018下.md#3"]
+        self.assertEqual("invalid", untrusted["quality_status"])
+        self.assertIn("missing_required_context", untrusted["quality_issues"])
+
+    def test_transcript_multi_question_group_is_filtered_until_subquestions_exist(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "## 第 1-2 题：[§4 示例]",
+                    "(1) 与 (2) 分别选择正确答案。",
+                    "(1) A. a B. b C. c D. d",
+                    "(2) A. a B. b C. c D. d",
+                    "【答案】B C",
+                    "**考点**：§4 示例",
+                    "【解析】两个空分别对应不同选项。",
+                ]
+            ),
+            "2013下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(2, item["question_count"])
+        self.assertEqual("invalid", item["quality_status"])
+        self.assertIn("multi_question_group", item["quality_issues"])
+
+    def test_shipped_repairs_restore_options_and_clean_explanations(self) -> None:
+        repaired = {
+            item["id"]: item
+            for path in (
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2014下.md",
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2025上.md",
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2017下.md",
+            )
+            for item in sanitize_bank.parse_paper(path)
+        }
+        for item_id in (
+            "past-papers/comprehensive-by-year/2014下.md#53-53",
+            "past-papers/comprehensive-by-year/2025上.md#30",
+            "past-papers/comprehensive-by-year/2017下.md#29-29",
+            "past-papers/comprehensive-by-year/2017下.md#52-52",
+        ):
+            item = repaired[item_id]
+            self.assertEqual("ready", item["quality_status"])
+            self.assertEqual(
+                ["A", "B", "C", "D"],
+                [option["label"] for option in item["options"]],
+            )
+            self.assertNotIn("【解析】", item["stem"])
+        self.assertEqual(
+            "*",
+            repaired["past-papers/comprehensive-by-year/2025上.md#30"]["options"][1]["text"],
+        )
+        explanation = repaired["past-papers/comprehensive-by-year/2025上.md#30"][
+            "explanation"
+        ]
+        self.assertNotIn("第 31", explanation)
+        self.assertNotIn("---", explanation)
 
     TRANSCRIPT = "\n".join(
         [

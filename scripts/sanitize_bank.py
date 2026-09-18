@@ -65,13 +65,68 @@ PAPER_EXPLAIN_RE = re.compile(r"【\s*解析\s*】")
 PAPER_TAG_RE = re.compile(r"^\*\*考点\*\*[:：]\s*(§[0-9]+(?:\.[0-9]+)?)\s*(.*)$", re.MULTILINE)
 PAPER_OPTION_ANCHOR_RE = re.compile(r"^[（(]?\s*(\d{1,3})\s*[)）]?\s*A[.．、]", re.MULTILINE)
 PAPER_OPTION_SPLIT_RE = re.compile(r"(?:^|\s{2,})(?=[A-D][.．、]\s*\S)")
-CURATED_HEADER_RE = re.compile(r"^###\s*(\d+)[.、]\s*", re.MULTILINE)
+INLINE_OPTION_START_RE = re.compile(r"(?<!\S)([A-D])[.．、]\s*")
+CURATED_HEADER_RE = re.compile(
+    r"^###\s*(\d+)(?:\s*[-–—]\s*(\d+))?[.、]\s*", re.MULTILINE
+)
 CURATED_ANSWER_RE = re.compile(
     r"^\*\*\s*答案\s*[:：]\s*([A-Z](?:\s*[、,，]?\s*[A-Z])*)\s*\*\*"
     r"(?:\s*\|\s*\*\*\s*考点\s*\*\*\s*[:：]\s*(§[0-9]+(?:\.[0-9]+)?)\s*(.*))?\s*$",
     re.MULTILINE,
 )
 IMAGE_ONLY_RE = re.compile(r"^!\[[^\]]*\]\([^)]*\)$")
+QUESTION_GROUP_HEADER_RE = re.compile(r"^##\s*第\s*\d+(?:\s*[-–—]\s*\d+)?\s*题")
+PASSAGE_HEADER_RE = re.compile(r"^##\s+(Passage\s+\d+[^\n]*)\s*$", re.MULTILINE)
+TRAILING_OPTIONS_LABEL_RE = re.compile(r"(?:\s|^)(?:选项(?:如下)?|options?)\s*[:：]\s*$", re.IGNORECASE)
+PLACEHOLDER_STEM_RE = re.compile(r"^[（(]\s*\d{1,3}\s*[)）]$")
+PRIOR_CONTEXT_RE = re.compile(
+    r"^\s*(?:(?:接|承|同|见)?上题|将上题|接前题|(?:在|基于)\s*第\s*\d+\s*题\s*(?:的)?基础(?:上)?)"
+)
+QUALITY_EXCLUSIONS_PATH = REPO_ROOT / "scripts" / "quiz_quality_exclusions.json"
+# 题干里真正指向“缺失图表”的指代。裸的“XX图中”多是术语（用例图/数据流图/视图），
+# 由 FIGURE_TERM_PREFIXES 排除，避免把“用例图中，…”误判成缺图。
+FIGURE_DEICTIC_RE = re.compile(r"(?:如下|见下|以下|下面|如|见|下|上|该|本|此)\s*图")
+FIGURE_CONTENT_RE = re.compile(
+    r"图\s*中\s*(?:标出|给出|与|的|箭头|各|所|[①-⑩])|图\s*中\s*[，,]|图\s*略"
+)
+FIGURE_TERM_PREFIXES = (
+    "视",
+    "用例",
+    "数据流",
+    "状态",
+    "顺序",
+    "活动",
+    "部署",
+    "组件",
+    "对象",
+    "前趋",
+    "流程",
+    "网络",
+    "结构",
+    "关系",
+    "架构",
+    "执行",
+    "因果",
+    "时序",
+    "协作",
+    "通信",
+    "类",
+    "包",
+)
+TABLE_REF_RE = re.compile(
+    r"(?:如下|见下|以下|下面|下|上|该|本|此)\s*表|表\s*中\s*(?:给|标|所|[，,])|见表|此表"
+)
+MARKDOWN_TABLE_RE = re.compile(r"^\s*\|.*\|\s*$", re.MULTILINE)
+ANSWER_LEAK_RE = re.compile(r"✅|(?:\*\*)?(?:答案|解析|考点)(?:\*\*)?\s*[:：]|【(?:答案|解析)】")
+EXPLANATION_LEAK_RE = re.compile(
+    r"^\s*(?:\*\*)?\s*(?:答案|考点|解析)\s*(?:\*\*)?\s*[:：]", re.MULTILINE
+)
+NEXT_QUESTION_HEADER_RE = re.compile(
+    r"^(?:---\s*\n+)?#{2,3}\s*(?:第\s*)?\d+(?:\s*[-–—]\s*\d+)?(?:[.、]|题)?(?:\s|$)",
+    re.MULTILINE,
+)
+RESOURCE_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+OPTION_LABELS = ("A", "B", "C", "D")
 DOMAIN_NAMES = {
     1: "计算机系统",
     2: "信息系统",
@@ -192,13 +247,6 @@ def normalize_label(value: str) -> str:
     return re.sub(r"\s+", "", value).casefold()
 
 
-def _split_option_line(line: str) -> List[str]:
-    """Split ``A. 甲  B. 乙`` into individual option strings."""
-    stripped = line.strip().lstrip("-*").strip()
-    parts = [p.strip() for p in PAPER_OPTION_SPLIT_RE.split(stripped) if p.strip()]
-    return parts or [stripped]
-
-
 def _parse_options(lines: Iterable[str]) -> List[Dict[str, str]]:
     """Collect A–D options from either one-line or multi-line layouts."""
     options: List[Dict[str, str]] = []
@@ -207,7 +255,10 @@ def _parse_options(lines: Iterable[str]) -> List[Dict[str, str]]:
         if not stripped or IMAGE_ONLY_RE.match(stripped):
             continue
         for chunk in _split_option_line(stripped):
-            probe = re.sub(r"^\*+|\*+$", "", chunk).strip()
+            probe = chunk.strip()
+            if probe.startswith(CHECK_MARK):
+                probe = probe[len(CHECK_MARK) :].lstrip()
+            probe = _strip_option_markdown_wrapper(probe)
             # transcript layout prefixes the first option with its blank number: "(5) A. …"
             probe = re.sub(r"^[（(]\s*\d{1,3}\s*[)）]\s*", "", probe).strip()
             match = OPTION_LINE.match(probe)
@@ -224,7 +275,94 @@ def _stem_before(lines: Sequence[str]) -> str:
     """Last substantive paragraph above the option block."""
     paragraphs = [p.strip() for p in "\n".join(lines).split("\n\n") if p.strip()]
     paragraphs = [p for p in paragraphs if not IMAGE_ONLY_RE.match(p) and len(p) > 4]
-    return _clean_text(paragraphs[-1]) if paragraphs else ""
+    return clean_stem(paragraphs[-1]) if paragraphs else ""
+
+
+def clean_stem(value: str) -> str:
+    """Normalize a learner-facing stem without keeping layout scaffolding."""
+
+    cleaned = _clean_text(value)
+    cleaned = re.sub(r"^(?:【\s*解析\s*】|\*\*\s*解析\s*\*\*\s*[:：])\s*", "", cleaned)
+    cleaned = re.sub(r"(?:\s|^)---\s*$", "", cleaned)
+    return TRAILING_OPTIONS_LABEL_RE.sub("", cleaned).strip()
+
+
+def _transcript_stem(lines: Sequence[str]) -> str:
+    """Recover a full transcript-group stem instead of its last paragraph.
+
+    Older papers place a ``## 第 N 题`` heading before a multi-paragraph
+    scenario.  The previous parser kept only the final paragraph, turning
+    valid prompts into fragments such as ``个顺序执行的阶段。``.
+    """
+
+    heading_indexes = [
+        index for index, line in enumerate(lines) if QUESTION_GROUP_HEADER_RE.match(line)
+    ]
+    if not heading_indexes:
+        return _stem_before(lines)
+    candidate_lines = lines[heading_indexes[-1] + 1 :]
+    paragraphs = [
+        paragraph.strip()
+        for paragraph in "\n".join(candidate_lines).split("\n\n")
+        if paragraph.strip()
+    ]
+    paragraphs = [
+        paragraph
+        for paragraph in paragraphs
+        if not IMAGE_ONLY_RE.match(paragraph) and not paragraph.startswith("**考点**")
+    ]
+    return clean_stem(" ".join(paragraphs)) if paragraphs else ""
+
+
+def _transcript_source_fragment(lines: Sequence[str]) -> str:
+    """Return the source portion belonging to the current transcript group."""
+
+    heading_indexes = [
+        index for index, line in enumerate(lines) if QUESTION_GROUP_HEADER_RE.match(line)
+    ]
+    relevant = lines[heading_indexes[-1] + 1 :] if heading_indexes else lines
+    return "\n".join(relevant)
+
+
+def _ordered_inline_option_chunks(value: str) -> List[str]:
+    """Split compact ``A. ... B. ...`` layouts only when order is credible."""
+
+    matches = list(INLINE_OPTION_START_RE.finditer(value))
+    if len(matches) < 2:
+        return [value]
+    selected = [matches[0]]
+    for match in matches[1:]:
+        previous = selected[-1].group(1)
+        if OPTION_LABELS.index(match.group(1)) == OPTION_LABELS.index(previous) + 1:
+            selected.append(match)
+        else:
+            break
+    if len(selected) < 2:
+        return [value]
+    return [
+        value[match.start() : selected[index + 1].start() if index + 1 < len(selected) else len(value)].strip()
+        for index, match in enumerate(selected)
+    ]
+
+
+def _split_option_line(line: str) -> List[str]:
+    """Split option lines while preserving literal option text such as ``*``."""
+
+    stripped = line.strip().lstrip("-*").strip()
+    parts = [part.strip() for part in PAPER_OPTION_SPLIT_RE.split(stripped) if part.strip()]
+    if len(parts) >= 2:
+        return parts
+    fallback = _ordered_inline_option_chunks(stripped)
+    return fallback if len(fallback) >= 2 else (parts or [stripped])
+
+
+def _strip_option_markdown_wrapper(value: str) -> str:
+    """Remove only an outer emphasis wrapper, never a literal ``*`` answer."""
+
+    stripped = value.strip()
+    if stripped.startswith("**") and stripped.endswith("**") and len(stripped) >= 4:
+        return stripped[2:-2].strip()
+    return stripped
 
 
 def parse_paper_transcript(text: str, year: str) -> List[Dict]:
@@ -239,9 +377,12 @@ def parse_paper_transcript(text: str, year: str) -> List[Dict]:
             continue
         start, end = min(anchors), max(anchors)
         first_anchor = PAPER_OPTION_ANCHOR_RE.search(window)
-        stem = _stem_before(window[: first_anchor.start()].splitlines())
+        pre_option_lines = window[: first_anchor.start()].splitlines()
+        source_fragment = _transcript_source_fragment(pre_option_lines)
+        stem = _transcript_stem(pre_option_lines)
         options = _parse_options(window[first_anchor.start() :].splitlines())
-        correct = sorted(set(re.findall(r"[A-D]", answer.group(1))))
+        answer_sequence = re.findall(r"[A-D]", answer.group(1))
+        correct = sorted(set(answer_sequence))
 
         explanation = ""
         explain_match = PAPER_EXPLAIN_RE.search(text, answer.end())
@@ -256,7 +397,7 @@ def parse_paper_transcript(text: str, year: str) -> List[Dict]:
                     paragraphs = [p for p in "\n".join(stem_lines).split("\n\n") if p.strip()]
                     if paragraphs:
                         next_start = next_window_start + next_window.rfind(paragraphs[-1].strip())
-            explanation = _clean_text(text[explain_match.end() : next_start])
+            explanation = clean_explanation(text[explain_match.end() : next_start])
 
         tag_match = PAPER_TAG_RE.search(text, answer.end())
         tag = tag_match.group(1) if tag_match and tag_match.start() < (answers[position + 1].start() if position + 1 < len(answers) else len(text)) else ""
@@ -271,7 +412,21 @@ def parse_paper_transcript(text: str, year: str) -> List[Dict]:
                 "stem": stem,
                 "options": options,
                 "correct": correct,
-                "explanation": explanation or None,
+                "explanation": explanation,
+                "question_count": len(anchors),
+                "answer_sequence": answer_sequence,
+                "source_figure_status": (
+                    "figure_not_renderable"
+                    if RESOURCE_LINK_RE.search(source_fragment)
+                    else (
+                        "missing_required_figure"
+                        if "原图含机构广告或水印，已移除" in source_fragment
+                        else None
+                    )
+                ),
+                "source_requires_table": bool(
+                    re.search(r"<table\b", source_fragment, re.IGNORECASE)
+                ),
             }
         )
     return items
@@ -284,7 +439,13 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
     for position, header in enumerate(headers):
         end = headers[position + 1].start() if position + 1 < len(headers) else len(text)
         block = text[header.start() : end]
-        number = header.group(1)
+        first_number = int(header.group(1))
+        last_number = int(header.group(2) or header.group(1))
+        number = (
+            f"{first_number}-{last_number}"
+            if first_number != last_number
+            else str(first_number)
+        )
         lines = block.splitlines()
         header_text = CURATED_HEADER_RE.sub("", lines[0]).strip()
         header_text = re.sub(r"^【题干】\s*", "", header_text).strip()
@@ -306,22 +467,49 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
         explain_match = EXPLAIN_LINE.search(block)
         if explain_match:
             # group(1) is the text on the 解析 line itself; the rest follows it
-            explanation = _clean_text(explain_match.group(1) + " " + block[explain_match.end() :])
+            explanation = clean_explanation(
+                explain_match.group(1) + " " + block[explain_match.end() :]
+            )
 
         items.append(
             {
                 "id": f"past-papers/comprehensive-by-year/{year}.md#{number}",
                 "year": year,
-                "range": [int(number), int(number)],
+                "range": [first_number, last_number],
                 "tag": tag,
                 "tag_label": label,
-                "stem": _clean_text(" ".join(stem_lines)),
+                "stem": clean_stem(" ".join(stem_lines)),
                 "options": options,
                 "correct": correct,
-                "explanation": explanation or None,
+                "explanation": explanation,
             }
         )
     return items
+
+
+def _attach_curated_followup_context(items: List[Dict]) -> None:
+    """Recover the safe subset of curated follow-up questions.
+
+    ``上题对应架构策略`` follows a complete, standalone quality-attribute
+    scenario in the immediately preceding item.  Carry that scenario as a
+    structured context instead of asking the learner to reconstruct it. Other
+    follow-ups (LRU traces, omitted SQL diagrams, process figures) remain
+    untrusted and are filtered by ``assess_quality``.
+    """
+
+    for index, item in enumerate(items):
+        stem = str(item.get("stem") or "")
+        if not re.match(r"^\s*上题对应架构策略\s*[:：]?\s*$", stem):
+            continue
+        if index == 0:
+            continue
+        previous = items[index - 1]
+        previous_stem = str(previous.get("stem") or "").strip()
+        if not previous_stem or PRIOR_CONTEXT_RE.match(previous_stem):
+            continue
+        item["context_id"] = f"{item['id']}#previous"
+        item["context_title"] = "关联题干"
+        item["context"] = previous_stem
 
 
 def parse_paper(path: Path) -> List[Dict]:
@@ -336,7 +524,10 @@ def parse_paper(path: Path) -> List[Dict]:
     transcript_items = parse_paper_transcript(text, year)
     curated_items = parse_paper_curated(text, year) if CURATED_HEADER_RE.search(text) else []
     items = curated_items if len(curated_items) > len(transcript_items) else transcript_items
+    if items is curated_items:
+        _attach_curated_followup_context(items)
     topic_tags = load_topic_tags()
+    exclusions = load_quality_exclusions()
     for item in items:
         item["candidate_topics"] = candidate_topics(
             item.get("tag", ""),
@@ -344,6 +535,54 @@ def parse_paper(path: Path) -> List[Dict]:
             label=item.get("tag_label", ""),
             item_id=item["id"],
         )
+        item.update(assess_quality(item, source_path=path, exclusions=exclusions))
+    return items
+
+
+def _passage_contexts(text: str, source: Path) -> Dict[str, Dict[str, str]]:
+    """Map numbered fill-in questions to their shared reading passage."""
+
+    result: Dict[str, Dict[str, str]] = {}
+    headings = list(PASSAGE_HEADER_RE.finditer(text))
+    try:
+        source_id = source.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        source_id = source.as_posix()
+    for index, heading in enumerate(headings, 1):
+        segment_end = headings[index].start() if index < len(headings) else len(text)
+        questions = list(BLOCK_HEADER.finditer(text, heading.end(), segment_end))
+        if not questions:
+            continue
+        context = clean_stem(text[heading.end() : questions[0].start()])
+        if not context:
+            continue
+        context_id = f"{source_id}#passage-{index}"
+        for question in questions:
+            result[question.group(1)] = {
+                "context_id": context_id,
+                "context_title": heading.group(1).strip(),
+                "context": context,
+            }
+    return result
+
+
+def parse_exam_bank(path: Path) -> List[Dict]:
+    """Parse an authored bank file and attach any shared passage context."""
+
+    text = path.read_text(encoding="utf-8")
+    contexts = _passage_contexts(text, path)
+    exclusions = load_quality_exclusions()
+    items: List[Dict] = []
+    try:
+        source_id = path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        source_id = path.as_posix()
+    for number, raw in split_blocks(text).items():
+        item = parse_block(raw)
+        item["id"] = f"{source_id}#{number}"
+        item.update(contexts.get(number, {}))
+        item.update(assess_quality(item, source_path=path, exclusions=exclusions))
+        items.append(item)
     return items
 
 
@@ -392,6 +631,176 @@ def _clean_text(value: str) -> str:
     return value.strip()
 
 
+def clean_explanation(value: str | None) -> str | None:
+    """Return an explanation that is safe to render verbatim.
+
+    Raw transcripts leak the next question's header, answer lines and asset
+    paths into the explanation. Everything after the next question header is
+    dropped, and the remaining text keeps only prose.
+    """
+
+    if not value:
+        return None
+    text = value
+    next_header = NEXT_QUESTION_HEADER_RE.search(text)
+    if next_header:
+        text = text[: next_header.start()]
+    text = re.sub(r"【\s*答案\s*】[^\n]*", " ", text)
+    text = re.sub(
+        r"^\s*(?:\*\*)?\s*(?:答案|考点)\s*(?:\*\*)?\s*[:：][^\n]*$",
+        " ",
+        text,
+        flags=re.MULTILINE,
+    )
+    text = RESOURCE_LINK_RE.sub(" ", text)
+    text = re.sub(r"【\s*解析\s*】", " ", text)
+    text = re.sub(r"^\s*(?:\*\*)?\s*解析\s*(?:\*\*)?\s*[:：]", " ", text, flags=re.MULTILINE)
+    text = re.sub(r"(?m)^---\s*$", " ", text)
+    text = _clean_text(text)
+    return text or None
+
+
+def _is_compound_figure(stem: str, index: int) -> bool:
+    """True when the ``图`` at ``index`` belongs to a term like 用例图/视图."""
+
+    return any(
+        stem[max(0, index - len(prefix)) : index] == prefix
+        for prefix in FIGURE_TERM_PREFIXES
+    )
+
+
+def references_figure(stem: str) -> bool:
+    """True when the stem points at a figure the learner must see."""
+
+    for pattern in (FIGURE_DEICTIC_RE, FIGURE_CONTENT_RE):
+        for match in pattern.finditer(stem or ""):
+            figure_index = (match.start() + match.group(0).rfind("图"))
+            if not _is_compound_figure(stem, figure_index):
+                return True
+    return False
+
+
+def references_table(stem: str) -> bool:
+    """True when the stem points at a table the learner must see."""
+
+    return bool(TABLE_REF_RE.search(stem or ""))
+
+
+def load_quality_exclusions(path: Path | None = None) -> Dict[str, str]:
+    """Load the maintainer deny-list of items that must never be quizzed."""
+
+    target = path or QUALITY_EXCLUSIONS_PATH
+    if not target.is_file():
+        return {}
+    try:
+        payload = json.loads(target.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ValueError(f"题目质量排除表损坏：{target}") from error
+    entries = payload.get("exclusions") if isinstance(payload, dict) else None
+    if not isinstance(entries, list):
+        raise ValueError("题目质量排除表需要 exclusions 数组")
+    result: Dict[str, str] = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValueError("题目质量排除项必须是对象")
+        item_id = entry.get("item_id")
+        reason = entry.get("reason")
+        if not isinstance(item_id, str) or not item_id.strip():
+            raise ValueError("题目质量排除项缺少 item_id")
+        if not isinstance(reason, str) or not reason.strip():
+            raise ValueError(f"题目质量排除项 {item_id} 缺少 reason")
+        result[item_id] = reason
+    return result
+
+
+def assess_quality(
+    item: Dict,
+    *,
+    source_path: Path | None = None,
+    exclusions: Dict[str, str] | None = None,
+) -> Dict:
+    """Judge whether one parsed item may be shown as a blind quiz question.
+
+    The gate is deliberately conservative: an item that references a figure or
+    table it does not carry, leaks an answer marker, or has an unusable answer
+    key is reported with a stable issue id instead of being quietly repaired.
+    """
+
+    issues: List[str] = []
+    stem = str(item.get("stem") or "").strip()
+    options = item.get("options") or []
+    correct = [letter for letter in (item.get("correct") or []) if letter]
+    labels = [str(option.get("label") or "") for option in options]
+    texts = [str(option.get("text") or "").strip() for option in options]
+    explanation = item.get("explanation")
+    has_context = bool(str(item.get("context") or "").strip())
+    image_links = RESOURCE_LINK_RE.findall(stem)
+    requires_figure = references_figure(stem) or bool(image_links)
+    requires_table = references_table(stem) or bool(MARKDOWN_TABLE_RE.search(stem))
+
+    if not stem:
+        issues.append("empty_stem")
+    if len(options) < 2 or any(not text for text in texts):
+        issues.append("missing_options")
+    if labels != list(OPTION_LABELS):
+        issues.append("incomplete_option_set")
+    if len(set(labels)) != len(labels):
+        issues.append("duplicate_options")
+    if not correct or any(letter not in labels for letter in correct):
+        issues.append("answer_not_in_options")
+    if ANSWER_LEAK_RE.search(stem) or any(ANSWER_LEAK_RE.search(text) for text in texts):
+        issues.append("answer_marker_leak")
+    if (PLACEHOLDER_STEM_RE.fullmatch(stem) or PRIOR_CONTEXT_RE.match(stem)) and not has_context:
+        issues.append("missing_required_context")
+    if int(item.get("question_count", 1) or 1) > 1:
+        # The objective-quiz runtime currently records one answer per visible
+        # item. A transcript block with several independent blanks would lose
+        # answer order and option ownership, so keep it out until it has a
+        # first-class subquestion representation.
+        issues.append("multi_question_group")
+    source_figure_status = item.get("source_figure_status")
+    if source_figure_status:
+        issues.append(str(source_figure_status))
+    if item.get("source_requires_table"):
+        issues.append("missing_required_table")
+    if image_links:
+        # quiz-prepare currently exposes a text-only public contract. A raw
+        # repository-relative Markdown path is not a renderable learner asset,
+        # so keep image-dependent questions out until the runtime can return a
+        # structured figure or an approved textual substitute.
+        issues.append("figure_not_renderable")
+    elif requires_figure:
+        issues.append("missing_required_figure")
+    if requires_table and not MARKDOWN_TABLE_RE.search(stem):
+        issues.append("missing_required_table")
+    for link in image_links:
+        target = link.split("#", 1)[0].strip()
+        if target.startswith(("http://", "https://")):
+            continue
+        base = source_path.parent if source_path is not None else REPO_ROOT
+        if not (base / target).resolve().exists():
+            issues.append("missing_figure_asset")
+            break
+    if explanation and (
+        NEXT_QUESTION_HEADER_RE.search(explanation)
+        or EXPLANATION_LEAK_RE.search(explanation)
+        or RESOURCE_LINK_RE.search(explanation)
+    ):
+        issues.append("explanation_leak")
+
+    item_id = str(item.get("id") or "")
+    excluded_reason = (exclusions or {}).get(item_id)
+    if excluded_reason:
+        issues.append(f"excluded:{excluded_reason}")
+    return {
+        "quality_status": "ready" if not issues else "invalid",
+        "quality_issues": sorted(set(issues)),
+        "requires_figure": requires_figure,
+        "requires_table": requires_table,
+        "requires_context": has_context,
+    }
+
+
 def _probe_option(stripped: str):
     """Return (letter, body, is_marked_correct) or None if not an option line.
 
@@ -433,7 +842,7 @@ def parse_block(raw: str) -> Dict:
     lines = raw.splitlines()
     header = lines[0] if lines else ""
     header_body = re.sub(r"^###\s+\d+[.\s]\s*", "", header).strip()
-    header_body = _clean_text(header_body)
+    header_body = clean_stem(header_body)
 
     stem_parts: List[str] = [header_body] if header_body else []
     options: List[Dict[str, str]] = []
@@ -487,10 +896,10 @@ def parse_block(raw: str) -> Dict:
 
     correct = answer_from_line or correct_from_marker
     return {
-        "stem": " ".join(p for p in stem_parts if p).strip(),
+        "stem": clean_stem(" ".join(p for p in stem_parts if p)),
         "options": options,
         "correct": sorted(set(correct)),
-        "explanation": " ".join(explanation_lines).strip() or None,
+        "explanation": clean_explanation(" ".join(explanation_lines)),
     }
 
 
@@ -572,17 +981,16 @@ def main(argv: List[str]) -> int:
         print(f"error: file not found: {path}", file=sys.stderr)
         return 2
     numbers = [n.strip() for n in positional[1:] if n.strip()]
-    text = path.read_text(encoding="utf-8")
-    blocks = split_blocks(text)
+    parsed_by_number = {
+        item["id"].rsplit("#", 1)[1]: item for item in parse_exam_bank(path)
+    }
     items: List[Dict] = []
     missing: List[str] = []
     for n in numbers:
-        raw = blocks.get(n)
-        if raw is None:
+        item = parsed_by_number.get(n)
+        if item is None:
             missing.append(n)
             continue
-        item = parse_block(raw)
-        item["id"] = f"{path.as_posix()}#{n}"
         items.append(item)
     if missing:
         print(

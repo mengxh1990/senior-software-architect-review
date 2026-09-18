@@ -61,7 +61,7 @@ python3 scripts/serve.py
 - [`quiz-loop-sop.md`](./quiz-loop-sop.md) — 客观题一轮"出题→作答→判分→记档"的运行时管道
 - [`topic-map.md`](./topic-map.md) — 考点↔资源↔facet 映射表（脚本自动生成，请勿手改）
 - [`../scripts/tutor.py`](../scripts/tutor.py) — 私人进度 CLI（含 `quiz-prepare` / `quiz-grade` 一体化客观题循环，以及只读的 `weakpoints` 薄弱点排名）
-- [`../scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) — exam-bank 答案脱敏器（题库维护、抽查与人工修复用，不在答题循环内调用）
+- [`../scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) — exam-bank 答案脱敏器与题目质量门禁（题库维护、抽查与人工修复用，不在答题循环内调用）
 - [`../scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) — 由 `curriculum.json` 重新生成 `topic-map.md`
 
 ## 常用说法
@@ -99,9 +99,21 @@ python3 scripts/tutor.py --data-dir .study recommend
 python3 scripts/tutor.py --data-dir .study quiz-prepare \
   --subject comprehensive --limit 5
 
+# 返回的 contexts 是题目共享上下文（例如英语阅读短文）；呈现时在关联题目前展示一次，
+# 不需要、也不应从题库另行查找原文。
+
 # 一次完成判分、批量记档与状态更新
 python3 scripts/tutor.py --data-dir .study quiz-grade \
   --quiz-id <quiz-id> --answers 'C,A,D,BD,B'
+
+# 考生明确说“不会”时用 X（0 分、记为 knowledge_gap，不需要补答）
+python3 scripts/tutor.py --data-dir .study quiz-grade \
+  --quiz-id <quiz-id> --answers 'C,B,A,X,B'
+
+# 坏题排除出本组（不记证据）；答案键存疑则标记给维护任务
+python3 scripts/tutor.py --data-dir .study quiz-grade \
+  --quiz-id <quiz-id> --answers 'C,B,A,X,B' \
+  --invalidate '4=missing_required_table' --audit '3=答案键疑似有误'
 
 # 查看最近完整模考暴露的具体薄弱点
 python3 scripts/tutor.py --data-dir .study diagnose --subject comprehensive
@@ -119,6 +131,10 @@ python3 scripts/tutor.py --data-dir .study configure \
   --case-track C01.CASE_ATAM --case-track C02.CASE_DATABASE \
   --essay-theme P01.ESSAY_ARCHITECTURE \
   --skip-topic 'K07.REALTIME_EMBEDDED=考前低收益，暂时只保留保命卡'
+
+# 学科启停策略：论文只在考生明确要求时训练
+python3 scripts/tutor.py --data-dir .study configure \
+  --subject-policy essay=manual_trigger --subject-policy-reason '考生要求主动触发'
 
 # 记录一次作答（示例）
 python3 scripts/tutor.py --data-dir .study record \

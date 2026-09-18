@@ -29,7 +29,10 @@
 ## 回合预算与结束条件
 
 - 出题回合只调用一次 `quiz-prepare`；判分回合只调用一次 `quiz-grade`。只有命令失败且直接阻塞本轮时，才允许增加一次修复或诊断调用。
+- **运行时白名单**：出题回合只允许 `quiz-prepare`，判分回合只允许 `quiz-grade`。不得用 `cat` / `rg` / `sed` 读取源码、题库、`quiz-sessions/*.json`、`state.json` 或知识库来"确认"答案，也不得手工改 manifest、伪造选项或要求考生补答"不会"的题。命令非零退出且直接阻塞本轮时，最多做一次只读诊断；仍失败就如实报告阻塞，改开维护任务。
+- **上下文预算**：非题面输出保持简短，不把完整题库、候选池或状态全集带进教学线程；题目本身不受此限制。为了"确认"重复运行确定性命令也算违规。每个日历日用新任务从 `.study/` 恢复；同一任务一旦发生源码/题库排查，后续教学转到新任务，避免维护上下文跨日累积。
 - `quiz-prepare` 每轮只调用一次。返回题目存在元数据瑕疵（缺图、缺表、组合答案不清、题干截断）时，当场用文字补全或说明，不得重跑命令换取新题。
+- 题目质量在进入本循环前已由门禁判定：`quiz-prepare` 只会给出 `ready_for_quiz` 的题。若某题在作答后才发现残缺（例如依赖的表其实没给出），用 `--invalidate` 把它排除出本组，不要临场补内容。
 - 同一轮同时要求"看薄弱点 + 安排训练"时，先用一次批量只读调用算出薄弱点（优先 `python3 scripts/tutor.py weakpoints --subject <科目>`），再出题；两段之间不插入探索性调用。分析结论只用于解释与排期，不用于手工挑题。
 - 第一次调用必须批量收集推荐、到期错题、候选题、题目元数据和去重信息，不得按题逐次搜索。
 - 非阻塞的诊断状态异常、元数据瑕疵或维护建议不得在训练回合内追查源码；记录后另开仓库维护任务处理。
@@ -45,10 +48,24 @@ python3 scripts/tutor.py quiz-prepare --subject comprehensive --limit 5
 facet 解析，并把私有答案保存到 `.study/quiz-sessions/`。标准输出只包含可直接
 展示的题干、选项和来源类型，不包含答案或解析。
 
+同一份输出还带排课结论，直接展示、不要另外分析：
+
+| 字段 | 用法 |
+|---|---|
+| `objective` | 一句话说明本组训练目标与依据，开场直接引用 |
+| `evidence_summary` | 3–5 条证据（近期正确率、是否到期、本组覆盖哪些考点） |
+| `days_left` / `daily_minutes` | 距离考试天数与每日可投入分钟数，用于控制任务体量 |
+
+需要更细的薄弱点排名时才用一次只读 `weakpoints`；不要为了排课再手工统计。
+
 ## Step 2 · 展示题目
 
 直接使用 `quiz-prepare` 返回的 `questions`；不要再次搜索题库或调用
 `sanitize_bank.py`。以下脱敏规则由 `quiz-prepare` 内部执行。
+
+若返回 `contexts`，按 `questions[].context_id` 在首次出现该 ID 前完整展示对应的
+`contexts[].text`（例如英语阅读短文或已验证的关联题干）；同一 context 只展示一次。
+没有上下文的题不得自行补写，质量门禁会在出题前过滤。
 
 ### 底层脱敏契约
 
@@ -110,13 +127,13 @@ python3 scripts/sanitize_bank.py --list
 | 字段 | 含义 |
 |---|---|
 | `tag` / `tag_label` | 该题块的 §考点标签（2009–2017 为题组级，2018 起为逐题） |
-| `range` | 题号区间，如 `[7, 8]`；**一个题块可能含多个小问**（共享题干） |
+| `range` | 原卷题号区间，如 `[7, 8]`；运行时只放行可作为**单个独立作答单元**呈现的题 |
 | `candidate_topics` | 由 `curriculum.json` 的 `raw_tags` 推出的 tutor 考点编号，用于 `record --topic` |
 
 抽题注意事项：
 
 - `id` 形如 `past-papers/comprehensive-by-year/2013下.md#7-8`，**record 时原样作为 `--item-id`**；
-- 一个题块含多个小问（如 `#7-8`）时按**一题**呈现与记档，不要拆成两条 record；
+- 一个题块含多个独立小问（如 `#7-8`）且尚未有逐小题选项、答案与记档模型时，会被质量门禁标记为 `multi_question_group` 并跳过；**不得**把多道题的答案压成一次作答或手工拆题。未来有结构化子题模型后再恢复。
 - `--source-type` 按考期来源选择：2009–2022 用 `real`，回忆版考期（2023 下、2024 上/下、2025 上/下、2026 上）用 `recalled_real`；
 - 真题保留试卷原始的答案分布，**不要**套用"自编题正确答案需分散到不同选项"的规则；
 - 2019 下、2020、2023 下的整理版本只覆盖部分题目（26 / 12 / 1 个可用题块），抽不到时退回 `exam-bank/` 或自编题；
@@ -185,8 +202,46 @@ python3 scripts/tutor.py quiz-grade \
   --confidences 'sure,sure,sure,sure,sure'
 ```
 
+答案输入只有三种合法状态，不需要额外问答：
+
+| 输入 | `response_state` | 记档 | 含义 |
+|---|---|---|---|
+| `A`–`D` / 组合答案 | `answered` | 正常判分 | 独立作答 |
+| `X` | `conceded` | 0 分 + `knowledge_gap` | 考生明确说"不会" |
+| 缺题号 | — | 不写入 | 输入不完整，`quiz-grade` 会整组拒绝 |
+
+`X` 不能与选项混写（`AX` 直接报错）。考生说"不会"时直接传 `X`，**不要**让他随便蒙一个字母，也不要为了补齐原子判分去改文件。
+
+题目本身有问题时用同一次调用处理，不要中断本组：
+
+```bash
+# 第 4 题缺关键表格：排除该题，其余正常判分
+python3 scripts/tutor.py quiz-grade --quiz-id <id> --answers 'C,B,A,X,B' \
+  --invalidate '4=missing_required_table'
+# 第 3 题答案键反直觉：照常判分，同时留给维护任务核对
+python3 scripts/tutor.py quiz-grade --quiz-id <id> --answers 'C,B,A,X,B' \
+  --audit '3=答案键疑似有误'
+```
+
+`--invalidate` 的题不生成 attempt、不计入掌握度，结果里写明"题目无效，本题不计分"；`--audit` 只标记 `needs_audit` 并把说明写入 `.study/quiz-audit-queue.jsonl`，供独立维护任务处理。
+
 `quiz-grade` 会先校验整组答案，再用一个锁和一次日志替换提交全部事件，最后更新
 状态、面板和测验清单。任何一题校验失败时整组不写入；重复提交同一测验保持幂等。
+
+### 判分返回值就是讲解的全部素材
+
+返回结果即当前回合的唯一事实来源，**不要再查题库、知识库或 manifest**。每题包含：
+
+| 字段 | 含义 |
+|---|---|
+| `response_state` / `selected` / `correct` / `is_correct` | 作答状态与判分；`conceded` 的 `selected` 为 `null` |
+| `wrong_reasons` | 错因（`conceded` 固定为 `knowledge_gap`） |
+| `explanation` | 已清洗的解析，可直接展示；答对且确定时可能为 `null` |
+| `memory_hook` | 登记过的记忆钩子；为 `null` 时用一句话概括即可，不得检索 |
+| `variant_question` | 已验证的同细考点变式题（含 `stem` / `options` / `answer`）；没有精确匹配时返回 `null`，不得用同一大考点下的无关题兜底 |
+| `next_review_at` | 该考点的下次复习日 |
+
+顶层另有 `score` / `max_score` / `conceded_count` / `invalidated_count`，用于一句话汇报本组结果。
 
 单题 `record` 保留给主观题、旧流程兼容和人工修复，不用于正常客观题循环。
 
@@ -252,6 +307,20 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 反馈完直接进入下一轮 `quiz-prepare`（推荐与选题已含在命令内，不再单独调用
 `recommend`）；连续答对 2 组后主动提"换科"。
 
+## 异常决策表（照做，不现场推理）
+
+| 场景 | 固定处理 | 继续判分 | 现场读文件 |
+|---|---|---|---|
+| 考生回答"不会" | 该题传 `X`，0 分 + `knowledge_gap` | 是 | 否 |
+| 考生漏写一题且未说明 | 一次性指出缺少题号，请补答 | 否 | 否 |
+| 考生要求"其他题先判"且该题明确不会 | 该题用 `X` 完成本组 | 是 | 否 |
+| 题目缺关键图表 | `--invalidate 题号=missing_required_table/figure`，该题不记证据 | 是 | 否 |
+| 答案键反直觉 | 信任已验证题库，`--audit` 标记 `needs_audit` | 是 | 否 |
+| 解析缺失或过短 | 给最小解释，不临时查资料 | 是 | 否 |
+| `quiz-grade` 非零退出 | 最多一次只读诊断；仍失败则报告阻塞 | 否 | 仅此一次 |
+| 发现历史 pending quiz | 忽略，不影响当前 quiz，维护任务单独清理 | 是 | 否 |
+| 同一题同一天再出现 | 照常出题（去重已由 `quiz-prepare` 处理），不手工挑题 | 是 | 否 |
+
 ## Boundaries
 
 - ❌ 用户未作答，不写任何 `record`
@@ -286,6 +355,8 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 - [ ] 没把 `✅` / `**答案**` / `**解析**` 泄给学员
 - [ ] 没有硬贴 exam-bank 原文（一律走 `quiz-prepare`）
 - [ ] 出真题时没把 `![...](../assets/...)` 图片路径或 `【解析】` 贴给学员
+- [ ] "不会"的题用了 `X`，没有伪造选项或让考生补答
+- [ ] 讲解只用了 `quiz-grade` 的返回值，没有读 manifest / 题库 / 知识库
 
 全部打勾才进入下一轮 `quiz-prepare`。
 
@@ -293,8 +364,9 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 
 | 工具 | 位置 | 作用 |
 |---|---|---|
-| CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / weakpoints / recommend / quiz-prepare / quiz-grade / record / doctor |
+| CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / weakpoints / recommend / quiz-prepare / quiz-grade / record / configure / doctor |
 | 脱敏器 | [`scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) | 题库维护、抽查与人工修复用；支持 `--topic` / `--tag` / `--year` / `--list`，不在答题循环内调用 |
+| 质量排除表 | [`scripts/quiz_quality_exclusions.json`](../scripts/quiz_quality_exclusions.json) | 人工确认的坏题黑名单；`doctor` 报告拦截数量，`quiz-prepare` 机械跳过 |
 | 考点表生成 | [`scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) | 由 `curriculum.json` 生成 `topic-map.md` |
 | 教师人格 | [`.claude/agents/senior-architect-pass-coach.md`](../.claude/agents/senior-architect-pass-coach.md) | 覆盖诊断 / 案例 / 论文全流程决策 |
 | 记档协议 | [`PROGRESS_PROTOCOL.md`](./PROGRESS_PROTOCOL.md) | 证据分级、掌握度定义、私隐边界 |
