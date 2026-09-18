@@ -194,9 +194,42 @@
   function choose(key) { if (session.phase !== 'taking') return; session.answers[String(session.current)] = key; if (!session.confidences[String(session.current)]) session.confidences[String(session.current)] = 'sure'; saveSession(); render(); }
   function jump(number) { commitQuestionTime(); session.current = Math.min(paper.question_count, Math.max(1, number)); session.questionEnteredAt = Date.now(); saveSession(); render(); }
   async function gradeExam(auto = false) {
-    if (busy || session.phase !== 'taking') return; commitQuestionTime(); busy = true; submitDialog = !auto; render();
-    try { const response = await fetch('/api/mock-grade', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ answers: answerPayload() }) }); const payload = await response.json(); if (!response.ok || !payload.ok) throw new Error(payload.error || '评分失败'); session.phase = 'feedback'; session.score = payload.data.score; session.results = payload.data.results; session.durationSeconds = Math.min(paper.duration_seconds, elapsedSeconds()); session.wrongReasons ||= {}; submitDialog = false; saveSession(); await recordExamEvidence(); window.scrollTo(0, 0); }
-    catch (error) { alert(`交卷失败：${error.message}`); } finally { busy = false; render(); }
+    if (busy || session.phase !== 'taking') return;
+    commitQuestionTime();
+    const durationSeconds = Math.min(paper.duration_seconds, elapsedSeconds());
+    busy = true;
+    submitDialog = !auto;
+    render();
+    try {
+      const response = await fetch('/api/mock-submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: session.id,
+          answers: answerPayload(),
+          confidences: session.confidences,
+          durations: session.durations,
+          duration_seconds: durationSeconds,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.error || '交卷失败');
+      session.phase = 'feedback';
+      session.score = payload.data.score;
+      session.results = payload.data.results;
+      session.durationSeconds = durationSeconds;
+      session.receipt = payload.data.record;
+      session.recordError = null;
+      session.wrongReasons ||= {};
+      submitDialog = false;
+      saveSession();
+      window.scrollTo(0, 0);
+    } catch (error) {
+      alert(`交卷失败：${error.message}`);
+    } finally {
+      busy = false;
+      render();
+    }
   }
   async function recordExamEvidence() {
     const response = await fetch('/api/mock-record', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: session.id, answers: answerPayload(), confidences: session.confidences, durations: session.durations, duration_seconds: session.durationSeconds }) });

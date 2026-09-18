@@ -140,6 +140,19 @@ def question_source(item: dict[str, Any]) -> tuple[str, str]:
     return source, f"{source}#{question_number}"
 
 
+def ensure_private_data_dir(data_dir: Path) -> Path:
+    """Resolve and validate the learner directory before any server write."""
+
+    resolved = data_dir.expanduser().resolve()
+    private, privacy_message = tutor.privacy_check(resolved)
+    if not private:
+        raise tutor.TutorError(
+            f"拒绝读取或写入可能被 Git 跟踪的私人目录：{privacy_message}"
+        )
+    resolved.mkdir(parents=True, exist_ok=True)
+    return resolved
+
+
 def persist_events(
     data_dir: Path,
     practice_events: list[dict[str, Any]],
@@ -147,7 +160,7 @@ def persist_events(
 ) -> dict[str, Any]:
     """Atomically classify and append one browser mock submission."""
     curriculum = tutor.load_curriculum()
-    data_dir.mkdir(parents=True, exist_ok=True)
+    data_dir = ensure_private_data_dir(data_dir)
     with tutor.data_lock(data_dir):
         profile, state = tutor.load_profile_and_state(data_dir)
         paths = tutor.state_paths(data_dir)
@@ -215,6 +228,7 @@ def persist_postmortem(
     reasons: dict[str, list[str]],
 ) -> dict[str, Any]:
     """Append learner-supplied wrong reasons without rewriting raw answer evidence."""
+    data_dir = ensure_private_data_dir(data_dir)
     results, _ = grade_mock(answers)
     wrong_results = {str(item["number"]): item for item in results if not item["correct"]}
     if set(reasons) != set(wrong_results):
@@ -349,8 +363,8 @@ class ExamHandler(SimpleHTTPRequestHandler):
             return
         path = urlsplit(self.path).path
         try:
-            if path == "/api/mock-grade":
-                self._handle_mock_grade(read_body(self))
+            if path == "/api/mock-submit":
+                self._handle_mock_submit(read_body(self))
             elif path == "/api/mock-record":
                 self._handle_mock_record(read_body(self))
             elif path == "/api/mock-feedback":
@@ -409,12 +423,7 @@ class ExamHandler(SimpleHTTPRequestHandler):
         except (OSError, ValueError, KeyError) as error:
             json_response(self, {"ok": False, "error": str(error)}, 500)
 
-    def _handle_mock_grade(self, body: dict[str, Any]) -> None:
-        answers = validate_answers(body.get("answers"))
-        results, score = grade_mock(answers)
-        json_response(self, {"ok": True, "data": {"score": score, "max_score": 75, "results": results}})
-
-    def _handle_mock_record(self, body: dict[str, Any]) -> None:
+    def _submit_mock(self, body: dict[str, Any]) -> tuple[list[dict[str, Any]], int, dict[str, Any]]:
         answers = validate_answers(body.get("answers"))
         session_id = validate_session_id(body.get("session_id"))
         duration_seconds = body.get("duration_seconds")
@@ -488,6 +497,25 @@ class ExamHandler(SimpleHTTPRequestHandler):
             "feedback_seen": True,
         }
         stored = persist_events(self.data_dir, practice_events, mock_event)
+        return results, score, stored
+
+    def _handle_mock_submit(self, body: dict[str, Any]) -> None:
+        results, score, stored = self._submit_mock(body)
+        json_response(
+            self,
+            {
+                "ok": True,
+                "data": {
+                    "score": score,
+                    "max_score": 75,
+                    "results": results,
+                    "record": stored,
+                },
+            },
+        )
+
+    def _handle_mock_record(self, body: dict[str, Any]) -> None:
+        _, score, stored = self._submit_mock(body)
         json_response(
             self,
             {
@@ -520,8 +548,10 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8420, help="本地端口（默认 8420）")
     parser.add_argument("--data-dir", default=str(REPO_ROOT / ".study"), help="私人学习状态目录")
     args = parser.parse_args()
-    data_dir = Path(args.data_dir).resolve()
-    data_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        data_dir = ensure_private_data_dir(Path(args.data_dir))
+    except tutor.TutorError as error:
+        parser.error(str(error))
 
     def handler_factory(*handler_args: Any, **handler_kwargs: Any) -> ExamHandler:
         return ExamHandler(*handler_args, data_dir=data_dir, **handler_kwargs)

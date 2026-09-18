@@ -1736,6 +1736,26 @@ class TutorAcceptanceTest(unittest.TestCase):
             )
         )
 
+    def _quiz_manifest(self, data_dir: Path, quiz_id: str) -> dict[str, Any]:
+        path = data_dir / "quiz-sessions" / f"{quiz_id}.json"
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def _manifest_item_ids(
+        self, data_dir: Path, quiz_id: str
+    ) -> set[str]:
+        return {
+            question["item_id"]
+            for question in self._quiz_manifest(data_dir, quiz_id)["questions"]
+        }
+
+    def _manifest_concept_ids(
+        self, data_dir: Path, quiz_id: str
+    ) -> set[str]:
+        return {
+            question["concept_id"]
+            for question in self._quiz_manifest(data_dir, quiz_id)["questions"]
+        }
+
     def test_quiz_grade_treats_explicit_x_as_conceded_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
@@ -2032,6 +2052,181 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertIsInstance(prepared["days_left"], int)
             self.assertGreater(prepared["days_left"], 0)
             self.assertEqual(45, prepared["daily_minutes"])
+
+    def test_quiz_prepare_does_not_repeat_items_from_an_ungraded_session(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            first = self._prepare_quiz(data_dir)
+            second = self._prepare_quiz(data_dir)
+            first_items = self._manifest_item_ids(data_dir, first["quiz_id"])
+            second_items = self._manifest_item_ids(data_dir, second["quiz_id"])
+            self.assertEqual(5, len(first_items))
+            self.assertFalse(
+                first_items & second_items,
+                "未判分的题组已经把题目展示给考生，同一天不得再次出同样的题",
+            )
+
+    def test_quiz_prepare_cools_concepts_already_tested_today(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            first = self._prepare_quiz(data_dir)
+            manifest = self._quiz_manifest(data_dir, first["quiz_id"])
+            answers = ",".join(
+                "".join(question["correct"]) for question in manifest["questions"]
+            )
+            _run_cli(
+                data_dir,
+                "quiz-grade",
+                "--quiz-id",
+                first["quiz_id"],
+                "--answers",
+                answers,
+                "--confidences",
+                "sure,sure,sure,sure,sure",
+            )
+            second = self._prepare_quiz(data_dir)
+            self.assertFalse(
+                self._manifest_concept_ids(data_dir, first["quiz_id"])
+                & self._manifest_concept_ids(data_dir, second["quiz_id"]),
+                "同一细考点当天已经考过，不应在同一天的下一组再次排课",
+            )
+
+    def test_quiz_prepare_announces_a_concept_it_can_actually_serve(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _append_mock_gap_session(
+                data_dir,
+                "mock-uml",
+                at="2026-08-10T10:00:00+08:00",
+                wrong_items=[
+                    ("K03.SOFTWARE_DESIGN_UML", "exam-bank/05-uml.md#1", None)
+                ],
+            )
+            registration = data_dir / "uml-variant.json"
+            registration.write_text(
+                json.dumps(
+                    {
+                        "item_id": "self-authored/uml-diagram-count-variant",
+                        "topic_id": "K03.SOFTWARE_DESIGN_UML",
+                        "concept_id": "K03.uml_diagram_count",
+                        "question_family_id": "K03.uml_diagram_count.variant",
+                        "variant_of": "exam-bank/05-uml.md#1",
+                        "stem": "UML 2.x 图分类变式：结构与行为图各有多少种？",
+                        "options": ["7 与 7", "9 与 5", "13 与 4", "17 与 0"],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            _run_cli(data_dir, "register-question", "--file", str(registration))
+            _run_cli(
+                data_dir,
+                "record",
+                "--topic",
+                "K03.SOFTWARE_DESIGN_UML",
+                "--skill",
+                "recognition",
+                "--score",
+                "1",
+                "--max-score",
+                "1",
+                "--confidence",
+                "sure",
+                "--attempt-id",
+                "uml-remedy",
+                "--item-id",
+                "self-authored/uml-diagram-count-variant",
+                "--at",
+                "2026-08-10T15:00:00+08:00",
+            )
+            prepared = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-prepare",
+                    "--subject",
+                    "comprehensive",
+                    "--limit",
+                    "5",
+                    "--today",
+                    "2026-08-20",
+                )
+            )
+            # 该细考点的两道题都在 avoid 列表里，本组一道都出不了它；
+            # 开场白不得宣称复测这个细考点。
+            self.assertNotIn("UML 2.x 图分类与数量", prepared["objective"])
+
+    def test_quiz_prepare_serves_a_gap_with_its_own_concept_variant(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _append_mock_gap_session(
+                data_dir,
+                "mock-uml-relations",
+                at="2026-08-10T10:00:00+08:00",
+                wrong_items=[
+                    ("K03.SOFTWARE_DESIGN_UML", "exam-bank/05-uml.md#4", None)
+                ],
+            )
+            registration = data_dir / "uml-relations-variant.json"
+            registration.write_text(
+                json.dumps(
+                    {
+                        "item_id": "self-authored/uml-relations-variant",
+                        "topic_id": "K03.SOFTWARE_DESIGN_UML",
+                        "concept_id": "K03.uml_relationships",
+                        "question_family_id": "K03.uml_relationships.variant",
+                        "variant_of": "exam-bank/05-uml.md#4",
+                        "stem": "UML 关系变式：实现与依赖分别用什么线型表示？",
+                        "options": ["实线空心三角与虚线箭头", "实线实心菱形与虚线", "虚线箭头与实线", "实线关联与虚线关联"],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            _run_cli(data_dir, "register-question", "--file", str(registration))
+            _run_cli(
+                data_dir,
+                "record",
+                "--topic",
+                "K03.SOFTWARE_DESIGN_UML",
+                "--skill",
+                "recognition",
+                "--score",
+                "1",
+                "--max-score",
+                "1",
+                "--confidence",
+                "sure",
+                "--attempt-id",
+                "uml-relations-remedy",
+                "--item-id",
+                "self-authored/uml-relations-variant",
+                "--at",
+                "2026-08-10T15:00:00+08:00",
+            )
+            prepared = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-prepare",
+                    "--subject",
+                    "comprehensive",
+                    "--limit",
+                    "5",
+                    "--today",
+                    "2026-08-20",
+                )
+            )
+            concepts = {
+                question["concept_id"]
+                for question in self._quiz_manifest(data_dir, prepared["quiz_id"])[
+                    "questions"
+                ]
+            }
+            self.assertIn("K03.uml_relationships", concepts)
+            self.assertIn("UML 泛化、实现与依赖关系", prepared["objective"])
 
     def test_subject_policy_blocks_automatic_recommendation_only(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -2714,6 +2909,51 @@ class TutorAcceptanceTest(unittest.TestCase):
             repaired = self._status(data_dir)
             self.assertEqual(repaired["topics"], {})
             _run_cli(data_dir, "doctor")
+
+    def test_repair_preserves_subject_policies(self) -> None:
+        topic_id = self._recognition_topic()["id"]
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(
+                data_dir,
+                "record",
+                "--topic",
+                topic_id,
+                "--skill",
+                "recognition",
+                "--score",
+                "1",
+                "--max-score",
+                "1",
+                "--attempt-id",
+                "repair-policy-evidence",
+                "--at",
+                "2026-08-10T09:00:00+08:00",
+            )
+            _run_cli(
+                data_dir,
+                "configure",
+                "--subject-policy",
+                "essay=manual_trigger",
+                "--subject-policy-reason",
+                "考生仅在主动要求时练论文",
+            )
+            state_path = data_dir / "state.json"
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            state["applied_attempt_ids"] = []
+            state_path.write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
+
+            _run_cli(data_dir, "repair")
+            repaired = self._status(data_dir)
+            self.assertEqual(
+                repaired["strategy"]["subject_policies"]["essay"]["mode"],
+                "manual_trigger",
+            )
+            self.assertEqual(
+                repaired["strategy"]["subject_policies"]["essay"]["reason"],
+                "考生仅在主动要求时练论文",
+            )
 
     def test_concurrent_records_are_serialized_without_lost_progress(self) -> None:
         topic_id = self._recognition_topic()["id"]
