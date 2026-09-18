@@ -2910,6 +2910,51 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertEqual(repaired["topics"], {})
             _run_cli(data_dir, "doctor")
 
+    def test_repair_preserves_subject_policies(self) -> None:
+        topic_id = self._recognition_topic()["id"]
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(
+                data_dir,
+                "record",
+                "--topic",
+                topic_id,
+                "--skill",
+                "recognition",
+                "--score",
+                "1",
+                "--max-score",
+                "1",
+                "--attempt-id",
+                "repair-policy-evidence",
+                "--at",
+                "2026-08-10T09:00:00+08:00",
+            )
+            _run_cli(
+                data_dir,
+                "configure",
+                "--subject-policy",
+                "essay=manual_trigger",
+                "--subject-policy-reason",
+                "考生仅在主动要求时练论文",
+            )
+            state_path = data_dir / "state.json"
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            state["applied_attempt_ids"] = []
+            state_path.write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
+
+            _run_cli(data_dir, "repair")
+            repaired = self._status(data_dir)
+            self.assertEqual(
+                repaired["strategy"]["subject_policies"]["essay"]["mode"],
+                "manual_trigger",
+            )
+            self.assertEqual(
+                repaired["strategy"]["subject_policies"]["essay"]["reason"],
+                "考生仅在主动要求时练论文",
+            )
+
     def test_concurrent_records_are_serialized_without_lost_progress(self) -> None:
         topic_id = self._recognition_topic()["id"]
         with tempfile.TemporaryDirectory() as temporary:

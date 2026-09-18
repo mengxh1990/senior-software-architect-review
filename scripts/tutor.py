@@ -3605,6 +3605,7 @@ def cmd_repair(args: argparse.Namespace) -> int:
             "case_tracks_configured",
             "essay_themes_configured",
             "strategic_skips",
+            "subject_policies",
         ):
             if key in source_state["strategy"]:
                 rebuilt["strategy"][key] = source_state["strategy"][key]

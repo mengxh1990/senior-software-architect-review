@@ -7,6 +7,7 @@ import threading
 import unittest
 import urllib.error
 import urllib.request
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -88,6 +89,66 @@ class ExamServerTest(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as denied:
             self.request("/questions.json")
         self.assertEqual(denied.exception.code, 404)
+
+    def test_mock_submit_records_before_returning_answers(self) -> None:
+        answers = self.correct_answers()
+        session_id = f"web-{exam_server.PAPER_ID}-submit0001"
+        submission = {
+            "session_id": session_id,
+            "answers": answers,
+            "confidences": {},
+            "durations": {},
+            "duration_seconds": 1800,
+        }
+
+        with self.assertRaises(urllib.error.HTTPError) as retired:
+            self.request("/api/mock-grade", payload={"answers": answers})
+        self.assertEqual(retired.exception.code, 404)
+
+        status, payload = self.request("/api/mock-submit", payload=submission)
+        self.assertEqual(status, 200)
+        self.assertFalse(payload["data"]["record"]["already_recorded"])
+        self.assertEqual(payload["data"]["score"], 75)
+        self.assertEqual(
+            payload["data"]["results"][0]["correct_answer"], answers["1"]
+        )
+        attempts = exam_server.tutor.load_attempts(
+            exam_server.tutor.state_paths(self.data_dir)["attempts"]
+        )
+        self.assertEqual(len(attempts), 76)
+
+    def test_mock_submit_withholds_answers_when_recording_fails(self) -> None:
+        answers = self.correct_answers()
+        state_path = exam_server.tutor.state_paths(self.data_dir)["state"]
+        state_path.write_bytes(b'{"schema_version":')
+        with self.assertRaises(urllib.error.HTTPError) as failed:
+            self.request(
+                "/api/mock-submit",
+                payload={
+                    "session_id": f"web-{exam_server.PAPER_ID}-submit0002",
+                    "answers": answers,
+                    "confidences": {},
+                    "durations": {},
+                    "duration_seconds": 1800,
+                },
+            )
+        self.assertEqual(failed.exception.code, 409)
+        body = json.loads(failed.exception.read())
+        self.assertFalse(body["ok"])
+        self.assertNotIn("correct_answer", json.dumps(body))
+        self.assertEqual(
+            exam_server.tutor.load_attempts(
+                exam_server.tutor.state_paths(self.data_dir)["attempts"]
+            ),
+            [],
+        )
+
+    def test_service_rejects_unignored_repo_private_directory(self) -> None:
+        unsafe = REPO_ROOT / f"private-exam-audit-{uuid.uuid4().hex}"
+        self.assertFalse(unsafe.exists())
+        with self.assertRaises(exam_server.tutor.TutorError):
+            exam_server.ensure_private_data_dir(unsafe)
+        self.assertFalse(unsafe.exists())
 
     def test_cross_site_origin_is_rejected(self) -> None:
         with self.assertRaises(urllib.error.HTTPError) as denied:
