@@ -60,8 +60,8 @@ python3 scripts/serve.py
 - [`PROGRESS_PROTOCOL.md`](./PROGRESS_PROTOCOL.md) — 记档规则、证据分级、隐私边界
 - [`quiz-loop-sop.md`](./quiz-loop-sop.md) — 客观题一轮"出题→作答→判分→记档"的运行时管道
 - [`topic-map.md`](./topic-map.md) — 考点↔资源↔facet 映射表（脚本自动生成，请勿手改）
-- [`../scripts/tutor.py`](../scripts/tutor.py) — 私人进度 CLI（含 `quiz-prepare` / `quiz-grade` 一体化客观题循环）
-- [`../scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) — exam-bank 答案脱敏器
+- [`../scripts/tutor.py`](../scripts/tutor.py) — 私人进度 CLI（含 `quiz-prepare` / `quiz-grade` 一体化客观题循环，以及只读的 `weakpoints` 薄弱点排名）
+- [`../scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) — exam-bank 答案脱敏器（题库维护、抽查与人工修复用，不在答题循环内调用）
 - [`../scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) — 由 `curriculum.json` 重新生成 `topic-map.md`
 
 ## 常用说法
@@ -105,6 +105,10 @@ python3 scripts/tutor.py --data-dir .study quiz-grade \
 
 # 查看最近完整模考暴露的具体薄弱点
 python3 scripts/tutor.py --data-dir .study diagnose --subject comprehensive
+
+# 只读查看到期、近期正确率与未覆盖考点（答题循环内的薄弱点入口）
+python3 scripts/tutor.py --data-dir .study weakpoints \
+  --subject comprehensive --days 21 --limit 10
 
 # 自编题先登记细考点、题型族和内容指纹
 python3 scripts/tutor.py --data-dir .study register-question \

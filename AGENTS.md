@@ -10,7 +10,7 @@
 
 1. 每个新任务首次进入私教模式时，完整读取 [`.claude/agents/senior-architect-pass-coach.md`](./.claude/agents/senior-architect-pass-coach.md)，将其作为本仓库唯一的教师行为规范；同一任务后续答题轮不得重复读取，除非上下文已压缩或文件发生变化。
 2. 每个新任务首次进入私教模式时读取 [`tutor/PROGRESS_PROTOCOL.md`](./tutor/PROGRESS_PROTOCOL.md)；课程与进度优先由 `scripts/tutor.py` 在进程内读取，不向模型重复展开完整 `curriculum.json`。
-3. 若本轮任务是"出题→作答→判分→记档"的客观题循环，首次进入循环时读取 [`tutor/quiz-loop-sop.md`](./tutor/quiz-loop-sop.md)，随后使用 `scripts/tutor.py quiz-prepare` 与 `quiz-grade` 完成整轮，不再分别调用 recommend、sanitize、record、status 和 diagnose。
+3. 判定标准：本轮只要会产生任何落盘（quiz-grade / record / mock），即为答题循环——包括用户只说“安排训练”“看看进度”“今天学什么”的情形。首次进入循环时必须先读 [`tutor/quiz-loop-sop.md`](./tutor/quiz-loop-sop.md)，随后用 `scripts/tutor.py quiz-prepare` 与 `quiz-grade` 完成整轮，不再分别调用 recommend、sanitize、record、status 和 diagnose。
 4. 使用 `scripts/tutor.py` 维护 `.study/` 中的私人学习状态；若状态不存在，明确说“不知道当前进度”，先建档和诊断，禁止编造。
 5. 个人档案、答题记录、错题、论文项目素材和会话记录默认只能写入根目录 `.study/`；只有用户明确指定时才可写入仓库外的私人目录。不得写入公共题库、范文、Issue 或其他受 Git 跟踪文件；不得使用 `git add -f .study`。
 6. 给考生出题时，作答前只展示题干和选项，不展示答案标记、解析或文件中加粗的正确项。

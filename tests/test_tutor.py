@@ -1608,6 +1608,120 @@ class TutorAcceptanceTest(unittest.TestCase):
                 self.assertNotIn(":", issue["concept_label"])
                 self.assertNotRegex(issue["concept_label"], r"^\(\d+\)$")
 
+    def test_weakpoints_ranks_overdue_and_recent_topics_readonly(self) -> None:
+        topic_id = self._recognition_topic()["id"]
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(
+                data_dir,
+                "record",
+                "--topic",
+                topic_id,
+                "--skill",
+                "recognition",
+                "--score",
+                "0",
+                "--max-score",
+                "1",
+                "--attempt-id",
+                "weak-001",
+                "--item-id",
+                "test-item:weak-001",
+                "--at",
+                "2026-08-10T09:00:00+08:00",
+                "--wrong-reason",
+                "knowledge_gap",
+            )
+            _run_cli(
+                data_dir,
+                "record",
+                "--topic",
+                topic_id,
+                "--skill",
+                "recognition",
+                "--score",
+                "1",
+                "--max-score",
+                "1",
+                "--attempt-id",
+                "weak-002",
+                "--item-id",
+                "test-item:weak-002",
+                "--at",
+                "2026-08-18T09:00:00+08:00",
+                "--confidence",
+                "guess",
+            )
+
+            before = _snapshot_files(data_dir)
+            payload = _json_output(
+                _run_cli(
+                    data_dir,
+                    "weakpoints",
+                    "--subject",
+                    "comprehensive",
+                    "--days",
+                    "30",
+                    "--today",
+                    "2026-08-20",
+                    "--json",
+                )
+            )
+            self.assertEqual(
+                before,
+                _snapshot_files(data_dir),
+                "weakpoints must stay read-only for learner data",
+            )
+            self.assertEqual("comprehensive", payload["subject"])
+            self.assertEqual("2026-08-20", payload["today"])
+
+            due = [row for row in payload["due"] if row["topic_id"] == topic_id]
+            self.assertTrue(due, "an unanswered past-due topic must be ranked as due")
+            self.assertLess(due[0]["next_review_at"], payload["today"])
+            self.assertGreaterEqual(due[0]["overdue_days"], 1)
+
+            recent = [row for row in payload["recent"] if row["topic_id"] == topic_id]
+            self.assertTrue(recent, "recent answers inside the window must be ranked")
+            self.assertEqual(2, recent[0]["recent_attempts"])
+            self.assertEqual(0.5, recent[0]["recent_accuracy"])
+            self.assertEqual(1, recent[0]["guess_correct"])
+            self.assertNotIn(
+                topic_id,
+                [row["topic_id"] for row in payload["uncovered"]],
+                "a practised topic must not be listed as uncovered",
+            )
+            for key in (
+                "recent_accuracy",
+                "recent_attempts",
+                "guess_correct",
+                "last_attempt_at",
+                "overdue_days",
+                "mastery",
+                "action",
+            ):
+                self.assertIn(key, recent[0])
+
+            # A shorter window keeps the ranking but drops the stale attempt.
+            narrow = _json_output(
+                _run_cli(
+                    data_dir,
+                    "weakpoints",
+                    "--subject",
+                    "comprehensive",
+                    "--days",
+                    "5",
+                    "--today",
+                    "2026-08-20",
+                    "--json",
+                )
+            )
+            narrow_recent = [
+                row for row in narrow["recent"] if row["topic_id"] == topic_id
+            ]
+            self.assertEqual(1, narrow_recent[0]["recent_attempts"])
+            self.assertEqual(1.0, narrow_recent[0]["recent_accuracy"])
+
     def test_diagnostic_gaps_respect_strategic_skips(self) -> None:
         topic_id = "K08.SOFTWARE_PROCESS_MODELS"
         with tempfile.TemporaryDirectory() as temporary:
