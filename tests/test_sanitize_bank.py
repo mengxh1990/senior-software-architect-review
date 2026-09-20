@@ -414,7 +414,7 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual("invalid", excluded["quality_status"])
         self.assertIn("excluded:missing_required_table", excluded["quality_issues"])
 
-    def test_shipped_bare_testing_stems_are_blocked(self) -> None:
+    def test_shipped_testing_stems_are_repaired_from_original_question(self) -> None:
         items = {
             item["id"]: item
             for item in sanitize_bank.parse_paper(
@@ -426,8 +426,10 @@ class PastPaperParsingTests(unittest.TestCase):
             "past-papers/comprehensive-by-year/2021.md#34",
         ):
             with self.subTest(item_id=item_id):
-                self.assertEqual("invalid", items[item_id]["quality_status"])
-                self.assertIn("incomplete_stem", items[item_id]["quality_issues"])
+                self.assertEqual("ready", items[item_id]["quality_status"])
+                self.assertNotIn("incomplete_stem", items[item_id]["quality_issues"])
+        self.assertIn("不在机器上运行", items["past-papers/comprehensive-by-year/2021.md#33"]["stem"])
+        self.assertIn("功能测试也称为", items["past-papers/comprehensive-by-year/2021.md#34"]["stem"])
 
     def test_transcript_boundary_keeps_next_question_out_of_explanation(self) -> None:
         items = {
