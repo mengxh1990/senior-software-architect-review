@@ -82,6 +82,19 @@ PLACEHOLDER_STEM_RE = re.compile(r"^[（(]\s*\d{1,3}\s*[)）]$")
 PRIOR_CONTEXT_RE = re.compile(
     r"^\s*(?:(?:接|承|同|见)?上题|将上题|接前题|(?:在|基于)\s*第\s*\d+\s*题\s*(?:的)?基础(?:上)?)"
 )
+# Very short noun-only cloze prompts are usually truncated transcript fragments
+# rather than self-contained questions (for example ``静态测试（ ）``).  Keep
+# this deliberately narrow: prompts such as ``性能量度包括（ ）`` still carry a
+# predicate and remain valid.
+BARE_CLOZE_STEM_RE = re.compile(
+    r"^(?P<prefix>[\u4e00-\u9fffA-Za-z0-9+#./_-]{2,8})\s*"
+    r"[（(]\s*[）)]\s*[。！？：:；;]?$"
+)
+CLOZE_PREDICATE_RE = re.compile(
+    r"(?:是|为|属于|包括|不包括|不属于|描述|用于|表示|指|采用|工作在|"
+    r"作用|目的|主要|正确|错误|达到|分为|具有|划分|包含|应用|不正确)"
+)
+QUESTION_PLACEHOLDER_RE = re.compile(r"[（(]\s*(\d{1,3})\s*[)）]")
 QUALITY_EXCLUSIONS_PATH = REPO_ROOT / "scripts" / "quiz_quality_exclusions.json"
 # 题干里真正指向“缺失图表”的指代。裸的“XX图中”多是术语（用例图/数据流图/视图），
 # 由 FIGURE_TERM_PREFIXES 排除，避免把“用例图中，…”误判成缺图。
@@ -288,7 +301,45 @@ def clean_stem(value: str) -> str:
     return TRAILING_OPTIONS_LABEL_RE.sub("", cleaned).strip()
 
 
-def _transcript_stem(lines: Sequence[str]) -> str:
+def _paragraphs_with_offsets(value: str) -> List[tuple[int, str]]:
+    """Return non-empty paragraphs and their offsets in ``value``."""
+
+    paragraphs: List[tuple[int, str]] = []
+    cursor = 0
+    for separator in re.finditer(r"\n\s*\n", value):
+        raw = value[cursor : separator.start()]
+        stripped = raw.strip()
+        if stripped:
+            paragraphs.append((cursor + len(raw) - len(raw.lstrip()), stripped))
+        cursor = separator.end()
+    raw = value[cursor:]
+    stripped = raw.strip()
+    if stripped:
+        paragraphs.append((cursor + len(raw) - len(raw.lstrip()), stripped))
+    return paragraphs
+
+
+def _transcript_question_intro(lines: Sequence[str], question_number: int) -> str:
+    """Recover a question intro accidentally placed before its ``##`` heading."""
+
+    heading_indexes = [
+        index for index, line in enumerate(lines) if QUESTION_GROUP_HEADER_RE.match(line)
+    ]
+    if not heading_indexes:
+        return ""
+    prefix = "\n".join(lines[: heading_indexes[-1]])
+    for _, paragraph in reversed(_paragraphs_with_offsets(prefix)):
+        if paragraph.lstrip().startswith(("**考点**", "**解析**", "【解析】")):
+            continue
+        if any(
+            int(match.group(1)) == question_number
+            for match in QUESTION_PLACEHOLDER_RE.finditer(paragraph)
+        ):
+            return paragraph
+    return ""
+
+
+def _transcript_stem(lines: Sequence[str], question_number: int) -> str:
     """Recover a full transcript-group stem instead of its last paragraph.
 
     Older papers place a ``## 第 N 题`` heading before a multi-paragraph
@@ -302,6 +353,7 @@ def _transcript_stem(lines: Sequence[str]) -> str:
     if not heading_indexes:
         return _stem_before(lines)
     candidate_lines = lines[heading_indexes[-1] + 1 :]
+    leading_intro = _transcript_question_intro(lines, question_number)
     paragraphs = [
         paragraph.strip()
         for paragraph in "\n".join(candidate_lines).split("\n\n")
@@ -312,17 +364,22 @@ def _transcript_stem(lines: Sequence[str]) -> str:
         for paragraph in paragraphs
         if not IMAGE_ONLY_RE.match(paragraph) and not paragraph.startswith("**考点**")
     ]
+    if leading_intro:
+        paragraphs.insert(0, leading_intro)
     return clean_stem(" ".join(paragraphs)) if paragraphs else ""
 
 
-def _transcript_source_fragment(lines: Sequence[str]) -> str:
+def _transcript_source_fragment(lines: Sequence[str], question_number: int) -> str:
     """Return the source portion belonging to the current transcript group."""
 
     heading_indexes = [
         index for index, line in enumerate(lines) if QUESTION_GROUP_HEADER_RE.match(line)
     ]
     relevant = lines[heading_indexes[-1] + 1 :] if heading_indexes else lines
-    return "\n".join(relevant)
+    leading_intro = _transcript_question_intro(lines, question_number)
+    parts = [leading_intro] if leading_intro else []
+    parts.extend(relevant)
+    return "\n".join(parts)
 
 
 def _ordered_inline_option_chunks(value: str) -> List[str]:
@@ -379,8 +436,8 @@ def parse_paper_transcript(text: str, year: str) -> List[Dict]:
         start, end = min(anchors), max(anchors)
         first_anchor = PAPER_OPTION_ANCHOR_RE.search(window)
         pre_option_lines = window[: first_anchor.start()].splitlines()
-        source_fragment = _transcript_source_fragment(pre_option_lines)
-        stem = _transcript_stem(pre_option_lines)
+        source_fragment = _transcript_source_fragment(pre_option_lines, start)
+        stem = _transcript_stem(pre_option_lines, start)
         options = _parse_options(window[first_anchor.start() :].splitlines())
         answer_sequence = re.findall(r"[A-D]", answer.group(1))
         correct = sorted(set(answer_sequence))
@@ -394,10 +451,30 @@ def parse_paper_transcript(text: str, year: str) -> List[Dict]:
                 next_window = text[next_window_start : answers[position + 1].start()]
                 next_anchor = PAPER_OPTION_ANCHOR_RE.search(next_window)
                 if next_anchor:
-                    stem_lines = next_window[: next_anchor.start()].splitlines()
-                    paragraphs = [p for p in "\n".join(stem_lines).split("\n\n") if p.strip()]
-                    if paragraphs:
-                        next_start = next_window_start + next_window.rfind(paragraphs[-1].strip())
+                    next_question_number = int(next_anchor.group(1))
+                    intro_boundary = None
+                    for offset, paragraph in _paragraphs_with_offsets(
+                        next_window[: next_anchor.start()]
+                    ):
+                        if any(
+                            int(match.group(1)) == next_question_number
+                            for match in QUESTION_PLACEHOLDER_RE.finditer(paragraph)
+                        ):
+                            intro_boundary = offset
+                            break
+                    if intro_boundary is not None:
+                        next_start = next_window_start + intro_boundary
+                    else:
+                        stem_lines = next_window[: next_anchor.start()].splitlines()
+                        paragraphs = [
+                            p
+                            for p in "\n".join(stem_lines).split("\n\n")
+                            if p.strip()
+                        ]
+                        if paragraphs:
+                            next_start = next_window_start + next_window.rfind(
+                                paragraphs[-1].strip()
+                            )
             explanation = clean_explanation(text[explain_match.end() : next_start])
 
         tag_match = PAPER_TAG_RE.search(text, answer.end())
@@ -687,6 +764,13 @@ def references_table(stem: str) -> bool:
     return bool(TABLE_REF_RE.search(stem or ""))
 
 
+def is_incomplete_stem(stem: str) -> bool:
+    """Return whether a short cloze stem is only a bare noun phrase."""
+
+    match = BARE_CLOZE_STEM_RE.fullmatch(stem.strip())
+    return bool(match and not CLOZE_PREDICATE_RE.search(match.group("prefix")))
+
+
 def load_quality_exclusions(path: Path | None = None) -> Dict[str, str]:
     """Load the maintainer deny-list of items that must never be quizzed."""
 
@@ -753,6 +837,8 @@ def assess_quality(
         issues.append("answer_marker_leak")
     if (PLACEHOLDER_STEM_RE.fullmatch(stem) or PRIOR_CONTEXT_RE.match(stem)) and not has_context:
         issues.append("missing_required_context")
+    if is_incomplete_stem(stem) and not has_context:
+        issues.append("incomplete_stem")
     if int(item.get("question_count", 1) or 1) > 1:
         # The objective-quiz runtime currently records one answer per visible
         # item. A transcript block with several independent blanks would lose

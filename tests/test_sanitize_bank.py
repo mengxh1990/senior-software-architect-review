@@ -296,6 +296,36 @@ class PastPaperParsingTests(unittest.TestCase):
         )
         self.assertEqual("ready", with_context["quality_status"])
 
+    def test_quality_gate_blocks_bare_noun_cloze_but_keeps_predicate_cloze(self) -> None:
+        item = {
+            "id": "past-papers/x.md#bare-cloze",
+            "stem": "静态测试（ ）",
+            "options": [
+                {"label": "A", "text": "静态测试"},
+                {"label": "B", "text": "动态测试"},
+                {"label": "C", "text": "黑盒测试"},
+                {"label": "D", "text": "白盒测试"},
+            ],
+            "correct": ["A"],
+            "explanation": "被测程序不上机运行。",
+        }
+        blocked = sanitize_bank.assess_quality(item)
+        self.assertEqual("invalid", blocked["quality_status"])
+        self.assertIn("incomplete_stem", blocked["quality_issues"])
+
+        complete = {
+            **item,
+            "id": "past-papers/x.md#predicate-cloze",
+            "stem": "性能量度包括（ ）",
+            "options": [
+                {"label": "A", "text": "单位时间处理的事件个数"},
+                {"label": "B", "text": "系统故障率"},
+                {"label": "C", "text": "系统的访问权限"},
+                {"label": "D", "text": "代码行数"},
+            ],
+        }
+        self.assertEqual("ready", sanitize_bank.assess_quality(complete)["quality_status"])
+
     def test_quality_gate_blocks_repository_image_links_until_renderable(self) -> None:
         verdict = sanitize_bank.assess_quality(
             {
@@ -373,6 +403,7 @@ class PastPaperParsingTests(unittest.TestCase):
             self.assertNotIn("✅", item["stem"])
             self.assertNotRegex(item["stem"], r"答案\s*[:：]")
             self.assertNotIn("](", item["stem"])
+            self.assertFalse(sanitize_bank.is_incomplete_stem(item["stem"]))
             self.assertEqual(
                 ["A", "B", "C", "D"],
                 [option["label"] for option in item["options"]],
@@ -382,6 +413,38 @@ class PastPaperParsingTests(unittest.TestCase):
         excluded = by_id["past-papers/comprehensive-by-year/2021.md#1"]
         self.assertEqual("invalid", excluded["quality_status"])
         self.assertIn("excluded:missing_required_table", excluded["quality_issues"])
+
+    def test_shipped_bare_testing_stems_are_blocked(self) -> None:
+        items = {
+            item["id"]: item
+            for item in sanitize_bank.parse_paper(
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2021.md"
+            )
+        }
+        for item_id in (
+            "past-papers/comprehensive-by-year/2021.md#33",
+            "past-papers/comprehensive-by-year/2021.md#34",
+        ):
+            with self.subTest(item_id=item_id):
+                self.assertEqual("invalid", items[item_id]["quality_status"])
+                self.assertIn("incomplete_stem", items[item_id]["quality_issues"])
+
+    def test_transcript_boundary_keeps_next_question_out_of_explanation(self) -> None:
+        items = {
+            item["id"]: item
+            for item in sanitize_bank.parse_paper(
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2016下.md"
+            )
+        }
+        q68 = items["past-papers/comprehensive-by-year/2016下.md#68-68"]
+        q69 = items["past-papers/comprehensive-by-year/2016下.md#69-69"]
+        q70 = items["past-papers/comprehensive-by-year/2016下.md#70-70"]
+        q71 = items["past-papers/comprehensive-by-year/2016下.md#71-75"]
+
+        self.assertNotIn("某公司有4百万元", q68["explanation"])
+        self.assertIn("某公司有4百万元", q69["stem"])
+        self.assertNotIn("The objective of (71)", q70["explanation"])
+        self.assertIn("The objective of (71)", q71["stem"])
 
     def test_english_passage_questions_keep_shared_context_without_duplication(self) -> None:
         path = REPO_ROOT / "exam-bank" / "23-english-reading.md"
