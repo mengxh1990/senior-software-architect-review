@@ -146,8 +146,10 @@ def apply_tags(text: str, groups: Sequence[dict]) -> str:
     lines = text.splitlines()
     answer_lines = [idx for idx, line in enumerate(lines) if ANSWER_RE.match(line.strip())]
 
-    # first option anchor of each answer block gives the block's first blank number
-    block_anchors: list[tuple[int, int]] = []  # (line index of first anchor, number)
+    # Keep one anchor slot per answer line.  Some source transcripts contain a
+    # question whose options are only present in an image; dropping that slot
+    # would shift every later ``**考点**`` line onto the preceding question.
+    answer_anchors: list[tuple[int, int] | None] = []
     for position, answer_idx in enumerate(answer_lines):
         previous = answer_lines[position - 1] if position else -1
         anchor: tuple[int, int] | None = None
@@ -156,8 +158,9 @@ def apply_tags(text: str, groups: Sequence[dict]) -> str:
             if match:
                 anchor = (idx, int(match.group(1)))
                 break
-        if anchor:
-            block_anchors.append(anchor)
+        answer_anchors.append(anchor)
+
+    block_anchors = [anchor for anchor in answer_anchors if anchor is not None]
 
     def paragraph_start(anchor_line: int) -> int:
         """Walk back to the first line of the paragraph above the anchor."""
@@ -188,12 +191,12 @@ def apply_tags(text: str, groups: Sequence[dict]) -> str:
     for line, header in headers:
         insertions.setdefault(line, []).extend([header, ""])
     for position, answer_idx in enumerate(answer_lines):
-        if position < len(block_anchors):
-            number = block_anchors[position][1]
-        elif position and block_anchors:
-            number = max(block_anchors[position - 1][1], 1) + 1
-        else:
-            number = 1
+        anchor = answer_anchors[position]
+        # A figure-only question has no reliable number anchor.  Do not emit a
+        # guessed tag: guessing here would corrupt every subsequent mapping.
+        if anchor is None:
+            continue
+        number = anchor[1]
         tag = tag_for.get(number, group_of_number.get(number, "§? 待人工标注"))
         insertions.setdefault(answer_idx + 1, []).extend(["", f"**考点**：{tag}"])
 

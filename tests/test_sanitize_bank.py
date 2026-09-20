@@ -18,6 +18,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = REPO_ROOT / "scripts" / "sanitize_bank.py"
+REGISTRY_PATH = REPO_ROOT / "scripts" / "question_registry.py"
 
 
 def _load_module():
@@ -29,6 +30,18 @@ def _load_module():
 
 
 sanitize_bank = _load_module()
+
+
+def _load_registry():
+    spec = importlib.util.spec_from_file_location("question_registry", REGISTRY_PATH)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["question_registry"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+question_registry = _load_registry()
 
 
 class SanitizeBankRealBankTests(unittest.TestCase):
@@ -566,6 +579,36 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual(
             by_id["past-papers/comprehensive-by-year/2009下.md#38-38"]["candidate_topics"],
             ["K11.COMPONENTS_4PLUS1"],
+        )
+
+    def test_repaired_2016_mapping_keeps_file_system_and_ip_questions_distinct(self) -> None:
+        items = sanitize_bank.parse_paper(
+            REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2016下.md"
+        )
+        by_id = {item["id"]: item for item in items}
+        self.assertEqual(
+            by_id["past-papers/comprehensive-by-year/2016下.md#7-8"]["candidate_topics"],
+            ["K14.OS_SCHEDULING_FILES"],
+        )
+        self.assertEqual(
+            by_id["past-papers/comprehensive-by-year/2016下.md#68-68"]["candidate_topics"],
+            ["K17.IP_COPYRIGHT"],
+        )
+
+    def test_cross_year_ip_variants_share_a_family_for_quiz_deduplication(self) -> None:
+        ids = (
+            "past-papers/comprehensive-by-year/2016下.md#68-68",
+            "past-papers/comprehensive-by-year/2022.md#68",
+        )
+        metadata = [
+            question_registry.default_metadata(item_id, "K17.IP_COPYRIGHT")
+            for item_id in ids
+        ]
+        self.assertEqual(
+            {item["concept_id"] for item in metadata}, {"K17.IP_COPYRIGHT"}
+        )
+        self.assertEqual(
+            {item["question_family_id"] for item in metadata}, {"K17.IP_COPYRIGHT"}
         )
 
     def test_optional_images_do_not_break_option_parsing(self) -> None:

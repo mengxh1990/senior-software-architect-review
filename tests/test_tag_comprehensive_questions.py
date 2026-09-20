@@ -94,6 +94,42 @@ class ApplyTagsTests(unittest.TestCase):
         self.assertEqual(lines[answer_index + 2], "**考点**：§1 操作系统")
         self.assertIn("## 第 2-3 题：[§5 数据库]", lines)
 
+    def test_missing_option_anchor_does_not_shift_later_tags(self) -> None:
+        text = "\n".join(
+            [
+                "第一题题干。",
+                "",
+                "(1) A. 甲",
+                "B. 乙",
+                "",
+                "【答案】A",
+                "",
+                "第二题题干（选项见图）。",
+                "",
+                "![figure](figure.webp)",
+                "",
+                "【答案】B",
+                "",
+                "第三题题干。",
+                "",
+                "(3) A. 甲",
+                "B. 乙",
+                "",
+                "【答案】A",
+            ]
+        )
+        output = tagging.apply_tags(
+            text,
+            [
+                {"range": [1, 1], "tag": "§1", "label": "计算机系统"},
+                {"range": [2, 2], "tag": "§5", "label": "数据库"},
+                {"range": [3, 3], "tag": "§11", "label": "知识产权"},
+            ],
+        )
+        self.assertIn("**考点**：§1 计算机系统", output)
+        self.assertIn("**考点**：§11 知识产权", output)
+        self.assertNotIn("**考点**：§5 数据库", output)
+
 
 class RealTagMapTests(unittest.TestCase):
     def test_shipped_tag_map_is_complete(self) -> None:
@@ -101,6 +137,10 @@ class RealTagMapTests(unittest.TestCase):
         tag_map = json.loads(TAG_MAP_PATH.read_text(encoding="utf-8"))
         self.assertEqual(tagging.validate_tag_map(tag_map), [])
         self.assertEqual(len(tag_map), 9)
+        self.assertIn(
+            {"range": [69, 69], "tag": "§12", "label": "应用数学—数学模型"},
+            tag_map["2012下"],
+        )
 
     def test_tagged_papers_carry_headers_and_tags(self) -> None:
         for year in ("2009下", "2013下", "2017下"):
