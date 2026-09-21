@@ -634,22 +634,30 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual("ready", items[1]["quality_status"])
         self.assertNotIn("missing_required_table", items[1]["quality_issues"])
 
-    def test_shipped_preheading_tables_are_blocked(self) -> None:
+    def test_shipped_preheading_table_remains_blocked(self) -> None:
         items = {
             item["id"]: item
-            for path in (
-                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2011下.md",
-                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2013下.md",
-            )
+            for path in (REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2011下.md",)
             for item in sanitize_bank.parse_paper(path)
         }
-        for item_id in (
-            "past-papers/comprehensive-by-year/2011下.md#70-70",
-            "past-papers/comprehensive-by-year/2013下.md#69-69",
-        ):
-            with self.subTest(item_id=item_id):
-                self.assertEqual("invalid", items[item_id]["quality_status"])
-                self.assertIn("missing_required_table", items[item_id]["quality_issues"])
+        item = items["past-papers/comprehensive-by-year/2011下.md#70-70"]
+        self.assertEqual("invalid", item["quality_status"])
+        self.assertIn("missing_required_table", item["quality_issues"])
+
+    def test_shipped_2013_product_schedule_embeds_required_table(self) -> None:
+        items = {
+            item["id"]: item
+            for item in sanitize_bank.parse_paper(
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2013下.md"
+            )
+        }
+        item = items["past-papers/comprehensive-by-year/2013下.md#69-69"]
+        self.assertEqual("ready", item["quality_status"])
+        self.assertTrue(item["requires_table"])
+        self.assertNotIn("missing_required_table", item["quality_issues"])
+        self.assertEqual(["A"], item["correct"])
+        self.assertIn("| 产品 | 设计（天） | 制造（天） | 检验（天） |", item["stem"])
+        self.assertIn("| 丁 | 8 | 10 | 15 |", item["stem"])
 
     def test_shipped_testing_stems_are_repaired_from_original_question(self) -> None:
         items = {

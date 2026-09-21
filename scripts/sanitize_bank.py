@@ -307,7 +307,15 @@ def _stem_before(lines: Sequence[str]) -> str:
 def clean_stem(value: str) -> str:
     """Normalize a learner-facing stem without keeping layout scaffolding."""
 
-    cleaned = _clean_text(value)
+    # Keep Markdown tables line-oriented: the public quiz payload is text-only,
+    # so collapsing their newlines would discard the only renderable form of
+    # source data that a learner needs to solve the question.
+    if MARKDOWN_TABLE_RE.search(value):
+        cleaned = "\n".join(
+            _clean_text(line) if line.strip() else "" for line in value.splitlines()
+        ).strip()
+    else:
+        cleaned = _clean_text(value)
     cleaned = re.sub(r"^(?:【\s*解析\s*】|\*\*\s*解析\s*\*\*\s*[:：])\s*", "", cleaned)
     cleaned = re.sub(r"(?:\s|^)---\s*$", "", cleaned)
     return TRAILING_OPTIONS_LABEL_RE.sub("", cleaned).strip()
@@ -433,7 +441,8 @@ def _transcript_stem(lines: Sequence[str], question_number: int) -> str:
     ]
     if leading_intro:
         paragraphs.insert(0, leading_intro)
-    return clean_stem(" ".join(paragraphs)) if paragraphs else ""
+    separator = "\n\n" if any(MARKDOWN_TABLE_RE.search(p) for p in paragraphs) else " "
+    return clean_stem(separator.join(paragraphs)) if paragraphs else ""
 
 
 def _transcript_source_fragment(lines: Sequence[str], question_number: int) -> str:
