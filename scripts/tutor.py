@@ -58,6 +58,7 @@ RECALLED_REAL_YEARS = {"2023下", "2024上", "2024下", "2025上", "2025下", "2
 # concept keeps its review schedule; only the exact item is retired so spacing
 # lands on a fresh question instead of a memorised one.
 RECENT_ITEM_COOLDOWN_DAYS = 14
+CASE_RESOURCE_RE = re.compile(r"^past-papers/case-types/(\d{2})-")
 
 
 class TutorError(RuntimeError):
@@ -1520,6 +1521,45 @@ def manual_trigger_subjects(state: dict[str, Any]) -> set[str]:
     }
 
 
+def next_training_action(
+    state: dict[str, Any],
+    today: date,
+    *,
+    quiz_id: str | None = None,
+    variant_count: int = 0,
+) -> dict[str, Any]:
+    """Return one deterministic next route without changing learner state."""
+
+    if variant_count:
+        return {
+            "mode": "await_variants",
+            "subject": "comprehensive",
+            "quiz_id": quiz_id,
+            "variant_count": variant_count,
+            "command": "quiz-variant-grade",
+            "user_override_allowed": True,
+        }
+    allocations = subject_allocations(state, today)
+    subject = select_target_subject(state, allocations)
+    if subject == "comprehensive":
+        mode = "quiz_prepare"
+        command = "quiz-prepare --subject comprehensive"
+    elif subject == "case":
+        mode = "case_prepare"
+        command = "case-prepare"
+    else:
+        mode = "essay_manual_flow"
+        command = "paper_practice --subject essay"
+    return {
+        "mode": mode,
+        "subject": subject,
+        "command": command,
+        "subject_allocation": allocations,
+        "decision_source": "existing_subject_allocator",
+        "user_override_allowed": True,
+    }
+
+
 def select_maintenance_subject(
     state: dict[str, Any], target_subject: str, today: date
 ) -> str | None:
@@ -2501,6 +2541,214 @@ def cmd_recommend(args: argparse.Namespace) -> int:
     return 0
 
 
+def case_type_for_topic(topic: dict[str, Any]) -> str | None:
+    """Resolve a stable topic to its candidate real-paper case type.
+
+    The curriculum remains the single source of truth for this mapping.  This
+    avoids a second hard-coded routing table drifting away from configured
+    tracks and recommendation priorities.
+    """
+
+    for resource in topic.get("resources", []):
+        match = CASE_RESOURCE_RE.match(str(resource))
+        if match:
+            return f"案例 {match.group(1)}"
+    return None
+
+
+def case_figure_assets(item: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """Return absolute existing and missing figure paths for one case item."""
+
+    existing: list[str] = []
+    missing: list[str] = []
+    for filename in item.get("figures", []):
+        path = REPO_ROOT / "past-papers" / "assets" / item["year"] / filename
+        if path.is_file():
+            existing.append(str(path.resolve()))
+        else:
+            missing.append(str(path.resolve()))
+    return existing, missing
+
+
+def cmd_case_prepare(args: argparse.Namespace) -> int:
+    """Select one complete blind case from the existing adaptive plan.
+
+    This is deliberately read-only.  It combines recommendation, case-type
+    resolution, freshness and figure checks so the teaching turn does not need
+    to rediscover those decisions through several model/tool round trips.
+    """
+
+    import paper_practice
+
+    today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
+    curriculum = load_curriculum()
+    topics = topic_map(curriculum)
+    requested_topic = args.topic
+    if requested_topic:
+        topic = topics.get(requested_topic)
+        if topic is None:
+            raise TutorError(f"未知稳定考点 ID：{requested_topic}")
+        if "case" not in topic.get("subjects", []) or "application" not in topic.get(
+            "skills", []
+        ):
+            raise TutorError(f"考点 {requested_topic} 不支持案例应用训练")
+
+    recommendation_args = argparse.Namespace(
+        data_dir=args.data_dir,
+        subject="case",
+        limit=max(len(topics), 20),
+        today=today.isoformat(),
+    )
+    plan = build_recommendation_payload(recommendation_args)
+    recommendations = plan["recommendations"]
+    if requested_topic:
+        selected_recommendations = [
+            item for item in recommendations if item["topic_id"] == requested_topic
+        ]
+        if not selected_recommendations:
+            topic = topics[requested_topic]
+            selected_recommendations = [
+                {
+                    "topic_id": requested_topic,
+                    "name": topic["name"],
+                    "subject": "case",
+                    "skill": "application",
+                    "priority_score": None,
+                    "mastery": topic_mastery(
+                        load_profile_and_state(args.data_dir)[1],
+                        requested_topic,
+                        "application",
+                    ),
+                    "review_due": False,
+                    "estimated_minutes": topic.get("estimated_minutes"),
+                    "reason": "考生明确指定该案例考点",
+                    "resources": topic.get("resources", []),
+                }
+            ]
+    else:
+        selected_recommendations = recommendations
+
+    attempts = load_attempts(state_paths(args.data_dir)["attempts"])
+    last_attempt_by_item: dict[str, str] = {}
+    for event in attempts:
+        if event.get("subject") != "case" or not event.get("item_id"):
+            continue
+        attempted_at = str(event.get("at") or "")
+        item_id = str(event["item_id"])
+        if attempted_at > last_attempt_by_item.get(item_id, ""):
+            last_attempt_by_item[item_id] = attempted_at
+
+    case_items = paper_practice.practice_items(paper_practice.build_case_items())
+    skipped_incomplete = 0
+    chosen_recommendation: dict[str, Any] | None = None
+    chosen_item: dict[str, Any] | None = None
+    chosen_assets: list[str] = []
+    chosen_missing_assets: list[str] = []
+    chosen_case_type: str | None = None
+
+    for recommendation in selected_recommendations:
+        topic = topics.get(recommendation["topic_id"])
+        if topic is None:
+            continue
+        case_type = case_type_for_topic(topic)
+        if case_type is None:
+            continue
+        candidates: list[tuple[dict[str, Any], list[str], list[str]]] = []
+        for item in case_items:
+            if item.get("tag") != case_type or item.get("practice_mode") != "blind":
+                continue
+            assets, missing_assets = case_figure_assets(item)
+            complete = not item.get("missing_figure") and not missing_assets
+            if not complete and not args.allow_missing_figures:
+                skipped_incomplete += 1
+                continue
+            candidates.append((item, assets, missing_assets))
+        if not candidates:
+            continue
+
+        def candidate_key(
+            candidate: tuple[dict[str, Any], list[str], list[str]]
+        ) -> tuple[Any, ...]:
+            item = candidate[0]
+            last_attempt = last_attempt_by_item.get(item["id"])
+            source_rank = 0 if item.get("source_type") == "real" else 1
+            year_match = re.match(r"(\d{4})", str(item.get("year") or "0"))
+            year = int(year_match.group(1)) if year_match else 0
+            return (
+                1 if last_attempt else 0,
+                last_attempt or "",
+                source_rank,
+                -year,
+                item["id"],
+            )
+
+        chosen_item, chosen_assets, chosen_missing_assets = min(
+            candidates, key=candidate_key
+        )
+        chosen_recommendation = recommendation
+        chosen_case_type = case_type
+        break
+
+    if chosen_item is None or chosen_recommendation is None or chosen_case_type is None:
+        detail = f"考点 {requested_topic}" if requested_topic else "当前案例推荐"
+        raise TutorError(
+            f"{detail} 没有可用的完整盲练真题；"
+            "可维护题面材料，或显式使用 --allow-missing-figures"
+        )
+
+    public_item = copy.deepcopy(chosen_item)
+    public_item.pop("answer", None)
+    public_item["figure_assets"] = chosen_assets
+    public_item["missing_figure_assets"] = chosen_missing_assets
+    public_item["figures_complete"] = (
+        not public_item.get("missing_figure") and not chosen_missing_assets
+    )
+    public_item["coach_note"] = (
+        "只呈现 stem，不展示答案；若 figure_assets 非空，按顺序查看后用文字准确描述图意，"
+        "不要向考生输出本地路径；作答后再按 year + numeral 调用 paper_practice --reveal。"
+    )
+    payload = {
+        "route_lock": {
+            "mode": "case_start",
+            "subject": "case",
+            "topic_id": chosen_recommendation["topic_id"],
+            "case_type": chosen_case_type,
+            "item_id": public_item["id"],
+        },
+        "today": today.isoformat(),
+        "selected_topic": {
+            "topic_id": chosen_recommendation["topic_id"],
+            "name": chosen_recommendation["name"],
+            "mastery": chosen_recommendation.get("mastery"),
+            "review_due": chosen_recommendation.get("review_due"),
+            "priority_score": chosen_recommendation.get("priority_score"),
+            "reason": chosen_recommendation["reason"],
+        },
+        "case_type": chosen_case_type,
+        "item": public_item,
+        "suggested_minutes": 25,
+        "selection": {
+            "policy": "adaptive_recommendation_then_curriculum_case_type",
+            "fresh_item": public_item["id"] not in last_attempt_by_item,
+            "skipped_incomplete_items": skipped_incomplete,
+            "allow_missing_figures": bool(args.allow_missing_figures),
+        },
+        "reveal": {
+            "year": public_item["year"],
+            "numeral": public_item["numeral"],
+        },
+        "record": {
+            "topic_id": chosen_recommendation["topic_id"],
+            "skill": "application",
+            "subject": "case",
+            "item_id": public_item["id"],
+            "source_type": public_item["source_type"],
+        },
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+    return 0
+
+
 def quiz_sessions_dir(data_dir: Path) -> Path:
     return data_dir / QUIZ_SESSIONS_DIR
 
@@ -3083,6 +3331,14 @@ QUIZ_INVALIDATION_REASONS = (
     "unclear_stem",
     "wrong_answer_key",
 )
+QUIZ_INVALIDATION_ALIASES = {
+    "incomplete_stem": "unclear_stem",
+    "stem_incomplete": "unclear_stem",
+    "missing_table": "missing_required_table",
+    "missing_figure": "missing_required_figure",
+    "missing_context": "missing_required_context",
+    "answer_leak": "answer_marker_leak",
+}
 
 
 def parse_quiz_marks(
@@ -3091,6 +3347,7 @@ def parse_quiz_marks(
     *,
     label: str,
     allowed: Iterable[str] = (),
+    aliases: dict[str, str] | None = None,
 ) -> dict[int, str]:
     """Parse ``--invalidate/--audit`` values written as ``4=reason``."""
 
@@ -3110,6 +3367,8 @@ def parse_quiz_marks(
         reason = reason_text.strip()
         if not reason:
             raise TutorError(f"{label} 缺少原因：{token}")
+        if aliases:
+            reason = aliases.get(reason, reason)
         if allowed and reason not in allowed:
             raise TutorError(
                 f"{label} 原因无效：{reason}（可用：" + ", ".join(sorted(allowed)) + "）"
@@ -3279,6 +3538,7 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
         len(questions),
         label="--invalidate",
         allowed=QUIZ_INVALIDATION_REASONS,
+        aliases=QUIZ_INVALIDATION_ALIASES,
     )
     audits = parse_quiz_marks(args.audit, len(questions), label="--audit")
     response_key = {
@@ -3486,6 +3746,16 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
             "evidence_level": subject.get("evidence_level"),
         },
     }
+    payload["next_action"] = next_training_action(
+        next_state,
+        parse_datetime(graded_at).date(),
+        quiz_id=args.quiz_id,
+        variant_count=sum(
+            1
+            for result in results
+            if isinstance(result.get("variant_question"), dict)
+        ),
+    )
     completed = {
         **manifest,
         "status": "graded",
@@ -3688,6 +3958,9 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
         "recorded_attempts": len(missing_events),
         "idempotent": not missing_events,
     }
+    payload["next_action"] = next_training_action(
+        next_state, parse_datetime(graded_at).date()
+    )
     completed = {
         **manifest,
         "variant_key": variant_key,
@@ -3980,6 +4253,22 @@ def build_parser() -> argparse.ArgumentParser:
     quiz_prepare_parser.add_argument("--limit", type=int, default=5)
     quiz_prepare_parser.add_argument("--today")
     quiz_prepare_parser.set_defaults(func=cmd_quiz_prepare)
+
+    case_prepare_parser = subparsers.add_parser(
+        "case-prepare",
+        help="一次完成案例薄弱点路由、真题选取与插图完整性检查（只读）",
+    )
+    case_prepare_parser.add_argument(
+        "--topic",
+        help="可选：明确指定支持 application 的稳定考点 ID；缺省时使用自适应推荐",
+    )
+    case_prepare_parser.add_argument("--today")
+    case_prepare_parser.add_argument(
+        "--allow-missing-figures",
+        action="store_true",
+        help="显式允许插图被移除的案例题；默认只选择材料完整的盲练题",
+    )
+    case_prepare_parser.set_defaults(func=cmd_case_prepare)
 
     quiz_grade_parser = subparsers.add_parser(
         "quiz-grade", help="一次完成客观题判分、批量记档和状态更新"

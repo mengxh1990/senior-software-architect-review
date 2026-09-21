@@ -99,6 +99,13 @@ python3 scripts/tutor.py --data-dir .study recommend
 python3 scripts/tutor.py --data-dir .study quiz-prepare \
   --subject comprehensive --limit 5
 
+# 一次完成案例路由、盲练真题选取、去重与插图完整性检查（只读）
+python3 scripts/tutor.py --data-dir .study case-prepare
+
+# 显式指定案例应用考点时仍通过 curriculum 解析题型，不手写题型映射
+python3 scripts/tutor.py --data-dir .study case-prepare \
+  --topic K25.RELIABILITY_ENGINEERING
+
 # 返回的 contexts 是题目共享上下文（例如英语阅读短文）；呈现时在关联题目前展示一次，
 # 不需要、也不应从题库另行查找原文。
 
@@ -114,6 +121,9 @@ python3 scripts/tutor.py --data-dir .study quiz-grade \
 python3 scripts/tutor.py --data-dir .study quiz-grade \
   --quiz-id <quiz-id> --answers 'C,B,A,X,B' \
   --invalidate '4=missing_required_table' --audit '3=答案键疑似有误'
+
+# 常见别名会规范化为稳定原因，例如 incomplete_stem -> unclear_stem，
+# 避免教学回合因记忆枚举名称而失败重试。
 
 # 查看最近完整模考暴露的具体薄弱点
 python3 scripts/tutor.py --data-dir .study diagnose --subject comprehensive

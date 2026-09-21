@@ -844,6 +844,63 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "the prepared set should not expose a trivial single-answer pattern",
             )
 
+    def test_case_prepare_uses_adaptive_route_and_stays_read_only(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            before = _snapshot_files(data_dir)
+
+            payload = _json_output(
+                _run_cli(
+                    data_dir,
+                    "case-prepare",
+                    "--today",
+                    "2026-09-21",
+                )
+            )
+
+            self.assertEqual(before, _snapshot_files(data_dir))
+            self.assertEqual("case_start", payload["route_lock"]["mode"])
+            self.assertEqual("case", payload["route_lock"]["subject"])
+            self.assertEqual("blind", payload["item"]["practice_mode"])
+            self.assertTrue(payload["item"]["figures_complete"])
+            self.assertNotIn("answer", payload["item"])
+            self.assertNotIn("参考答案", payload["item"]["stem"])
+            for asset in payload["item"]["figure_assets"]:
+                self.assertTrue(Path(asset).is_file())
+
+            topic = next(
+                item
+                for item in self.topics
+                if item["id"] == payload["selected_topic"]["topic_id"]
+            )
+            case_resource = next(
+                resource
+                for resource in topic["resources"]
+                if resource.startswith("past-papers/case-types/")
+            )
+            expected_type = re.search(r"/(\d{2})-", case_resource).group(1)
+            self.assertEqual(f"案例 {expected_type}", payload["case_type"])
+
+    def test_case_prepare_explicit_topic_maps_through_curriculum(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            payload = _json_output(
+                _run_cli(
+                    data_dir,
+                    "case-prepare",
+                    "--topic",
+                    "K25.RELIABILITY_ENGINEERING",
+                    "--today",
+                    "2026-09-21",
+                )
+            )
+            self.assertEqual("K25.RELIABILITY_ENGINEERING", payload["route_lock"]["topic_id"])
+            self.assertEqual("案例 13", payload["case_type"])
+            self.assertEqual("case", payload["record"]["subject"])
+            self.assertEqual("application", payload["record"]["skill"])
+
     def test_quiz_grade_records_one_atomic_idempotent_batch(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
@@ -2003,6 +2060,32 @@ class TutorAcceptanceTest(unittest.TestCase):
                 expected_returncode=2,
             )
 
+    def test_quiz_grade_normalizes_common_invalidation_aliases(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir)
+            graded = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-grade",
+                    "--quiz-id",
+                    prepared["quiz_id"],
+                    "--answers",
+                    "A,A,X,A,A",
+                    "--invalidate",
+                    "3=incomplete_stem",
+                )
+            )
+            self.assertEqual("unclear_stem", graded["results"][2]["invalid_reason"])
+            self.assertEqual("await_variants", graded["next_action"]["mode"])
+            attempts = [
+                json.loads(line)
+                for line in (data_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            self.assertFalse(any(event["attempt_id"].endswith("-q-3") for event in attempts))
+
     def test_variant_question_does_not_fall_back_to_another_concept(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
@@ -2136,6 +2219,14 @@ class TutorAcceptanceTest(unittest.TestCase):
                 len(variants), recorded["score"], "按正确答案作答应全部判对"
             )
             self.assertEqual(len(variants), recorded["recorded_attempts"])
+            self.assertIn(
+                recorded["next_action"]["mode"],
+                {"quiz_prepare", "case_prepare", "essay_manual_flow"},
+            )
+            self.assertEqual(
+                "existing_subject_allocator",
+                recorded["next_action"]["decision_source"],
+            )
 
             attempts = [
                 json.loads(line)

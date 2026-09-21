@@ -37,6 +37,7 @@
 - 第一次调用必须批量收集推荐、到期错题、候选题、题目元数据和去重信息，不得按题逐次搜索。
 - 非阻塞的诊断状态异常、元数据瑕疵或维护建议不得在训练回合内追查源码；记录后另开仓库维护任务处理。
 - `quiz-grade` 成功返回即表示判分、原子记档和状态更新完成。收到整组答案后只调用一次 `quiz-grade`，判分前后都不得追加 `status` 或 `diagnose`；给出必要反馈后立即结束本轮。
+- **路由锁定**：优先服从 `quiz-grade` / `quiz-variant-grade` 返回的 `next_action`。`await_variants` 只收变式答案；`quiz_prepare` 直接进入下一组；`case_prepare` 直接调用一次 `case-prepare`。除非用户明确改题型或命令失败，否则同一回合不得重新比较"继续综合还是切案例"。
 
 ## Step 1 · 一次准备整组题
 
@@ -141,7 +142,22 @@ python3 scripts/sanitize_bank.py --list
 
 ### Step 2c · 案例与论文真题（按题型 / 主题抽题）
 
-案例与论文的主观题也用真题，入口是 [`scripts/paper_practice.py`](../scripts/paper_practice.py)：
+案例与论文的主观题也用真题。自动排案例时优先使用聚合入口 `case-prepare`：
+
+```bash
+# 自动复用当前推荐器、个人路线、去重和题面完整性门禁
+python3 scripts/tutor.py case-prepare
+
+# 用户明确指定案例考点时
+python3 scripts/tutor.py case-prepare --topic K25.RELIABILITY_ENGINEERING
+```
+
+`case-prepare` 返回并锁定 `topic_id + case_type + item_id`，同时提供现存插图的
+`figure_assets` 绝对路径、作答后 reveal 参数和 record 上下文。默认跳过缺图或图文件
+不存在的题；只有用户明确接受缺图题时才加 `--allow-missing-figures`。收到成功结果后
+不得再调用 `--list`、手工比较题型或搜索图片路径。
+
+论文以及案例作答后的答案揭示仍使用 [`scripts/paper_practice.py`](../scripts/paper_practice.py)：
 
 ```bash
 # 案例：按题型盲练（自动剥离参考答案）
@@ -315,7 +331,8 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 变式题的作答会写成正式 `recognition` attempt，`variant_of` 指回产生它的原题：
 答错或明确不会的变式自动进入 1/3/7/14 复习队列，答对且确定的题进入题目冷却。
 不填 `--confidences` 时按 `unsure` 记录，避免未声明把握度的变式冒充确定掌握。
-命令返回值含逐题 `is_correct` / `wrong_reasons` / `next_review_at`，直接用它做反馈。
+命令返回值含逐题 `is_correct` / `wrong_reasons` / `next_review_at` 和唯一的
+`next_action`，直接用它做反馈和下一步路由。
 
 反馈完直接进入下一轮 `quiz-prepare`（推荐与选题已含在命令内，不再单独调用
 `recommend`）；连续答对 2 组后主动提"换科"。
@@ -329,6 +346,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 | 考生要求"其他题先判"且该题明确不会 | 该题用 `X` 完成本组 | 是 | 否 |
 | 考生答完变式题 | 整组用 `quiz-variant-grade` 记录一次，再给反馈 | 是 | 否 |
 | 题目缺关键图表 | `--invalidate 题号=missing_required_table/figure`，该题不记证据；回合结束后新开去重的修复任务，无法可靠修复则保持拦截 | 是 | 否 |
+| 题干不清或残缺 | `--invalidate 题号=unclear_stem`；兼容别名 `incomplete_stem`，工具会规范化 | 是 | 否 |
 | 答案键反直觉 | 信任已验证题库，`--audit` 标记 `needs_audit` | 是 | 否 |
 | 解析缺失或过短 | 给最小解释，不临时查资料 | 是 | 否 |
 | `quiz-grade` 非零退出 | 最多一次只读诊断；仍失败则报告阻塞 | 否 | 仅此一次 |
