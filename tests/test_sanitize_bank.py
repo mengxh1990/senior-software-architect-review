@@ -547,7 +547,7 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertTrue(item["stem"].startswith("某系统需要先完成总体分析的"))
         self.assertIn("其中条件判断并进行下一步处理", item["stem"])
 
-    def test_transcript_blocks_asset_before_question_heading(self) -> None:
+    def test_transcript_repairs_table_before_question_heading(self) -> None:
         path = self._write(
             "\n".join(
                 [
@@ -556,7 +556,7 @@ class PastPaperParsingTests(unittest.TestCase):
                     "<table><tr><td>输入数据</td></tr></table>",
                     "",
                     "## 第 2 题：[§12 示例]",
-                    "根据这些数据，最优结果是（2）。",
+                    "根据下表数据，最优结果是（2）。",
                     "",
                     "(2) A. 1 B. 2 C. 3 D. 4",
                     "",
@@ -570,9 +570,9 @@ class PastPaperParsingTests(unittest.TestCase):
             "2013下",
         )
         item = sanitize_bank.parse_paper(path)[0]
-        self.assertEqual("invalid", item["quality_status"])
-        self.assertIn("missing_required_table", item["quality_issues"])
-        self.assertNotIn("<table", item["stem"])
+        self.assertEqual("ready", item["quality_status"])
+        self.assertNotIn("missing_required_table", item["quality_issues"])
+        self.assertIn("| 输入数据 |", item["stem"])
 
     def test_transcript_blocks_image_before_question_heading(self) -> None:
         path = self._write(
@@ -581,7 +581,7 @@ class PastPaperParsingTests(unittest.TestCase):
                     "![流程图](../assets/example.webp)",
                     "",
                     "## 第 2 题：[§4 示例]",
-                    "根据图中关系，正确的是（2）。",
+                    "如下图所示，正确的是（2）。",
                     "",
                     "(2) A. a B. b C. c D. d",
                     "",
@@ -634,15 +634,16 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual("ready", items[1]["quality_status"])
         self.assertNotIn("missing_required_table", items[1]["quality_issues"])
 
-    def test_shipped_preheading_table_remains_blocked(self) -> None:
+    def test_shipped_preheading_table_is_repaired_into_question(self) -> None:
         items = {
             item["id"]: item
             for path in (REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2011下.md",)
             for item in sanitize_bank.parse_paper(path)
         }
         item = items["past-papers/comprehensive-by-year/2011下.md#70-70"]
-        self.assertEqual("invalid", item["quality_status"])
-        self.assertIn("missing_required_table", item["quality_issues"])
+        self.assertEqual("ready", item["quality_status"])
+        self.assertIn("| 子公司 \\ 材料 | 1 吨 | 2 吨 | 3 吨 | 4 吨 |", item["stem"])
+        self.assertIn("| 丙 | 4 | 6 | 11 | 14 |", item["stem"])
 
     def test_shipped_2013_product_schedule_embeds_required_table(self) -> None:
         items = {
@@ -658,6 +659,45 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual(["A"], item["correct"])
         self.assertIn("| 产品 | 设计（天） | 制造（天） | 检验（天） |", item["stem"])
         self.assertIn("| 丁 | 8 | 10 | 15 |", item["stem"])
+
+    def test_html_and_markdown_table_questions_are_renderable(self) -> None:
+        items = {
+            item["id"]: item
+            for path in (
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2015下.md",
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2016下.md",
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2017下.md",
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2024下.md",
+            )
+            for item in sanitize_bank.parse_paper(path)
+        }
+        for item_id in (
+            "past-papers/comprehensive-by-year/2015下.md#69-69",
+            "past-papers/comprehensive-by-year/2016下.md#69-69",
+            "past-papers/comprehensive-by-year/2017下.md#11-11",
+            "past-papers/comprehensive-by-year/2024下.md#21",
+        ):
+            with self.subTest(item_id=item_id):
+                item = items[item_id]
+                self.assertEqual("ready", item["quality_status"])
+                self.assertNotIn("<table", item["stem"])
+                self.assertIn("|", item["stem"])
+
+    def test_unrelated_preheading_table_does_not_block_question(self) -> None:
+        items = {
+            item["id"]: item
+            for path in (
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2016下.md",
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2017下.md",
+            )
+            for item in sanitize_bank.parse_paper(path)
+        }
+        for item_id in (
+            "past-papers/comprehensive-by-year/2016下.md#70-70",
+            "past-papers/comprehensive-by-year/2017下.md#5-5",
+        ):
+            with self.subTest(item_id=item_id):
+                self.assertEqual("ready", items[item_id]["quality_status"])
 
     def test_shipped_testing_stems_are_repaired_from_original_question(self) -> None:
         items = {

@@ -50,6 +50,7 @@ import json
 import re
 import sys
 from collections import defaultdict
+from html import unescape
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
 
@@ -307,6 +308,7 @@ def _stem_before(lines: Sequence[str]) -> str:
 def clean_stem(value: str) -> str:
     """Normalize a learner-facing stem without keeping layout scaffolding."""
 
+    value = render_html_tables(value)
     # Keep Markdown tables line-oriented: the public quiz payload is text-only,
     # so collapsing their newlines would discard the only renderable form of
     # source data that a learner needs to solve the question.
@@ -441,18 +443,24 @@ def _transcript_stem(lines: Sequence[str], question_number: int) -> str:
     ]
     if leading_intro:
         paragraphs.insert(0, leading_intro)
+    provisional = clean_stem(" ".join(paragraphs)) if paragraphs else ""
+    leading_asset = _transcript_preheading_asset(lines, provisional)
+    if leading_asset:
+        paragraphs.insert(0, leading_asset)
     separator = "\n\n" if any(MARKDOWN_TABLE_RE.search(p) for p in paragraphs) else " "
     return clean_stem(separator.join(paragraphs)) if paragraphs else ""
 
 
-def _transcript_source_fragment(lines: Sequence[str], question_number: int) -> str:
+def _transcript_source_fragment(
+    lines: Sequence[str], question_number: int, stem: str
+) -> str:
     """Return the source portion belonging to the current transcript group."""
 
     heading_indexes = [
         index for index, line in enumerate(lines) if QUESTION_GROUP_HEADER_RE.match(line)
     ]
     relevant = lines[heading_indexes[-1] + 1 :] if heading_indexes else lines
-    leading_asset = _transcript_preheading_asset(lines)
+    leading_asset = _transcript_preheading_asset(lines, stem)
     leading_intro = _transcript_question_intro(lines, question_number)
     if not leading_intro:
         leading_intro = _transcript_orphaned_preamble(lines)
@@ -461,21 +469,22 @@ def _transcript_source_fragment(lines: Sequence[str], question_number: int) -> s
     return "\n".join(parts)
 
 
-def _transcript_preheading_asset(lines: Sequence[str]) -> str:
+def _transcript_preheading_asset(lines: Sequence[str], stem: str) -> str:
     """Return a table or image immediately preceding the current group heading.
 
     LAS transcript papers sometimes place a shared table or figure *before*
     ``## 第 N 题``.  The learner-facing stem intentionally omits those raw
-    assets, but the quality gate must still see them and keep the dependent
-    question out of a text-only quiz.  Only inspect the trailing pre-heading
-    paragraph so an asset used in the previous question's explanation does
-    not poison the next question.
+    assets. Associate one only when the current stem explicitly points to a
+    table or figure; this avoids attaching a table from the previous answer's
+    explanation to an unrelated standalone question.
     """
 
     heading_indexes = [
         index for index, line in enumerate(lines) if QUESTION_GROUP_HEADER_RE.match(line)
     ]
     if not heading_indexes:
+        return ""
+    if not (references_table(stem) or references_figure(stem)):
         return ""
     prefix = "\n".join(lines[: heading_indexes[-1]]).rstrip()
     if not prefix:
@@ -548,8 +557,8 @@ def parse_paper_transcript(text: str, year: str) -> List[Dict]:
         start, end = min(anchors), max(anchors)
         first_anchor = PAPER_OPTION_ANCHOR_RE.search(window)
         pre_option_lines = window[: first_anchor.start()].splitlines()
-        source_fragment = _transcript_source_fragment(pre_option_lines, start)
         stem = _transcript_stem(pre_option_lines, start)
+        source_fragment = _transcript_source_fragment(pre_option_lines, start, stem)
         options = _parse_options(window[first_anchor.start() :].splitlines())
         answer_sequence = re.findall(r"[A-D]", answer.group(1))
         correct = sorted(set(answer_sequence))
@@ -652,6 +661,11 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
         )
         stem_lines = [header_text] + [line for line in body_lines[:option_start] if line.strip()]
         options = _parse_options(body_lines[option_start:])
+        separator = (
+            "\n"
+            if any(MARKDOWN_TABLE_RE.search(line) for line in stem_lines)
+            else " "
+        )
 
         explanation = ""
         explain_match = EXPLAIN_LINE.search(block)
@@ -668,7 +682,7 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
                 "range": [first_number, last_number],
                 "tag": tag,
                 "tag_label": label,
-                "stem": clean_stem(" ".join(stem_lines)),
+                "stem": clean_stem(separator.join(stem_lines)),
                 "options": options,
                 "correct": correct,
                 "explanation": explanation,
@@ -821,6 +835,87 @@ def _clean_text(value: str) -> str:
     return value.strip()
 
 
+HTML_TABLE_RE = re.compile(r"<table\b[^>]*>(.*?)</table>", re.IGNORECASE | re.DOTALL)
+HTML_ROW_RE = re.compile(r"<tr\b[^>]*>(.*?)</tr>", re.IGNORECASE | re.DOTALL)
+HTML_CELL_RE = re.compile(
+    r"<(?:th|td)\b(?P<attrs>[^>]*)>(?P<content>.*?)</(?:th|td)>",
+    re.IGNORECASE | re.DOTALL,
+)
+HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _html_span(attrs: str, name: str) -> int:
+    """Read a positive HTML table span attribute, defaulting to one."""
+
+    match = re.search(rf"\b{name}\s*=\s*['\"]?(\d+)", attrs, re.IGNORECASE)
+    return max(1, int(match.group(1))) if match else 1
+
+
+def _html_cell_text(value: str) -> str:
+    """Flatten inline HTML inside a table cell for Markdown rendering."""
+
+    value = re.sub(r"<br\s*/?>", " ", value, flags=re.IGNORECASE)
+    value = HTML_TAG_RE.sub(" ", value)
+    return _clean_text(unescape(value)).replace("|", "\\|")
+
+
+def _html_table_to_markdown(table: str) -> str:
+    """Render an HTML table into a rectangular Markdown table.
+
+    Historical transcripts use HTML tables because they retain PDF layout.
+    Quiz payloads are text-only, so HTML is not usable by a learner. The
+    renderer preserves cell order and expands row/column spans into a stable
+    rectangular form; blank cells intentionally represent visual spans.
+    """
+
+    rows: list[list[str]] = []
+    pending: dict[int, int] = {}
+    for raw_row in HTML_ROW_RE.findall(table):
+        row: list[str] = []
+        column = 0
+
+        def fill_pending() -> None:
+            nonlocal column
+            while column in pending:
+                row.append("")
+                pending[column] -= 1
+                if pending[column] == 0:
+                    del pending[column]
+                column += 1
+
+        for match in HTML_CELL_RE.finditer(raw_row):
+            fill_pending()
+            attrs = match.group("attrs")
+            text = _html_cell_text(match.group("content"))
+            colspan = _html_span(attrs, "colspan")
+            rowspan = _html_span(attrs, "rowspan")
+            row.append(text)
+            row.extend("" for _ in range(colspan - 1))
+            if rowspan > 1:
+                for offset in range(colspan):
+                    pending[column + offset] = rowspan - 1
+            column += colspan
+        fill_pending()
+        if row:
+            rows.append(row)
+
+    if not rows:
+        return ""
+    width = max(len(row) for row in rows)
+    normalized = [row + [""] * (width - len(row)) for row in rows]
+    lines = [normalized[0], ["---"] * width, *normalized[1:]]
+    return "\n".join("| " + " | ".join(row) + " |" for row in lines)
+
+
+def render_html_tables(value: str) -> str:
+    """Replace source HTML tables with learner-renderable Markdown tables."""
+
+    return HTML_TABLE_RE.sub(
+        lambda match: f"\n\n{_html_table_to_markdown(match.group(0))}\n\n",
+        value,
+    )
+
+
 def clean_explanation(value: str | None) -> str | None:
     """Return an explanation that is safe to render verbatim.
 
@@ -936,7 +1031,8 @@ def assess_quality(
     has_context = bool(str(item.get("context") or "").strip())
     image_links = RESOURCE_LINK_RE.findall(stem)
     requires_figure = references_figure(stem) or bool(image_links)
-    requires_table = references_table(stem) or bool(MARKDOWN_TABLE_RE.search(stem))
+    has_renderable_table = bool(MARKDOWN_TABLE_RE.search(stem))
+    requires_table = references_table(stem) or has_renderable_table
 
     if not stem:
         issues.append("empty_stem")
@@ -965,7 +1061,7 @@ def assess_quality(
     source_figure_status = item.get("source_figure_status")
     if source_figure_status:
         issues.append(str(source_figure_status))
-    if item.get("source_requires_table"):
+    if item.get("source_requires_table") and not has_renderable_table:
         issues.append("missing_required_table")
     if image_links:
         # quiz-prepare currently exposes a text-only public contract. A raw
@@ -973,9 +1069,11 @@ def assess_quality(
         # so keep image-dependent questions out until the runtime can return a
         # structured figure or an approved textual substitute.
         issues.append("figure_not_renderable")
-    elif requires_figure:
+    elif requires_figure and not (
+        has_renderable_table and "原卷图不可用" not in stem
+    ):
         issues.append("missing_required_figure")
-    if requires_table and not MARKDOWN_TABLE_RE.search(stem):
+    if requires_table and not has_renderable_table:
         issues.append("missing_required_table")
     for link in image_links:
         target = link.split("#", 1)[0].strip()
@@ -1099,8 +1197,13 @@ def parse_block(raw: str) -> Dict:
             stem_parts.append(_clean_text(stripped))
 
     correct = answer_from_line or correct_from_marker
+    separator = (
+        "\n"
+        if any(MARKDOWN_TABLE_RE.search(part) for part in stem_parts)
+        else " "
+    )
     return {
-        "stem": clean_stem(" ".join(p for p in stem_parts if p)),
+        "stem": clean_stem(separator.join(p for p in stem_parts if p)),
         "options": options,
         "correct": sorted(set(correct)),
         "explanation": clean_explanation(" ".join(explanation_lines)),
