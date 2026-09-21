@@ -6,6 +6,36 @@
       "item_id": "past-papers/comprehensive-by-year/2021.md#1",
       "reason": "missing_required_table",
       "note": "页式地址变换题：原卷页表在转录时丢失，解析中的页号→物理块号映射题干未给出，考生无法作答。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2010下.md#51-51",
+      "reason": "ambiguous_answer_key",
+      "note": "解析明确说明题干同时适合隐式调用、虚拟机等多种架构风格，并先认可答案 C、后建议答案 A，无法作为唯一答案题进入训练。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2014下.md#1-2",
+      "reason": "explanation_conflict",
+      "note": "同一解析先称图中④应为 C4，后又依据答案 D 称图中④应为 C2；该题组本身也已被多题组门禁拦截。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2015下.md#20-20",
+      "reason": "answer_explanation_conflict",
+      "note": "答案键为 C，但解析又把 Government To Employee 列为电子政务四种主要模式之一；同时选项 B 的 Customer 与解析中的 Citizen 表述不一致，题目没有稳定的唯一答案。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2016下.md#52-52",
+      "reason": "ambiguous_answer_key",
+      "note": "解析明确指出 A（规则系统）与 D（解释器）均属于虚拟机风格，但答案键只给 D，无法唯一判分。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2022.md#4",
+      "reason": "explanation_conflict",
+      "note": "解析声称同柱面按扇区号排序，但答案 D 在 16 号柱面的顺序为 ②(3)、③(6)、⑧(4)，与该判定规则不一致，需核对原卷规则后再开放。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2026上.md#57",
+      "reason": "ambiguous_answer_key",
+      "note": "解析承认 B 项表述不严谨，同时以 C 项错误更直接为由维持单选答案；至少存在两个可争议选项，不适合盲练。"
     }
   ]
 }

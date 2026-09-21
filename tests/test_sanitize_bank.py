@@ -414,6 +414,25 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual("invalid", excluded["quality_status"])
         self.assertIn("excluded:missing_required_table", excluded["quality_issues"])
 
+    def test_known_answer_explanation_conflicts_are_excluded(self) -> None:
+        items = {}
+        for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
+            items.update({item["id"]: item for item in sanitize_bank.parse_paper(path)})
+
+        expected = {
+            "past-papers/comprehensive-by-year/2010下.md#51-51": "ambiguous_answer_key",
+            "past-papers/comprehensive-by-year/2014下.md#1-2": "explanation_conflict",
+            "past-papers/comprehensive-by-year/2015下.md#20-20": "answer_explanation_conflict",
+            "past-papers/comprehensive-by-year/2016下.md#52-52": "ambiguous_answer_key",
+            "past-papers/comprehensive-by-year/2022.md#4": "explanation_conflict",
+            "past-papers/comprehensive-by-year/2026上.md#57": "ambiguous_answer_key",
+        }
+        for item_id, reason in expected.items():
+            with self.subTest(item_id=item_id):
+                self.assertIn(item_id, items)
+                self.assertEqual("invalid", items[item_id]["quality_status"])
+                self.assertIn(f"excluded:{reason}", items[item_id]["quality_issues"])
+
     def test_shipped_testing_stems_are_repaired_from_original_question(self) -> None:
         items = {
             item["id"]: item
