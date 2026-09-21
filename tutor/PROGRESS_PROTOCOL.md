@@ -97,6 +97,7 @@ unseen → learning → fragile → pass_ready
 - 题目本身无效（缺关键图表、答案不在选项中、题干被解析污染）时不写事件：判分时用 `--invalidate` 排除该题，只对有效题记档；题库疑点用 `--audit` 写入 `.study/quiz-audit-queue.jsonl`，由独立维护任务处理。
 - `item_id` 必填并稳定标识一道独立题目；不得用新的 `attempt_id` 兜底。复做同一 `item_id` 可以验证遗忘，但不能冒充多个独立掌握证据。
 - 自编题先登记题干、选项、稳定细考点 `concept_id`、题型族 `question_family_id` 和内容指纹；同内容换 ID 不得作为新证据。同一细考点的变式用 `variant_of` 关联来源题。
+- 变式题的作答同样是有效证据：由 `quiz-variant-grade` 写成 `recognition` attempt，`attempt_id` 为 `<quiz-id>-v-<序号>`，`variant_of` 指回产生它的原题；未声明把握度时记为 `unsure`，不得冒充确定掌握。
 - `curriculum.json` 声明了 `facets` 的聚合考点，在识别/应用训练中必须记录合法 `facet`；达到题数但未覆盖全部子主题时仍不能 `pass_ready`。
 - `source_type` 只能明确标记为 `official_outline`、`real`、`recalled_real`、`self_authored` 或 `simulation`，不得把模拟题称为真题。
 - 用户输入无效、尚未回答或只阅读讲解时，不写掌握证据。

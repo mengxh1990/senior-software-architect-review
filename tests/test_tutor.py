@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import unquote
@@ -1756,6 +1757,67 @@ class TutorAcceptanceTest(unittest.TestCase):
             for question in self._quiz_manifest(data_dir, quiz_id)["questions"]
         }
 
+    def _grade_wrong_answer_variant(
+        self,
+        data_dir: Path,
+        concept_id: str = "K16.REQUIREMENTS_MANAGEMENT",
+        at: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Prepare one question pinned to ``concept_id`` and answer it wrong.
+
+        Pinning the fine concept keeps the follow-up deterministic: the picker
+        only ever offers a variant on that same concept.
+        """
+
+        prepared = self._prepare_quiz(data_dir, limit=1)
+        manifest_path = data_dir / "quiz-sessions" / f"{prepared['quiz_id']}.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        question = manifest["questions"][0]
+        question["topic_id"] = concept_id
+        question["concept_id"] = concept_id
+        manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        correct = "".join(question["correct"])
+        wrong = next(letter for letter in "ABCD" if letter != correct)
+        arguments = [
+            "quiz-grade",
+            "--quiz-id",
+            prepared["quiz_id"],
+            "--answers",
+            wrong,
+        ]
+        if at is not None:
+            arguments += ["--at", at]
+        graded = _json_output(_run_cli(data_dir, *arguments))
+        self.assertFalse(graded["results"][0]["is_correct"])
+        return graded["results"][0]["variant_question"]
+
+    def _grade_quiz_with_wrong_answers(
+        self, data_dir: Path
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        """Grade a whole group with all-A answers and return the variants served."""
+
+        prepared = self._prepare_quiz(data_dir)
+        graded = _json_output(
+            _run_cli(
+                data_dir,
+                "quiz-grade",
+                "--quiz-id",
+                prepared["quiz_id"],
+                "--answers",
+                "A,A,A,A,A",
+            )
+        )
+        variants = [
+            result["variant_question"]
+            for result in graded["results"]
+            if result.get("variant_question")
+        ]
+        self.assertTrue(variants, "全 A 作答必须至少产生一道变式题")
+        return graded, variants
+
     def test_quiz_grade_treats_explicit_x_as_conceded_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
@@ -1972,6 +2034,198 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertIsNone(
                 graded["results"][0]["variant_question"],
                 "a different concept in the same topic is not a valid variant",
+            )
+
+    def test_variant_question_does_not_repeat_within_the_cooldown_window(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            first = self._grade_wrong_answer_variant(data_dir)
+            self.assertIsNotNone(
+                first, "a wrong answer on a mapped concept must offer a variant"
+            )
+            second = self._grade_wrong_answer_variant(data_dir)
+            self.assertIsNotNone(second)
+            self.assertEqual(first["topic_id"], second["topic_id"])
+            self.assertNotEqual(
+                first["item_id"],
+                second["item_id"],
+                "变式题只在对话里口头作答、不写 attempts，"
+                "因此必须靠会话清单把它排除出冷却窗口",
+            )
+
+    def test_variant_question_cooldown_reads_older_sessions(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            three_days_ago = (
+                datetime.now().astimezone() - timedelta(days=3)
+            ).isoformat(timespec="seconds")
+            first = self._grade_wrong_answer_variant(data_dir, at=three_days_ago)
+            self.assertIsNotNone(first)
+            second = self._grade_wrong_answer_variant(data_dir)
+            self.assertIsNotNone(second)
+            self.assertNotEqual(
+                first["item_id"],
+                second["item_id"],
+                "冷却窗口要覆盖前几天已经出过的变式题，而不只是当天",
+            )
+
+    def test_quiz_prepare_does_not_re_serve_a_banked_item_on_a_later_day(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            first = self._prepare_quiz(data_dir)
+            manifest = self._quiz_manifest(data_dir, first["quiz_id"])
+            answers = ",".join(
+                "".join(question["correct"]) for question in manifest["questions"]
+            )
+            _run_cli(
+                data_dir,
+                "quiz-grade",
+                "--quiz-id",
+                first["quiz_id"],
+                "--answers",
+                answers,
+                "--confidences",
+                "sure,sure,sure,sure,sure",
+            )
+            later = (
+                datetime.now().astimezone() + timedelta(days=3)
+            ).date().isoformat()
+            second = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-prepare",
+                    "--subject",
+                    "comprehensive",
+                    "--limit",
+                    "5",
+                    "--today",
+                    later,
+                )
+            )
+            self.assertFalse(
+                self._manifest_item_ids(data_dir, first["quiz_id"])
+                & self._manifest_item_ids(data_dir, second["quiz_id"]),
+                "做对且把握确定的原题不得在冷却窗口内重出",
+            )
+
+    def test_quiz_variant_grade_records_follow_up_answers(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            graded, variants = self._grade_quiz_with_wrong_answers(data_dir)
+            answers = ",".join(variant["answer"] for variant in variants)
+            recorded = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-variant-grade",
+                    "--quiz-id",
+                    graded["quiz_id"],
+                    "--answers",
+                    answers,
+                )
+            )
+            self.assertEqual(len(variants), recorded["max_score"])
+            self.assertEqual(
+                len(variants), recorded["score"], "按正确答案作答应全部判对"
+            )
+            self.assertEqual(len(variants), recorded["recorded_attempts"])
+
+            attempts = [
+                json.loads(line)
+                for line in (data_dir / "attempts.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if line.strip()
+            ]
+            variant_events = [event for event in attempts if "-v-" in event["attempt_id"]]
+            self.assertEqual(len(variants), len(variant_events))
+            for event in variant_events:
+                self.assertEqual("recognition", event["skill"])
+                self.assertEqual("review", event["mode"])
+                self.assertEqual(1, event["score"])
+                self.assertTrue(event["variant_of"], "变式作答必须指回来源题")
+                self.assertEqual(
+                    "unsure",
+                    event["confidence"],
+                    "未声明把握度的变式不得冒充确定掌握",
+                )
+
+            replay = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-variant-grade",
+                    "--quiz-id",
+                    graded["quiz_id"],
+                    "--answers",
+                    answers,
+                )
+            )
+            self.assertTrue(replay["idempotent"])
+            self.assertEqual(0, replay["recorded_attempts"])
+
+            conflicting = ",".join(
+                next(letter for letter in "ABCD" if letter != variant["answer"])
+                for variant in variants
+            )
+            _run_cli(
+                data_dir,
+                "quiz-variant-grade",
+                "--quiz-id",
+                graded["quiz_id"],
+                "--answers",
+                conflicting,
+                expected_returncode=2,
+            )
+
+    def test_quiz_variant_grade_schedules_a_missed_variant_for_review(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            graded, variants = self._grade_quiz_with_wrong_answers(data_dir)
+            answers = ["X"] + [
+                next(letter for letter in "ABCD" if letter != variant["answer"])
+                for variant in variants[1:]
+            ]
+            recorded = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-variant-grade",
+                    "--quiz-id",
+                    graded["quiz_id"],
+                    "--answers",
+                    ",".join(answers),
+                )
+            )
+            self.assertEqual(0, recorded["score"])
+            conceded = recorded["results"][0]
+            self.assertEqual("conceded", conceded["response_state"])
+            self.assertIsNone(conceded["confidence"])
+            self.assertEqual(["knowledge_gap"], conceded["wrong_reasons"])
+            tomorrow = (datetime.now().astimezone().date() + timedelta(days=1)).isoformat()
+            for result in recorded["results"]:
+                self.assertFalse(result["is_correct"])
+                self.assertEqual(
+                    tomorrow,
+                    result["next_review_at"],
+                    "答错或明确不会的变式题必须进入 1 天后的纠错复习",
+                )
+            attempted_ids = {
+                json.loads(line)["item_id"]
+                for line in (data_dir / "attempts.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if line.strip()
+            }
+            self.assertTrue(
+                {variant["item_id"] for variant in variants} <= attempted_ids,
+                "变式题的作答现在也是正式证据，必须进入去重集合",
             )
 
     def test_quiz_grade_audit_failure_does_not_commit_learner_evidence(self) -> None:

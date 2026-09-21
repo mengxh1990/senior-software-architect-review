@@ -53,6 +53,11 @@ WRONG_REASONS = {
 QUIZ_SCHEMA_VERSION = 1
 QUIZ_SESSIONS_DIR = "quiz-sessions"
 RECALLED_REAL_YEARS = {"2023下", "2024上", "2024下", "2025上", "2025下", "2026上"}
+# An item answered correctly with certain confidence, or already shown as a
+# follow-up variant, stays out of rotation for this many days.  The fine
+# concept keeps its review schedule; only the exact item is retired so spacing
+# lands on a fresh question instead of a memorised one.
+RECENT_ITEM_COOLDOWN_DAYS = 14
 
 
 class TutorError(RuntimeError):
@@ -2541,6 +2546,82 @@ def quiz_questions_served_on(data_dir: Path, day: date) -> tuple[set[str], set[s
     return items, concepts
 
 
+def recently_served_variant_item_ids(
+    data_dir: Path, day: date, days: int = RECENT_ITEM_COOLDOWN_DAYS
+) -> set[str]:
+    """Item ids already handed to the learner as a follow-up variant.
+
+    A variant is answered out loud in chat and never becomes an attempt, so the
+    session manifests are the only durable trace of what was already served.
+    Without this set the picker repeats the same follow-up question day after
+    day, because nothing else marks it as seen.
+    """
+
+    items: set[str] = set()
+    directory = quiz_sessions_dir(data_dir)
+    if not directory.is_dir():
+        return items
+    earliest = day - timedelta(days=max(days, 0))
+    for path in sorted(directory.glob("*.json")):
+        try:
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise TutorError(f"客观题会话损坏：{path}") from error
+        # A variant is served while grading, so graded_at is the serving time.
+        stamp = manifest.get("graded_at") or manifest.get("created_at")
+        if not isinstance(stamp, str):
+            raise TutorError(f"客观题会话损坏：{path}")
+        served_on = parse_datetime(stamp).date()
+        if not earliest <= served_on <= day:
+            continue
+        result = manifest.get("result")
+        if not isinstance(result, dict):
+            continue
+        for entry in result.get("results") or []:
+            if not isinstance(entry, dict):
+                continue
+            variant = entry.get("variant_question")
+            if isinstance(variant, dict) and isinstance(variant.get("item_id"), str):
+                items.add(variant["item_id"])
+    return items
+
+
+def recently_mastered_item_ids(
+    attempts: Iterable[dict[str, Any]],
+    day: date,
+    days: int = RECENT_ITEM_COOLDOWN_DAYS,
+) -> set[str]:
+    """Items answered correctly with certain confidence inside the cooldown window.
+
+    A guess or an unsure answer is fragile evidence, so the item stays eligible.
+    """
+
+    earliest = day - timedelta(days=max(days, 0))
+    items: set[str] = set()
+    for event in attempts:
+        item_id = event.get("item_id")
+        if not isinstance(item_id, str) or not item_id:
+            continue
+        if event.get("confidence") != "sure":
+            continue
+        if event.get("response_state") == "conceded":
+            continue
+        try:
+            score = float(event.get("score") or 0)
+            max_score = float(event.get("max_score") or 0)
+        except (TypeError, ValueError):
+            continue
+        if max_score <= 0 or score < max_score:
+            continue
+        at = event.get("at")
+        if not isinstance(at, str):
+            continue
+        if parse_datetime(at).date() < earliest:
+            continue
+        items.add(item_id)
+    return items
+
+
 def paper_source_type(year: str | None) -> str:
     return "recalled_real" if year in RECALLED_REAL_YEARS else "real"
 
@@ -2734,11 +2815,17 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
     used_concepts: set[str] = set()
     answer_counts: dict[str, int] = {}
     chosen_recommendations: list[dict[str, Any]] = []
+    # Items the learner has already banked or already read are the last thing
+    # to hand back; the fine concept stays in rotation through fresh items.
+    protected_items = recently_mastered_item_ids(attempts, today) | (
+        recently_served_variant_item_ids(args.data_dir, today)
+    )
 
     def choose_for(
         recommendation: dict[str, Any],
         allow_repeated: bool,
         allow_cooled: bool,
+        allow_protected: bool = False,
     ) -> bool:
         topic = topics.get(recommendation["topic_id"])
         if not topic:
@@ -2749,6 +2836,8 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
             if candidate is None or candidate["item_id"] in used_items:
                 continue
             if candidate["item_id"] in served_today_items:
+                continue
+            if not allow_protected and candidate["item_id"] in protected_items:
                 continue
             if not allow_repeated and candidate["item_id"] in attempted_items:
                 continue
@@ -2807,12 +2896,17 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
 
     # Same-day freshness comes first: an item or fine concept already served
     # today is only reused after every untouched recommendation had its turn.
-    for allow_cooled in (False, True):
-        for allow_repeated in (False, True):
-            for recommendation in recommendations:
+    for allow_protected in (False, True):
+        for allow_cooled in (False, True):
+            for allow_repeated in (False, True):
+                for recommendation in recommendations:
+                    if len(selected) >= args.limit:
+                        break
+                    choose_for(
+                        recommendation, allow_repeated, allow_cooled, allow_protected
+                    )
                 if len(selected) >= args.limit:
                     break
-                choose_for(recommendation, allow_repeated, allow_cooled)
             if len(selected) >= args.limit:
                 break
         if len(selected) >= args.limit:
@@ -2959,6 +3053,19 @@ def parse_quiz_confidences(value: str | None, count: int) -> list[str]:
     return values
 
 
+def parse_variant_confidences(value: str | None, count: int) -> list[str]:
+    """Confidence for a follow-up variant, which is usually not stated.
+
+    Defaulting to ``unsure`` keeps an unstated variant from being banked as
+    certain mastery.  The item is still retired by the served-variant cooldown,
+    so repeat protection does not depend on this default.
+    """
+
+    if not value:
+        return ["unsure"] * count
+    return parse_quiz_confidences(value, count)
+
+
 QUIZ_INVALIDATION_REASONS = (
     "missing_required_figure",
     "missing_required_table",
@@ -3043,11 +3150,14 @@ def pick_variant_question(
     topics: dict[str, dict[str, Any]],
     private_registry: dict[str, dict[str, Any]],
     blocked_items: set[str],
+    recently_served_items: set[str] | None = None,
 ) -> dict[str, Any] | None:
     """Pick one fresh, quality-gated question on the same concept.
 
     The variant comes from the verified pool instead of being written on the
-    spot, so the coaching round never needs to search the question bank.
+    spot, so the coaching round never needs to search the question bank.  An
+    item the learner already saw as a variant is skipped; a repeat is only used
+    when every candidate on that concept is spent.
     """
 
     topic = topics.get(question.get("topic_id"))
@@ -3056,6 +3166,7 @@ def pick_variant_question(
     wanted_concept = question.get("concept_id")
     if not wanted_concept:
         return None
+    stale: dict[str, Any] | None = None
     for raw in pool:
         candidate = quiz_question_for_topic(raw, topic, private_registry)
         if candidate is None:
@@ -3064,9 +3175,14 @@ def pick_variant_question(
             continue
         if candidate["item_id"] in blocked_items:
             continue
-        if candidate.get("concept_id") == wanted_concept:
-            return variant_question_payload(candidate)
-    return None
+        if candidate.get("concept_id") != wanted_concept:
+            continue
+        if recently_served_items and candidate["item_id"] in recently_served_items:
+            if stale is None:
+                stale = candidate
+            continue
+        return variant_question_payload(candidate)
+    return variant_question_payload(stale) if stale is not None else None
 
 
 def append_quiz_audit_entries(
@@ -3312,6 +3428,9 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
     blocked_items = {question["item_id"] for question in questions} | {
         event.get("item_id") for event in attempts
     }
+    recently_served_variants = recently_served_variant_item_ids(
+        args.data_dir, parse_datetime(graded_at).date()
+    )
     for result in counted_results:
         topic_record = next_state["topics"].get(result["topic_id"]) or state["topics"].get(
             result["topic_id"]
@@ -3336,6 +3455,7 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
                 topics,
                 private_registry,
                 blocked_items,
+                recently_served_variants,
             )
         else:
             result["variant_question"] = None
@@ -3381,6 +3501,199 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
         append_quiz_audit_entries(
             args.data_dir, args.quiz_id, audits, questions, graded_at
         )
+    if missing_events:
+        write_attempts(attempts_path, [*attempts, *missing_events])
+        save_state_bundle(args.data_dir, profile, next_state, backup=True)
+    atomic_write_json(path, completed)
+    print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
+    """Record the follow-up variants a graded round handed to the learner.
+
+    A variant is answered in chat and would otherwise vanish, leaving the
+    picker blind to what was already served and the review ladder blind to a
+    missed follow-up.  Each answer becomes a normal attempt whose
+    ``variant_of`` points back at the question that produced it.
+    """
+
+    path, manifest = load_quiz_manifest(args.data_dir, args.quiz_id)
+    graded = manifest.get("result")
+    if manifest.get("status") != "graded" or not isinstance(graded, dict):
+        raise TutorError("变式判分要求本组已完成判分，请先运行 quiz-grade")
+    served: list[tuple[int, dict[str, Any]]] = []
+    for position, entry in enumerate(graded.get("results") or [], 1):
+        if not isinstance(entry, dict):
+            continue
+        variant = entry.get("variant_question")
+        if isinstance(variant, dict):
+            number = entry.get("number")
+            served.append((number if isinstance(number, int) else position, variant))
+    if not served:
+        raise TutorError(f"quiz-id {args.quiz_id} 本组没有变式题，无需判分")
+    answers = parse_quiz_answers(args.answers)
+    if len(answers) != len(served):
+        raise TutorError(f"变式答案数量为 {len(answers)}，变式题数量为 {len(served)}")
+    confidences = parse_variant_confidences(args.confidences, len(served))
+    variant_key = {
+        "answers": ["".join(answer) for answer in answers],
+        "confidences": confidences,
+    }
+    if manifest.get("variant_result") is not None:
+        if manifest.get("variant_key") != variant_key:
+            raise TutorError(f"quiz-id {args.quiz_id} 的变式题已使用不同答案完成")
+        replay = {
+            **manifest["variant_result"],
+            "recorded_attempts": 0,
+            "idempotent": True,
+        }
+        print(json.dumps(replay, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+
+    questions = manifest["questions"]
+    curriculum = load_curriculum()
+    topics = topic_map(curriculum)
+    profile, state = load_profile_and_state(args.data_dir)
+    attempts_path = state_paths(args.data_dir)["attempts"]
+    attempts = load_attempts(attempts_path)
+    existing_by_id = {event["attempt_id"]: event for event in attempts}
+    private_registry = load_private_question_registry(args.data_dir)
+    graded_at = parse_datetime(args.at).isoformat(timespec="seconds")
+    # The variant payload is the public view of the question; concept, facet and
+    # family come back from the bank so the attempt lands in the same buckets a
+    # first-round answer would.
+    pool = load_quiz_question_pool(curriculum)
+    resolved: dict[str, dict[str, Any]] = {}
+    for _, variant in served:
+        item_id = variant.get("item_id")
+        topic = topics.get(variant.get("topic_id"))
+        if not isinstance(item_id, str) or topic is None:
+            raise TutorError(f"变式题元数据无效：{item_id}")
+        for raw in pool:
+            candidate = quiz_question_for_topic(raw, topic, private_registry)
+            if candidate is not None and candidate["item_id"] == item_id:
+                resolved[item_id] = candidate
+                break
+        if item_id not in resolved:
+            raise TutorError(f"变式题已不在可出题池中：{item_id}")
+
+    events: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
+    for index, ((source_number, variant), selected, confidence) in enumerate(
+        zip(served, answers, confidences, strict=True), 1
+    ):
+        candidate = resolved[variant["item_id"]]
+        source = (
+            questions[source_number - 1] if 1 <= source_number <= len(questions) else {}
+        )
+        correct = sorted(variant["answer"])
+        conceded = selected == ["X"]
+        is_correct = selected == correct
+        if conceded:
+            wrong_reasons = ["knowledge_gap"]
+            event_confidence = None
+        elif is_correct:
+            wrong_reasons = ["guessed_correct"] if confidence == "guess" else []
+            event_confidence = confidence
+        else:
+            wrong_reasons = ["concept_confusion"]
+            event_confidence = confidence
+        event = {
+            "attempt_id": f"{args.quiz_id}-v-{index}",
+            "event_type": "practice",
+            "topic_id": candidate["topic_id"],
+            "item_id": candidate["item_id"],
+            "facet": candidate.get("facet"),
+            "at": graded_at,
+            "subject": manifest["subject"],
+            "skill": "recognition",
+            "mode": "review",
+            "score": 0 if conceded else (1 if is_correct else 0),
+            "max_score": 1,
+            "duration_seconds": None,
+            "word_count": None,
+            "complete": False,
+            "confidence": event_confidence,
+            "response_state": "conceded" if conceded else "answered",
+            "selected_answer": None if conceded else "".join(selected),
+            "correct_answer": "".join(correct),
+            "wrong_reasons": wrong_reasons,
+            "source_type": candidate["source_type"],
+            "source": candidate.get("source"),
+            "feedback_seen": False,
+            "concept_id": candidate.get("concept_id"),
+            "question_family_id": candidate.get("question_family_id"),
+            "question_fingerprint": None,
+            "variant_of": source.get("item_id"),
+        }
+        validate_record_event(event, curriculum)
+        existing = existing_by_id.get(event["attempt_id"])
+        if existing is not None and events_conflict(
+            comparable_existing_event(existing, event),
+            event,
+            compare_at=bool(args.at),
+        ):
+            raise TutorError(f"attempt-id {event['attempt_id']} 与已记录内容冲突")
+        events.append(event)
+        results.append(
+            {
+                "number": index,
+                "source_number": source_number,
+                "item_id": candidate["item_id"],
+                "topic_id": candidate["topic_id"],
+                "concept_id": candidate.get("concept_id"),
+                "response_state": event["response_state"],
+                "selected": None if conceded else "".join(selected),
+                "correct": "".join(correct),
+                "is_correct": is_correct,
+                "confidence": event_confidence,
+                "wrong_reasons": wrong_reasons,
+                "memory_hook": (
+                    private_registry.get(candidate["item_id"], {}) or {}
+                ).get("memory_hook"),
+            }
+        )
+
+    next_state = copy.deepcopy(state)
+    missing_events = [
+        event for event in events if event["attempt_id"] not in existing_by_id
+    ]
+    for event in missing_events:
+        apply_record_event(next_state, event, curriculum)
+    minimum_interval = int(
+        next_state.get("strategy", {}).get("min_review_interval_days", 0) or 0
+    )
+    for result in results:
+        topic_record = next_state["topics"].get(result["topic_id"]) or state[
+            "topics"
+        ].get(result["topic_id"])
+        if not topic_record:
+            result["topic_status"] = None
+            result["next_review_at"] = None
+            continue
+        skill_record = (topic_record.get("mastery") or {}).get("recognition") or {}
+        result["topic_status"] = topic_record.get("status")
+        result["next_review_at"] = effective_review_date(
+            skill_record.get("next_review_at"),
+            skill_record.get("last_attempt_at"),
+            minimum_interval,
+        )
+
+    payload = {
+        "quiz_id": args.quiz_id,
+        "score": sum(1 for result in results if result["is_correct"]),
+        "max_score": len(results),
+        "results": results,
+        "recorded_attempts": len(missing_events),
+        "idempotent": not missing_events,
+    }
+    completed = {
+        **manifest,
+        "variant_key": variant_key,
+        "variant_graded_at": graded_at,
+        "variant_result": payload,
+    }
     if missing_events:
         write_attempts(attempts_path, [*attempts, *missing_events])
         save_state_bundle(args.data_dir, profile, next_state, backup=True)
@@ -3685,6 +3998,20 @@ def build_parser() -> argparse.ArgumentParser:
     quiz_grade_parser.add_argument("--duration-seconds", type=int)
     quiz_grade_parser.add_argument("--at")
     quiz_grade_parser.set_defaults(func=cmd_quiz_grade)
+
+    quiz_variant_parser = subparsers.add_parser(
+        "quiz-variant-grade",
+        help="记录并判分上一组给出的变式题（作答后调用一次）",
+    )
+    quiz_variant_parser.add_argument("--quiz-id", required=True)
+    quiz_variant_parser.add_argument(
+        "--answers",
+        required=True,
+        help="按变式出现顺序作答，逗号分隔；明确不会写 X",
+    )
+    quiz_variant_parser.add_argument("--confidences")
+    quiz_variant_parser.add_argument("--at")
+    quiz_variant_parser.set_defaults(func=cmd_quiz_variant_grade)
 
     configure_parser = subparsers.add_parser(
         "configure", help="保存诊断后的案例赛道与论文主题"

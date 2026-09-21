@@ -29,7 +29,7 @@
 ## 回合预算与结束条件
 
 - 出题回合只调用一次 `quiz-prepare`；判分回合只调用一次 `quiz-grade`。只有命令失败且直接阻塞本轮时，才允许增加一次修复或诊断调用。
-- **运行时白名单**：出题回合只允许 `quiz-prepare`，判分回合只允许 `quiz-grade`。不得用 `cat` / `rg` / `sed` 读取源码、题库、`quiz-sessions/*.json`、`state.json` 或知识库来"确认"答案，也不得手工改 manifest、伪造选项或要求考生补答"不会"的题。命令非零退出且直接阻塞本轮时，最多做一次只读诊断；仍失败就如实报告阻塞，改开维护任务。
+- **运行时白名单**：出题回合只允许 `quiz-prepare`，判分回合只允许 `quiz-grade`，变式回合只允许 `quiz-variant-grade`。不得用 `cat` / `rg` / `sed` 读取源码、题库、`quiz-sessions/*.json`、`state.json` 或知识库来"确认"答案，也不得手工改 manifest、伪造选项或要求考生补答"不会"的题。命令非零退出且直接阻塞本轮时，最多做一次只读诊断；仍失败就如实报告阻塞，改开维护任务。
 - **上下文预算**：非题面输出保持简短，不把完整题库、候选池或状态全集带进教学线程；题目本身不受此限制。为了"确认"重复运行确定性命令也算违规。每个日历日用新任务从 `.study/` 恢复；同一任务一旦发生源码/题库排查，后续教学转到新任务，避免维护上下文跨日累积。
 - `quiz-prepare` 每轮只调用一次。返回题目存在元数据瑕疵（缺图、缺表、组合答案不清、题干截断）时，当场用文字补全或说明，不得重跑命令换取新题。
 - 题目质量在进入本循环前已由门禁判定：`quiz-prepare` 只会给出 `ready_for_quiz` 的题。若某题在作答后才发现残缺（例如依赖的表其实没给出），用 `--invalidate` 把它排除出本组，不要临场补内容。
@@ -304,6 +304,19 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 
 3. **一道变式题**（口头答）
 
+考生答完变式题后，整组用一次 `quiz-variant-grade` 落盘（答案顺序按变式出现顺序，
+明确不会写 `X`）：
+
+```bash
+python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
+  --answers 'B,C' --confidences 'sure,unsure'
+```
+
+变式题的作答会写成正式 `recognition` attempt，`variant_of` 指回产生它的原题：
+答错或明确不会的变式自动进入 1/3/7/14 复习队列，答对且确定的题进入题目冷却。
+不填 `--confidences` 时按 `unsure` 记录，避免未声明把握度的变式冒充确定掌握。
+命令返回值含逐题 `is_correct` / `wrong_reasons` / `next_review_at`，直接用它做反馈。
+
 反馈完直接进入下一轮 `quiz-prepare`（推荐与选题已含在命令内，不再单独调用
 `recommend`）；连续答对 2 组后主动提"换科"。
 
@@ -314,6 +327,7 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 | 考生回答"不会" | 该题传 `X`，0 分 + `knowledge_gap` | 是 | 否 |
 | 考生漏写一题且未说明 | 一次性指出缺少题号，请补答 | 否 | 否 |
 | 考生要求"其他题先判"且该题明确不会 | 该题用 `X` 完成本组 | 是 | 否 |
+| 考生答完变式题 | 整组用 `quiz-variant-grade` 记录一次，再给反馈 | 是 | 否 |
 | 题目缺关键图表 | `--invalidate 题号=missing_required_table/figure`，该题不记证据 | 是 | 否 |
 | 答案键反直觉 | 信任已验证题库，`--audit` 标记 `needs_audit` | 是 | 否 |
 | 解析缺失或过短 | 给最小解释，不临时查资料 | 是 | 否 |
@@ -352,6 +366,7 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 - [ ] 自编题已登记细考点、题型族和内容指纹
 - [ ] 未重复原题、同题型或当天已经纠偏的细考点
 - [ ] 错题给了错因 + 记忆钩子 + 变式题
+- [ ] 变式题的作答已用 `quiz-variant-grade` 记录，没有只停留在对话里
 - [ ] 没把 `✅` / `**答案**` / `**解析**` 泄给学员
 - [ ] 向考生说明作答格式时只用了占位符（如 `1_ 2_ 3_ 4_ 5_`），没有用真实字母组合举例——示例串不得恰好等于答案串
 - [ ] 没有硬贴 exam-bank 原文（一律走 `quiz-prepare`）
@@ -365,7 +380,7 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 
 | 工具 | 位置 | 作用 |
 |---|---|---|
-| CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / weakpoints / recommend / quiz-prepare / quiz-grade / record / configure / doctor |
+| CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / weakpoints / recommend / quiz-prepare / quiz-grade / quiz-variant-grade / record / configure / doctor |
 | 脱敏器 | [`scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) | 题库维护、抽查与人工修复用；支持 `--topic` / `--tag` / `--year` / `--list`，不在答题循环内调用 |
 | 质量排除表 | [`scripts/quiz_quality_exclusions.json`](../scripts/quiz_quality_exclusions.json) | 人工确认的坏题黑名单；`doctor` 报告拦截数量，`quiz-prepare` 机械跳过 |
 | 考点表生成 | [`scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) | 由 `curriculum.json` 生成 `topic-map.md` |
