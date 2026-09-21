@@ -547,6 +547,110 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertTrue(item["stem"].startswith("某系统需要先完成总体分析的"))
         self.assertIn("其中条件判断并进行下一步处理", item["stem"])
 
+    def test_transcript_blocks_asset_before_question_heading(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "上一题解析结束。",
+                    "",
+                    "<table><tr><td>输入数据</td></tr></table>",
+                    "",
+                    "## 第 2 题：[§12 示例]",
+                    "根据这些数据，最优结果是（2）。",
+                    "",
+                    "(2) A. 1 B. 2 C. 3 D. 4",
+                    "",
+                    "【答案】A",
+                    "",
+                    "**考点**：§12 示例",
+                    "",
+                    "【解析】测试题。",
+                ]
+            ),
+            "2013下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual("invalid", item["quality_status"])
+        self.assertIn("missing_required_table", item["quality_issues"])
+        self.assertNotIn("<table", item["stem"])
+
+    def test_transcript_blocks_image_before_question_heading(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "![流程图](../assets/example.webp)",
+                    "",
+                    "## 第 2 题：[§4 示例]",
+                    "根据图中关系，正确的是（2）。",
+                    "",
+                    "(2) A. a B. b C. c D. d",
+                    "",
+                    "【答案】A",
+                    "",
+                    "**考点**：§4 示例",
+                    "",
+                    "【解析】测试题。",
+                ]
+            ),
+            "2013下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual("invalid", item["quality_status"])
+        self.assertIn("figure_not_renderable", item["quality_issues"])
+
+    def test_previous_explanation_table_does_not_block_next_question(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "前一题。",
+                    "",
+                    "(1) A. a B. b C. c D. d",
+                    "",
+                    "【答案】A",
+                    "",
+                    "**考点**：§4 示例",
+                    "",
+                    "【解析】说明如下。",
+                    "",
+                    "<table><tr><td>仅用于解析</td></tr></table>",
+                    "",
+                    "因此上一题选 A。",
+                    "",
+                    "## 第 2 题：[§4 示例]",
+                    "独立问题是（2）。",
+                    "",
+                    "(2) A. a B. b C. c D. d",
+                    "",
+                    "【答案】A",
+                    "",
+                    "**考点**：§4 示例",
+                    "",
+                    "【解析】测试题。",
+                ]
+            ),
+            "2013下",
+        )
+        items = sanitize_bank.parse_paper(path)
+        self.assertEqual("ready", items[1]["quality_status"])
+        self.assertNotIn("missing_required_table", items[1]["quality_issues"])
+
+    def test_shipped_preheading_tables_are_blocked(self) -> None:
+        items = {
+            item["id"]: item
+            for path in (
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2011下.md",
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2013下.md",
+            )
+            for item in sanitize_bank.parse_paper(path)
+        }
+        for item_id in (
+            "past-papers/comprehensive-by-year/2011下.md#70-70",
+            "past-papers/comprehensive-by-year/2013下.md#69-69",
+        ):
+            with self.subTest(item_id=item_id):
+                self.assertEqual("invalid", items[item_id]["quality_status"])
+                self.assertIn("missing_required_table", items[item_id]["quality_issues"])
+
     def test_shipped_testing_stems_are_repaired_from_original_question(self) -> None:
         items = {
             item["id"]: item

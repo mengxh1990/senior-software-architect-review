@@ -443,12 +443,46 @@ def _transcript_source_fragment(lines: Sequence[str], question_number: int) -> s
         index for index, line in enumerate(lines) if QUESTION_GROUP_HEADER_RE.match(line)
     ]
     relevant = lines[heading_indexes[-1] + 1 :] if heading_indexes else lines
+    leading_asset = _transcript_preheading_asset(lines)
     leading_intro = _transcript_question_intro(lines, question_number)
     if not leading_intro:
         leading_intro = _transcript_orphaned_preamble(lines)
-    parts = [leading_intro] if leading_intro else []
+    parts = [part for part in (leading_asset, leading_intro) if part]
     parts.extend(relevant)
     return "\n".join(parts)
+
+
+def _transcript_preheading_asset(lines: Sequence[str]) -> str:
+    """Return a table or image immediately preceding the current group heading.
+
+    LAS transcript papers sometimes place a shared table or figure *before*
+    ``## 第 N 题``.  The learner-facing stem intentionally omits those raw
+    assets, but the quality gate must still see them and keep the dependent
+    question out of a text-only quiz.  Only inspect the trailing pre-heading
+    paragraph so an asset used in the previous question's explanation does
+    not poison the next question.
+    """
+
+    heading_indexes = [
+        index for index, line in enumerate(lines) if QUESTION_GROUP_HEADER_RE.match(line)
+    ]
+    if not heading_indexes:
+        return ""
+    prefix = "\n".join(lines[: heading_indexes[-1]]).rstrip()
+    if not prefix:
+        return ""
+
+    table = re.search(r"(?is)(<table\b.*?</table>)\s*$", prefix)
+    if table:
+        return table.group(1)
+
+    paragraphs = _paragraphs_with_offsets(prefix)
+    if not paragraphs:
+        return ""
+    trailing = paragraphs[-1][1]
+    if RESOURCE_LINK_RE.search(trailing) or "原图含机构广告或水印，已移除" in trailing:
+        return trailing
+    return ""
 
 
 def _ordered_inline_option_chunks(value: str) -> List[str]:
