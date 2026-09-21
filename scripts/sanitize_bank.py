@@ -82,6 +82,18 @@ PLACEHOLDER_STEM_RE = re.compile(r"^[（(]\s*\d{1,3}\s*[)）]$")
 PRIOR_CONTEXT_RE = re.compile(
     r"^\s*(?:(?:接|承|同|见)?上题|将上题|接前题|(?:在|基于)\s*第\s*\d+\s*题\s*(?:的)?基础(?:上)?)"
 )
+# LAS 转录偶尔把题组标题插入到一个跨段题干中间，导致标题后的第一段
+# 以“其中/条件/关系/接和/类架构”等续写片段开头。遇到这种形态时，
+# 应尝试把标题前紧邻的未完段落一并归入题干，而不是把残片当成完整题目。
+ORPHANED_STEM_PREFIX_RE = re.compile(
+    r"^\s*(?:其中|条件判断|关系[，,]|与\s|类架构|接和|那么前驱图|所共有|中众多|用领域中|连接和)"
+)
+ORPHANED_PREAMBLE_END_RE = re.compile(
+    r"(?:的|一项|了一|自然连|之间的|为|是|有|将|包括|体系|如下|如下图所示)\s*[：:]?$"
+)
+TRUNCATED_CMMI_STEM_RE = re.compile(
+    r"^\s*CMMI\s+(?:该|本)(?:企业|公司|组织).{0,30}(?:达到|评估).*[（(]\s*[）)]\s*$"
+)
 # Very short noun-only cloze prompts are usually truncated transcript fragments
 # rather than self-contained questions (for example ``静态测试（ ）``).  Keep
 # this deliberately narrow: prompts such as ``性能量度包括（ ）`` still carry a
@@ -339,6 +351,59 @@ def _transcript_question_intro(lines: Sequence[str], question_number: int) -> st
     return ""
 
 
+def _transcript_orphaned_preamble(lines: Sequence[str]) -> str:
+    """Recover a pre-heading fragment when the next stem starts mid-sentence.
+
+    Some LAS transcripts place ``## 第 N 题`` between two paragraphs of the
+    same question.  The old recovery path only worked when the question
+    number appeared before the heading, which misses cases where ``(N)`` is
+    printed after the heading.  Keep this heuristic narrow: it only fires
+    when the post-heading text has a known continuation prefix and the
+    immediately preceding paragraph is visibly unfinished, a formula, or a
+    figure/table marker.
+    """
+
+    heading_indexes = [
+        index for index, line in enumerate(lines) if QUESTION_GROUP_HEADER_RE.match(line)
+    ]
+    if not heading_indexes:
+        return ""
+    heading_index = heading_indexes[-1]
+    after_heading = [
+        paragraph.strip()
+        for paragraph in "\n".join(lines[heading_index + 1 :]).split("\n\n")
+        if paragraph.strip()
+    ]
+    if not after_heading or not ORPHANED_STEM_PREFIX_RE.match(after_heading[0]):
+        return ""
+
+    before_heading = [
+        paragraph.strip()
+        for paragraph in "\n".join(lines[:heading_index]).split("\n\n")
+        if paragraph.strip()
+    ]
+    if not before_heading:
+        return ""
+
+    previous = before_heading[-1]
+    recovered: List[str] = []
+    if IMAGE_ONLY_RE.match(previous) or previous.startswith("$$"):
+        recovered.append(previous)
+        if len(before_heading) >= 2:
+            prior = before_heading[-2]
+            if (
+                IMAGE_ONLY_RE.match(previous)
+                and (prior.endswith(("：", ":")) or "图" in prior)
+            ) or (previous.startswith("$$") and prior.endswith(("：", ":"))):
+                recovered.insert(0, prior)
+    elif ORPHANED_PREAMBLE_END_RE.search(previous) and not previous.endswith(
+        ("。", "！", "？", ".", "!", "?", "；", ";")
+    ):
+        recovered.append(previous)
+
+    return clean_stem(" ".join(recovered)) if recovered else ""
+
+
 def _transcript_stem(lines: Sequence[str], question_number: int) -> str:
     """Recover a full transcript-group stem instead of its last paragraph.
 
@@ -354,6 +419,8 @@ def _transcript_stem(lines: Sequence[str], question_number: int) -> str:
         return _stem_before(lines)
     candidate_lines = lines[heading_indexes[-1] + 1 :]
     leading_intro = _transcript_question_intro(lines, question_number)
+    if not leading_intro:
+        leading_intro = _transcript_orphaned_preamble(lines)
     paragraphs = [
         paragraph.strip()
         for paragraph in "\n".join(candidate_lines).split("\n\n")
@@ -377,6 +444,8 @@ def _transcript_source_fragment(lines: Sequence[str], question_number: int) -> s
     ]
     relevant = lines[heading_indexes[-1] + 1 :] if heading_indexes else lines
     leading_intro = _transcript_question_intro(lines, question_number)
+    if not leading_intro:
+        leading_intro = _transcript_orphaned_preamble(lines)
     parts = [leading_intro] if leading_intro else []
     parts.extend(relevant)
     return "\n".join(parts)
@@ -765,10 +834,13 @@ def references_table(stem: str) -> bool:
 
 
 def is_incomplete_stem(stem: str) -> bool:
-    """Return whether a short cloze stem is only a bare noun phrase."""
+    """Return whether a stem is an obvious truncated prompt."""
 
     match = BARE_CLOZE_STEM_RE.fullmatch(stem.strip())
-    return bool(match and not CLOZE_PREDICATE_RE.search(match.group("prefix")))
+    return bool(
+        (match and not CLOZE_PREDICATE_RE.search(match.group("prefix")))
+        or TRUNCATED_CMMI_STEM_RE.fullmatch(stem.strip())
+    )
 
 
 def load_quality_exclusions(path: Path | None = None) -> Dict[str, str]:
@@ -838,6 +910,8 @@ def assess_quality(
     if (PLACEHOLDER_STEM_RE.fullmatch(stem) or PRIOR_CONTEXT_RE.match(stem)) and not has_context:
         issues.append("missing_required_context")
     if is_incomplete_stem(stem) and not has_context:
+        issues.append("incomplete_stem")
+    if ORPHANED_STEM_PREFIX_RE.match(stem) and not has_context:
         issues.append("incomplete_stem")
     if int(item.get("question_count", 1) or 1) > 1:
         # The objective-quiz runtime currently records one answer per visible

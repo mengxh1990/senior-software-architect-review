@@ -326,6 +326,24 @@ class PastPaperParsingTests(unittest.TestCase):
         }
         self.assertEqual("ready", sanitize_bank.assess_quality(complete)["quality_status"])
 
+    def test_quality_gate_blocks_truncated_cmmi_prompt(self) -> None:
+        verdict = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/x.md#17",
+                "stem": "CMMI 该企业已达到（ ）",
+                "options": [
+                    {"label": "A", "text": "可重复级"},
+                    {"label": "B", "text": "已定义级"},
+                    {"label": "C", "text": "量化级"},
+                    {"label": "D", "text": "优化级"},
+                ],
+                "correct": ["B"],
+                "explanation": "企业达到已定义级。",
+            }
+        )
+        self.assertEqual("invalid", verdict["quality_status"])
+        self.assertIn("incomplete_stem", verdict["quality_issues"])
+
     def test_quality_gate_blocks_repository_image_links_until_renderable(self) -> None:
         verdict = sanitize_bank.assess_quality(
             {
@@ -432,6 +450,102 @@ class PastPaperParsingTests(unittest.TestCase):
                 self.assertIn(item_id, items)
                 self.assertEqual("invalid", items[item_id]["quality_status"])
                 self.assertIn(f"excluded:{reason}", items[item_id]["quality_issues"])
+
+    def test_shipped_cmmi_question_has_complete_stem(self) -> None:
+        items = {
+            item["id"]: item
+            for item in sanitize_bank.parse_paper(
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2021.md"
+            )
+        }
+        item = items["past-papers/comprehensive-by-year/2021.md#17"]
+        self.assertEqual("ready", item["quality_status"])
+        self.assertIn("某软件企业在项目开发过程中目标明确", item["stem"])
+        self.assertIn("符合企业管理体系与流程制度", item["stem"])
+        self.assertEqual(["B"], item["correct"])
+
+    def test_shipped_orphaned_transcript_stems_are_recovered_or_blocked(self) -> None:
+        expected = {
+            "past-papers/comprehensive-by-year/2010下.md#16-16": (
+                "ready",
+                "假设单个 CPU 的性能为 1",
+            ),
+            "past-papers/comprehensive-by-year/2010下.md#52-52": (
+                "ready",
+                "某公司欲开发一个语音识别系统",
+            ),
+            "past-papers/comprehensive-by-year/2011下.md#24-24": (
+                "invalid",
+                "利用需求跟踪能力链",
+            ),
+            "past-papers/comprehensive-by-year/2011下.md#68-68": (
+                "ready",
+                "M 公司的程序员在不影响本职工作的情况下",
+            ),
+            "past-papers/comprehensive-by-year/2013下.md#43-43": (
+                "ready",
+                "软件架构风格是描述某一特定应用领域",
+            ),
+            "past-papers/comprehensive-by-year/2016下.md#9-9": (
+                "ready",
+                "给定关系模式 R(A, B, C, D, E)",
+            ),
+            "past-papers/comprehensive-by-year/2016下.md#51-51": (
+                "ready",
+                "某公司拟开发一个扫地机器人",
+            ),
+            "past-papers/comprehensive-by-year/2017下.md#6-6": (
+                "invalid",
+                "前驱图(Precedence Graph)",
+            ),
+            "past-papers/comprehensive-by-year/2022.md#17": (
+                "ready",
+                "系统可靠性的常用度量指标主要有",
+            ),
+        }
+        items = {}
+        for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
+            items.update({item["id"]: item for item in sanitize_bank.parse_paper(path)})
+        for item_id, (status, marker) in expected.items():
+            with self.subTest(item_id=item_id):
+                self.assertEqual(status, items[item_id]["quality_status"])
+                self.assertIn(marker, items[item_id]["stem"])
+        self.assertIn(
+            "figure_not_renderable",
+            items["past-papers/comprehensive-by-year/2011下.md#24-24"]["quality_issues"],
+        )
+        self.assertIn(
+            "figure_not_renderable",
+            items["past-papers/comprehensive-by-year/2017下.md#6-6"]["quality_issues"],
+        )
+
+    def test_transcript_recovery_collects_fragment_before_question_heading(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "某系统需要先完成总体分析的",
+                    "",
+                    "## 第 1 题：[§4 示例]",
+                    "其中条件判断并进行下一步处理，题目要求选择（1）。",
+                    "",
+                    "(1) A. 选项 A",
+                    "B. 选项 B",
+                    "C. 选项 C",
+                    "D. 选项 D",
+                    "",
+                    "【答案】A",
+                    "",
+                    "**考点**：§4 示例",
+                    "",
+                    "【解析】测试题。",
+                ]
+            ),
+            "2013下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual("ready", item["quality_status"])
+        self.assertTrue(item["stem"].startswith("某系统需要先完成总体分析的"))
+        self.assertIn("其中条件判断并进行下一步处理", item["stem"])
 
     def test_shipped_testing_stems_are_repaired_from_original_question(self) -> None:
         items = {
