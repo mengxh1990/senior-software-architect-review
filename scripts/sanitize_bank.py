@@ -300,6 +300,7 @@ ITEM_TOPIC_OVERRIDES = {
 CURATED_SOURCE_FIGURE_STATUS_OVERRIDES = {
     "past-papers/comprehensive-by-year/2011下.md#24-24": "figure_not_renderable",
     "past-papers/comprehensive-by-year/2017下.md#6-6": "figure_not_renderable",
+    "past-papers/comprehensive-by-year/2021.md#4": "figure_not_renderable",
 }
 
 
@@ -1284,6 +1285,28 @@ def is_incomplete_stem(stem: str) -> bool:
     )
 
 
+def question_span(item: Dict) -> int:
+    """Return how many sub-questions one transcript block covers.
+
+    Normalized papers carry ``range`` (``[7, 8]``) but no ``question_count``;
+    legacy transcripts carry ``question_count``. Reading both keeps the answer
+    arity check working on either layout.
+    """
+
+    span = item.get("range")
+    if isinstance(span, (list, tuple)) and len(span) == 2:
+        try:
+            first, last = int(span[0]), int(span[1])
+        except (TypeError, ValueError):
+            first = last = 0
+        if last >= first >= 1:
+            return last - first + 1
+    try:
+        return max(1, int(item.get("question_count") or 1))
+    except (TypeError, ValueError):
+        return 1
+
+
 def load_quality_exclusions(path: Path | None = None) -> Dict[str, str]:
     """Load the maintainer deny-list of items that must never be quizzed."""
 
@@ -1347,6 +1370,13 @@ def assess_quality(
         issues.append("duplicate_options")
     if not correct or any(letter not in labels for letter in correct):
         issues.append("answer_not_in_options")
+    # A block covering several blanks must carry one answer per blank.
+    # ``correct`` is a de-duplicated letter set, so a block whose answers are
+    # missing or repeat can no longer be scored positionally: the runtime would
+    # accept any permutation of the same letters.
+    span = question_span(item)
+    if span > 1 and len(correct) != span:
+        issues.append("answer_count_mismatch")
     if ANSWER_LEAK_RE.search(stem) or any(ANSWER_LEAK_RE.search(text) for text in texts):
         issues.append("answer_marker_leak")
     if (PLACEHOLDER_STEM_RE.fullmatch(stem) or PRIOR_CONTEXT_RE.match(stem)) and not has_context:

@@ -737,6 +737,73 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual("invalid", excluded["quality_status"])
         self.assertIn("excluded:missing_required_table", excluded["quality_issues"])
 
+    def test_multi_blank_blocks_need_one_answer_per_blank(self) -> None:
+        options = [
+            {"label": "A", "text": "选项 A"},
+            {"label": "B", "text": "选项 B"},
+            {"label": "C", "text": "选项 C"},
+            {"label": "D", "text": "选项 D"},
+        ]
+        shared_bank = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/x.md#19-20",
+                "range": [19, 20],
+                "stem": "描述软件到硬件映射的是（　）？关注运行状态的是（　）。",
+                "options": options,
+                "correct": ["B", "D"],
+                "explanation": None,
+            }
+        )
+        self.assertEqual("ready", shared_bank["quality_status"])
+
+        short_key = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/x.md#57-59",
+                "range": [57, 59],
+                "stem": "（57）是基本设计决策；（58）是最低层的模式；引用计数是一种（59）。",
+                "options": options,
+                "correct": ["A", "B"],
+                "explanation": None,
+            }
+        )
+        self.assertEqual("invalid", short_key["quality_status"])
+        self.assertIn("answer_count_mismatch", short_key["quality_issues"])
+
+        single = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/x.md#4",
+                "range": [4, 4],
+                "stem": "以下关于构件的叙述中，正确的是（　）。",
+                "options": options,
+                "correct": ["B"],
+                "explanation": None,
+            }
+        )
+        self.assertEqual("ready", single["quality_status"])
+
+    def test_shipped_multi_blank_blocks_keep_one_answer_per_blank(self) -> None:
+        items = {}
+        for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
+            items.update({item["id"]: item for item in sanitize_bank.parse_paper(path)})
+
+        blocked = items["past-papers/comprehensive-by-year/2009下.md#57-59"]
+        self.assertEqual("invalid", blocked["quality_status"])
+        self.assertIn("answer_count_mismatch", blocked["quality_issues"])
+
+        ready_multi = [
+            item
+            for item in items.values()
+            if item["quality_status"] == "ready"
+            and sanitize_bank.question_span(item) > 1
+        ]
+        self.assertGreater(len(ready_multi), 0)
+        for item in ready_multi:
+            with self.subTest(item_id=item["id"]):
+                self.assertEqual(
+                    sanitize_bank.question_span(item),
+                    len(item["correct"]),
+                )
+
     def test_shipped_corpus_separates_ready_from_incomplete_questions(self) -> None:
         items = []
         for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):

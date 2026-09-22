@@ -56,10 +56,75 @@ BASELINE_RAW_ASSET_FIELD_EXCEPTIONS = {
         (69, 69): {"stem": "baseline_embedded_raw_figure_path"},
     },
 }
+# A reviewed group split rewrites one multi-blank block into a carrier plus one
+# item per blank.  The carrier keeps the shared scenario and every child gets
+# its own option bank and answer, so no exam text is invented or lost.  The
+# check below still proves line-level preservation against the baseline.
+REVIEWED_GROUP_SPLITS = {
+    "past-papers/comprehensive-by-year/2009下.md": {(57, 59), (71, 75)},
+    "past-papers/comprehensive-by-year/2010下.md": {(55, 57), (71, 75)},
+    "past-papers/comprehensive-by-year/2011下.md": {(71, 75),},
+    "past-papers/comprehensive-by-year/2012下.md": {(44, 48), (56, 61), (71, 75)},
+    "past-papers/comprehensive-by-year/2013下.md": {
+        (40, 42),
+        (52, 56),
+        (57, 63),
+        (71, 75),
+    },
+}
+GROUP_HEADING_RE = re.compile(r"^### (\d+)(?:-(\d+))?\.\s*$", re.MULTILINE)
+GROUP_MARKER_LINE_RE = re.compile(r"^[（(]\s*\d{1,3}\s*[)）]$")
+GROUP_ANSWER_LINE_RE = re.compile(r"^\*\*答案\*\*\s*[:：]")
+
+
+def _block_text(text: str, start: int, end: int) -> str:
+    """Return one ``### start-end.`` block, bounded by the next ``###`` line."""
+
+    match = GROUP_HEADING_RE.search(text)
+    while match:
+        first = int(match.group(1))
+        last = int(match.group(2) or match.group(1))
+        if (first, last) == (start, end):
+            following = text.find("\n### ", match.end())
+            return text[match.start() : following if following != -1 else len(text)]
+        match = GROUP_HEADING_RE.search(text, match.end())
+    return ""
+
+
+def _preserved_lines(block: str) -> List[str]:
+    """Lines that a split must carry over verbatim.
+
+    ``(N)`` scaffolding and the single ``**答案**`` line are rewritten by
+    design; every other non-empty line -- stem, options, tag, explanation --
+    has to survive somewhere in the rewritten region.
+    """
+
+    kept = []
+    for line in block.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if GROUP_MARKER_LINE_RE.match(stripped) or GROUP_ANSWER_LINE_RE.match(stripped):
+            continue
+        kept.append(stripped)
+    return kept
+
+
 # A reviewed content correction made on ``dev`` from the authoritative paper
 # is not layout drift.  Store the exact approved value so the exception cannot
 # silently absorb a later, different edit to the same field.
 REVIEWED_CONTENT_FIXES = {
+    "past-papers/comprehensive-by-year/2021.md": {
+        (4, 4): {
+            # The baseline transcript pasted the answer edge set into the stem,
+            # which is the same string as option C: the question leaked its own
+            # answer and never carried the precedence graph it references.
+            "stem": (
+                "前趋图（Precedence Graph） 题图给出了进程 P1–P8 之间的前趋关系"
+                "（原卷插图未随转录保留），那么前趋图可记为（ ）。"
+            ),
+        },
+    },
     "past-papers/comprehensive-by-year/2025上.md": {
         (30, 30): {
             "stem": "在数据流图中，描述数据流可以产生 b 数据和 c 数据，但是不能同时产生 b 和 c 数据的是（）符号。",
@@ -122,7 +187,9 @@ def index_items(items: Iterable[Dict[str, Any]]) -> Dict[Tuple[int, int], Dict[s
 
 
 def compare_paper(module: Any, path: Path, base_ref: str) -> List[str]:
-    baseline = index_items(parse_revision(module, read_revision(path, base_ref), path.stem))
+    baseline_text = read_revision(path, base_ref)
+    current_text = path.read_text(encoding="utf-8")
+    baseline = index_items(parse_revision(module, baseline_text, path.stem))
     current = index_items(module.parse_paper(path))
     issues: List[str] = []
 
@@ -131,7 +198,15 @@ def compare_paper(module: Any, path: Path, base_ref: str) -> List[str]:
     allowed_polluted_fields = BASELINE_TRAILING_POLLUTION_FIELDS.get(relative, {})
     allowed_asset_fields = BASELINE_RAW_ASSET_FIELD_EXCEPTIONS.get(relative, {})
     reviewed_content_fixes = REVIEWED_CONTENT_FIXES.get(relative, {})
-    unexpected_current = set(current) - set(baseline) - set(allowed_additions)
+    split_keys = REVIEWED_GROUP_SPLITS.get(relative, set())
+    split_additions = {
+        (number, number)
+        for start, end in split_keys
+        for number in range(start, end + 1)
+    }
+    unexpected_current = (
+        set(current) - set(baseline) - set(allowed_additions) - split_additions
+    )
     missing_current = set(baseline) - set(current)
     if unexpected_current or missing_current:
         issues.append(
@@ -139,6 +214,22 @@ def compare_paper(module: Any, path: Path, base_ref: str) -> List[str]:
             f"基线={sorted(baseline)}，当前={sorted(current)}"
         )
         return issues
+    for start, end in sorted(split_keys):
+        for number in range(start, end + 1):
+            child = current.get((number, number))
+            if child is None or child.get("quality_status") != "ready":
+                issues.append(f"{relative}#{number}-{number}：拆分出的子题未通过门禁")
+        baseline_block = _block_text(baseline_text, start, end)
+        region = "\n".join(
+            [_block_text(current_text, start, end)]
+            + [_block_text(current_text, number, number) for number in range(start, end + 1)]
+        )
+        for line in _preserved_lines(baseline_block):
+            if line not in region:
+                issues.append(
+                    f"{relative}#{start}-{end}：拆分后遗失内容 {line[:40]!r}"
+                )
+                break
     for key, reason in allowed_additions.items():
         item = current.get(key)
         if item is None:
@@ -149,6 +240,10 @@ def compare_paper(module: Any, path: Path, base_ref: str) -> List[str]:
             )
 
     for key in sorted(baseline):
+        if key in split_keys:
+            # Reviewed split: the carrier keeps the scenario as shared reading
+            # material, and the per-blank fields are asserted above.
+            continue
         for field in FIELDS:
             if baseline[key].get(field) != current[key].get(field):
                 exception = allowed_polluted_fields.get(key, {}).get(field)

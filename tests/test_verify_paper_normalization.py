@@ -89,6 +89,36 @@ class VerifyPaperNormalizationTests(unittest.TestCase):
                     with self.subTest(path=relative, key=key, field=field):
                         self.assertEqual(expected, items[key][field])
 
+    def test_reviewed_group_splits_expose_one_ready_item_per_blank(self) -> None:
+        import importlib.util
+
+        sanitizer_path = REPO_ROOT / "scripts" / "sanitize_bank.py"
+        spec = importlib.util.spec_from_file_location("sanitize_bank", sanitizer_path)
+        assert spec and spec.loader
+        sanitizer = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sanitizer)
+
+        shipped = 0
+        for relative, groups in verify_paper_normalization.REVIEWED_GROUP_SPLITS.items():
+            items = {
+                (item["range"][0], item["range"][1]): item
+                for item in sanitizer.parse_paper(REPO_ROOT / relative)
+            }
+            for start, end in sorted(groups):
+                carrier = items[(start, end)]
+                with self.subTest(path=relative, group=f"{start}-{end}"):
+                    self.assertNotEqual("ready", carrier["quality_status"])
+                for number in range(start, end + 1):
+                    child = items.get((number, number))
+                    with self.subTest(path=relative, child=number):
+                        self.assertIsNotNone(child)
+                        self.assertEqual("ready", child["quality_status"])
+                        self.assertEqual(1, sanitizer.question_span(child))
+                        self.assertEqual(1, len(child["correct"]))
+                        self.assertTrue(child.get("context"), "子题必须带上共享题干")
+                        shipped += 1
+        self.assertGreater(shipped, 50)
+
 
 if __name__ == "__main__":
     unittest.main()
