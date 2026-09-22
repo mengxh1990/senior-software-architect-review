@@ -84,11 +84,32 @@ LEGACY_CURATED_ANSWER_RE = re.compile(
     r"(?:[ \t]*\|[ \t]*\*\*[ \t]*考点[ \t]*\*\*[ \t]*[:：][ \t]*(§[0-9]+(?:\.[0-9]+)?)(?:[ \t]+([^\r\n]*))?)?[ \t]*$",
     re.MULTILINE,
 )
+# A small number of pre-normalisation recall transcripts placed all metadata
+# after the stem on one physical line, often without Markdown emphasis.  This
+# is intentionally a *separate* adapter rather than a permissive canonical
+# pattern.  It exists solely to compare/serve those historical source blocks
+# without treating their answer and explanation as learner-facing stem text.
+LEGACY_INLINE_FIELD_RE = re.compile(
+    r"(?:\*\*)?答案(?:\*\*)?[ \t]*[:：][ \t]*(?P<answer>.*?)"
+    r"(?:[ \t]*\|?[ \t]*(?:\*\*)?考点(?:\*\*)?[ \t]*[:：][ \t]*"
+    r"(?P<tag>§[0-9]+(?:\.[0-9]+)?)(?:[ \t]+(?P<label>.*?))?)?"
+    r"(?:[ \t]*\|?[ \t]*(?:\*\*)?解析(?:\*\*)?[ \t]*[:：][ \t]*(?P<explanation>.*))?$",
+    re.MULTILINE,
+)
+CURATED_METADATA_LINE_RE = re.compile(
+    r"^\s*(?:\*\*)?\s*(?:答案|考点|解析)\s*(?:\*\*)?\s*[:：]",
+)
 IMAGE_ONLY_RE = re.compile(r"^!\[[^\]]*\]\([^)]*\)$")
 QUESTION_GROUP_HEADER_RE = re.compile(r"^##\s*第\s*\d+(?:\s*[-–—]\s*\d+)?\s*题")
 PASSAGE_HEADER_RE = re.compile(r"^##\s+(Passage\s+\d+[^\n]*)\s*$", re.MULTILINE)
 TRAILING_OPTIONS_LABEL_RE = re.compile(r"(?:\s|^)(?:选项(?:如下)?|options?)\s*[:：]\s*$", re.IGNORECASE)
 PLACEHOLDER_STEM_RE = re.compile(r"^[（(]\s*\d{1,3}\s*[)）]$")
+INLINE_SUBQUESTION_OPTION_RE = re.compile(
+    r"^[（(]\s*\d{1,3}\s*[)）]\s*[A-D][.．、]"
+)
+SUBQUESTION_MARKER_RE = re.compile(
+    r"^[（(]\s*\d{1,3}(?:\s*[-、,，]\s*\d{1,3})*\s*[)）]$"
+)
 PRIOR_CONTEXT_RE = re.compile(
     r"^\s*(?:(?:接|承|同|见)?上题|将上题|接前题|(?:在|基于)\s*第\s*\d+\s*题\s*(?:的)?基础(?:上)?)"
 )
@@ -329,6 +350,10 @@ def clean_stem(value: str) -> str:
         ).strip()
     else:
         cleaned = _clean_text(value)
+    # Normalisation may move an inline option set after a Chinese colon or
+    # semicolon onto the next physical line.  Preserve the source's compact
+    # ``选项集：A. ...；A. ...`` text contract in the learner-facing payload.
+    cleaned = re.sub(r"([：；])\s+(?=[A-D][.．、])", r"\1", cleaned)
     cleaned = re.sub(r"^(?:【\s*解析\s*】|\*\*\s*解析\s*\*\*\s*[:：])\s*", "", cleaned)
     cleaned = re.sub(r"(?:\s|^)---\s*$", "", cleaned)
     return TRAILING_OPTIONS_LABEL_RE.sub("", cleaned).strip()
@@ -555,6 +580,32 @@ def _strip_option_markdown_wrapper(value: str) -> str:
     return stripped
 
 
+def _curated_stem_lines(lines: Sequence[str]) -> List[str]:
+    """Keep legacy sub-question markers attached to their option text.
+
+    Historical source used forms like ``（55-57）A. ...`` on one line.  During
+    visual normalisation the marker and option may land on two lines.  They
+    represent one textual field, so rejoin them before ``clean_stem`` folds
+    whitespace.
+    """
+
+    result: List[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if (
+            SUBQUESTION_MARKER_RE.match(line.strip())
+            and index + 1 < len(lines)
+            and OPTION_LINE.match(lines[index + 1].strip().lstrip("-*").strip())
+        ):
+            result.append(line.strip() + lines[index + 1].strip())
+            index += 2
+            continue
+        result.append(line)
+        index += 1
+    return result
+
+
 def parse_paper_transcript(text: str, year: str) -> List[Dict]:
     """Parse the 2009–2017 transcript layout (【答案】/【解析】 blocks)."""
     answers = list(PAPER_ANSWER_RE.finditer(text))
@@ -668,38 +719,81 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
 
         answer_match = CURATED_ANSWER_RE.search(block)
         tag_match = CURATED_TAG_RE.search(block)
+        legacy_inline = LEGACY_INLINE_FIELD_RE.search(block)
         if answer_match:
             correct = sorted(set(re.findall(r"[A-Z]", answer_match.group(1))))
             tag = tag_match.group(1) if tag_match else ""
             label = (tag_match.group(2) or "").strip() if tag_match else ""
         else:
             legacy_match = LEGACY_CURATED_ANSWER_RE.search(block)
-            correct = (
-                sorted(set(re.findall(r"[A-Z]", legacy_match.group(1))))
-                if legacy_match
-                else []
-            )
-            tag = legacy_match.group(2) if legacy_match and legacy_match.group(2) else ""
-            label = (legacy_match.group(3) or "").strip() if legacy_match else ""
+            if legacy_match:
+                correct = sorted(set(re.findall(r"[A-Z]", legacy_match.group(1))))
+                tag = legacy_match.group(2) or ""
+                label = (legacy_match.group(3) or "").strip()
+            elif legacy_inline:
+                correct = sorted(
+                    set(re.findall(r"[A-Z]", legacy_inline.group("answer")))
+                )
+                tag = legacy_inline.group("tag") or ""
+                label = (legacy_inline.group("label") or "").strip()
+            else:
+                correct = []
+                tag = ""
+                label = ""
 
         body_lines = lines[1:]
-        option_start = next(
-            (i for i, line in enumerate(body_lines) if OPTION_LINE.match(line.strip().lstrip("-*").strip())),
-            len(body_lines),
-        )
+        content_lines: List[str] = []
+        for line in body_lines:
+            if CURATED_METADATA_LINE_RE.match(line):
+                break
+            inline_metadata = LEGACY_INLINE_FIELD_RE.search(line)
+            if inline_metadata:
+                prefix = line[: inline_metadata.start()].rstrip()
+                if prefix:
+                    content_lines.append(prefix)
+                break
+            content_lines.append(line)
+        option_labels = [
+            match.group(1)
+            for line in content_lines
+            if (
+                match := OPTION_LINE.match(line.strip().lstrip("-*").strip())
+            )
+        ]
+        # Legacy multi-blank groups sometimes start an option set as
+        # ``(6) A. ...`` and then repeat A–D for later blanks.  The legacy
+        # adapter exposed those groups as a single stem (there is no safe
+        # one-to-one option set), so retain that contract after reformatting.
+        # A canonical group that has a standalone ``(6)`` line followed by
+        # A–D remains safely parseable and uses the usual option path.
+        if (
+            any(INLINE_SUBQUESTION_OPTION_RE.match(line.strip()) for line in content_lines)
+            or "选项集" in "\n".join(content_lines)
+            or len(option_labels) != len(set(option_labels))
+        ):
+            option_start = len(content_lines)
+        else:
+            option_start = next(
+                (
+                    i
+                    for i, line in enumerate(content_lines)
+                    if OPTION_LINE.match(line.strip().lstrip("-*").strip())
+                ),
+                len(content_lines),
+            )
         # A canonicalised transcript may retain source images and an explicit
         # ``(N)`` sub-question marker immediately before its first option.
         # Those are layout scaffolding, not learner-facing stem content; the
         # legacy transcript adapter already omitted them, so the canonical
         # path must do the same to preserve its public payload exactly.
-        stem_lines = [header_text] + [
+        stem_lines = _curated_stem_lines([header_text] + [
             line
-            for line in body_lines[:option_start]
+            for line in content_lines[:option_start]
             if line.strip()
             and not IMAGE_ONLY_RE.match(line.strip())
             and not PLACEHOLDER_STEM_RE.match(line.strip())
-        ]
-        options = _parse_options(body_lines[option_start:])
+        ])
+        options = _parse_options(content_lines[option_start:])
         separator = (
             "\n"
             if any(MARKDOWN_TABLE_RE.search(line) for line in stem_lines)
@@ -713,6 +807,8 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
             explanation = clean_explanation(
                 explain_match.group(1) + " " + block[explain_match.end() :]
             )
+        elif legacy_inline and legacy_inline.group("explanation"):
+            explanation = clean_explanation(legacy_inline.group("explanation"))
 
         items.append(
             {

@@ -261,6 +261,81 @@ class PastPaperParsingTests(unittest.TestCase):
         item = sanitize_bank.parse_paper(path)[0]
         self.assertEqual(item["stem"], "题干保留。")
 
+    def test_legacy_inline_metadata_adapter_keeps_metadata_out_of_stem(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 1. 回忆版题干",
+                    "题干正文。答案：C | 考点：§4.7 软件测试 解析：旧版解析。",
+                ]
+            ),
+            "2023下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["stem"], "回忆版题干 题干正文。")
+        self.assertEqual(item["correct"], ["C"])
+        self.assertEqual(item["tag"], "§4.7")
+        self.assertEqual(item["tag_label"], "软件测试")
+        self.assertEqual(item["explanation"], "旧版解析。")
+
+    def test_inline_multi_blank_options_stay_as_an_unsplittable_stem_group(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 6-7. 【题干】",
+                    "两个填空题。",
+                    "（6）A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "（7）A. 戊",
+                    "B. 己",
+                    "C. 庚",
+                    "D. 辛",
+                    "**答案**：D A",
+                    "**考点**：§5.2 关系理论",
+                    "**解析**：保留题组解析。",
+                ]
+            ),
+            "2019下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["options"], [])
+        self.assertIn("（6）A. 甲 B. 乙", item["stem"])
+        self.assertIn("（7）A. 戊 B. 己", item["stem"])
+
+    def test_repeated_option_sets_stay_in_the_legacy_group_stem(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 26-27. 【题干】",
+                    "两道题共享多个选项集。",
+                    "选项集：",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "A. 戊",
+                    "B. 己",
+                    "C. 庚",
+                    "D. 辛",
+                    "**答案**：26.A 27.B",
+                    "**考点**：§4.1 软件过程",
+                    "**解析**：保留题组解析。",
+                ]
+            ),
+            "2019下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["options"], [])
+        self.assertIn("A. 甲 B. 乙 C. 丙 D. 丁 A. 戊", item["stem"])
+
+    def test_clean_stem_keeps_compact_option_sets_after_line_normalisation(self) -> None:
+        self.assertEqual(
+            sanitize_bank.clean_stem("选项集：\nA. 甲\nD. 丁；\nA. 戊"),
+            "选项集：A. 甲 D. 丁；A. 戊",
+        )
+
     def test_shipped_papers_never_put_explanation_in_tag_label(self) -> None:
         polluted = []
         for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
