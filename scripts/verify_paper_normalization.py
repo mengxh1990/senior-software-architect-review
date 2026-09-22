@@ -44,6 +44,7 @@ BASELINE_TRAILING_POLLUTION_FIELDS = {
         (45, 46): {"explanation": "baseline_consumed_following_question_blocks"},
     },
     "past-papers/comprehensive-by-year/2011下.md": {
+        (1, 1): {"explanation": "baseline_consumed_following_figure_intro"},
         (70, 70): {"explanation": "baseline_consumed_following_english_passage"},
     },
 }

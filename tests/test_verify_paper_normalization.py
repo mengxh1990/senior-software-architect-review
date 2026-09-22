@@ -50,6 +50,15 @@ class VerifyPaperNormalizationTests(unittest.TestCase):
                 (69, 69): {"stem": "baseline_embedded_raw_figure_path"},
             },
         )
+        self.assertEqual(
+            verify_paper_normalization.BASELINE_TRAILING_POLLUTION_FIELDS[
+                "past-papers/comprehensive-by-year/2011下.md"
+            ],
+            {
+                (1, 1): {"explanation": "baseline_consumed_following_figure_intro"},
+                (70, 70): {"explanation": "baseline_consumed_following_english_passage"},
+            },
+        )
 
     def test_shipped_papers_match_the_normalization_baseline(self) -> None:
         result = subprocess.run(
