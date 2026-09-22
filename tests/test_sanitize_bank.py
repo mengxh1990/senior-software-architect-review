@@ -195,6 +195,35 @@ if __name__ == "__main__":
 class PastPaperParsingTests(unittest.TestCase):
     """真题（past-papers）走同一套脱敏契约，必须同样不泄答案。"""
 
+    def test_curated_answer_match_does_not_consume_following_explanation(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 1. 【题干】",
+                    "测试题干。",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "**答案：C**  |  **考点**：§4",
+                    "**解析**：这是解析正文。",
+                ]
+            ),
+            "2024上",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["tag"], "§4")
+        self.assertEqual(item["tag_label"], "")
+        self.assertEqual(item["explanation"], "这是解析正文。")
+
+    def test_shipped_papers_never_put_explanation_in_tag_label(self) -> None:
+        polluted = []
+        for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
+            for item in sanitize_bank.parse_paper(path):
+                if str(item.get("tag_label") or "").lstrip().startswith("**解析**"):
+                    polluted.append(item["id"])
+        self.assertEqual([], polluted)
+
     def test_explanation_cleaning_drops_next_question_and_asset_paths(self) -> None:
         polluted = (
             "本题考查存储管理。\n\n"
