@@ -68,7 +68,7 @@
       "quick_win": 0.82,
       "cross_subject_value": 1.0,
       "estimated_minutes": 120,
-      "raw_tags": ["§6.3"],
+      "raw_tags": ["§6.3", "§6.7"],
       "resources": ["exam-bank/10-architecture-styles.md", "knowledge-index/10-architecture-styles.md", "past-papers/case-types/03-style-comparison.md", "past-papers/paper-topics/01-architecture-design.md"]
     },
     {
@@ -83,7 +83,7 @@
       "quick_win": 0.78,
       "cross_subject_value": 0.55,
       "estimated_minutes": 120,
-      "raw_tags": ["§4.7"],
+      "raw_tags": ["§4.7", "§4.9", "§4.10"],
       "resources": ["exam-bank/07-software-engineering.md", "exam-bank/13-design-patterns.md", "cheatsheets/software-engineering-cmmi.md"]
     },
     {
@@ -112,7 +112,7 @@
       "quick_win": 0.48,
       "cross_subject_value": 0.5,
       "estimated_minutes": 150,
-      "raw_tags": ["§1.5"],
+      "raw_tags": ["§1.5", "§1.8"],
       "resources": ["exam-bank/22-embedded.md", "knowledge-index/22-embedded.md", "past-papers/case-types/08-embedded-components.md"]
     },
     {
@@ -140,7 +140,7 @@
       "quick_win": 0.88,
       "cross_subject_value": 1.0,
       "estimated_minutes": 90,
-      "raw_tags": ["§7.2"],
+      "raw_tags": ["§7.1", "§7.2", "§7.6"],
       "resources": ["exam-bank/11-quality-attributes.md", "knowledge-index/11-quality-attributes.md", "cheatsheets/quality-attributes.md", "past-papers/case-types/01-architecture-evaluation.md"]
     },
     {
@@ -154,7 +154,7 @@
       "quick_win": 0.74,
       "cross_subject_value": 0.82,
       "estimated_minutes": 150,
-      "raw_tags": ["§5.2"],
+      "raw_tags": ["§5.1", "§5.2", "§5.3", "§5.4", "§5.5", "§5.6", "§5.7"],
       "resources": ["exam-bank/03-database.md", "knowledge-index/03-database.md", "past-papers/case-types/02-database-design.md"]
     },
     {
@@ -168,7 +168,7 @@
       "quick_win": 0.82,
       "cross_subject_value": 0.82,
       "estimated_minutes": 75,
-      "raw_tags": ["§6.2"],
+      "raw_tags": ["§6.2", "§6.8"],
       "resources": ["exam-bank/14-absd-views.md", "knowledge-index/14-absd-views.md", "notes/06-system-architecture-design/README.md"]
     },
     {
@@ -183,7 +183,7 @@
       "quick_win": 0.66,
       "cross_subject_value": 1.0,
       "estimated_minutes": 150,
-      "raw_tags": ["§6.5"],
+      "raw_tags": ["§6.5", "§6.9", "§6.10"],
       "resources": ["exam-bank/13-design-patterns.md", "exam-bank/15-microservice-cloud-native.md", "knowledge-index/15-microservice-cloud-native.md", "past-papers/case-types/05-microservice-refactor.md"]
     },
     {
@@ -254,7 +254,7 @@
       "quick_win": 1.0,
       "cross_subject_value": 0.15,
       "estimated_minutes": 30,
-      "raw_tags": ["§11.2"],
+      "raw_tags": ["§11.1", "§11.2", "§11.3"],
       "resources": ["exam-bank/06-ip-and-standards.md", "knowledge-index/06-ip-and-standards.md", "cheatsheets/ip-and-standards.md"]
     },
     {
@@ -268,7 +268,7 @@
       "quick_win": 0.62,
       "cross_subject_value": 0.15,
       "estimated_minutes": 90,
-      "raw_tags": ["§1.2"],
+      "raw_tags": ["§1.1", "§1.2"],
       "resources": ["exam-bank/01-computer-systems.md", "knowledge-index/01-computer-systems.md", "cheatsheets/computer-systems-formulas.md"]
     },
     {
@@ -282,7 +282,7 @@
       "quick_win": 0.9,
       "cross_subject_value": 1.0,
       "estimated_minutes": 90,
-      "raw_tags": ["§7.3"],
+      "raw_tags": ["§7.3", "§7.4"],
       "resources": ["exam-bank/12-atam-evaluation.md", "knowledge-index/12-atam-evaluation.md", "cheatsheets/architecture-evaluation.md", "past-papers/case-types/01-architecture-evaluation.md"]
     },
     {
@@ -296,7 +296,7 @@
       "quick_win": 0.7,
       "cross_subject_value": 0.86,
       "estimated_minutes": 120,
-      "raw_tags": ["§3.1"],
+      "raw_tags": ["§3.1", "§3.3", "§3.4"],
       "resources": ["exam-bank/21-security.md", "knowledge-index/21-security.md", "past-papers/case-types/07-security-architecture.md", "past-papers/paper-topics/04-security-design.md"]
     },
     {
@@ -310,7 +310,7 @@
       "quick_win": 0.72,
       "cross_subject_value": 0.95,
       "estimated_minutes": 120,
-      "raw_tags": ["§6.6", "中间件/缓存"],
+      "raw_tags": ["§1.7", "§6.6", "中间件/缓存"],
       "resources": ["exam-bank/16-middleware.md", "exam-bank/18-cache.md", "knowledge-index/16-middleware.md", "knowledge-index/18-cache.md", "past-papers/case-types/06-messaging-caching.md"]
     },
     {
@@ -339,7 +339,7 @@
       "quick_win": 0.74,
       "cross_subject_value": 0.35,
       "estimated_minutes": 120,
-      "raw_tags": ["§4.6", "§4.8", "§12.1"],
+      "raw_tags": ["§4.6", "§4.8", "§4.12"],
       "resources": ["exam-bank/08-project-management.md", "exam-bank/09-software-metrics.md", "knowledge-index/08-project-management.md", "knowledge-index/09-software-metrics.md", "cheatsheets/project-management-calculations.md", "cheatsheets/software-metrics.md"]
     },
     {
@@ -353,7 +353,7 @@
       "quick_win": 0.88,
       "cross_subject_value": 0.55,
       "estimated_minutes": 75,
-      "raw_tags": ["§2"],
+      "raw_tags": ["§2", "§2.1", "§2.2", "§2.3", "§2.5"],
       "resources": ["exam-bank/27-information-systems.md", "notes/02-information-systems/README.md", "past-papers/SURVIVAL_CARD.md", "past-papers/comprehensive-by-year/2025上.md"]
     },
     {
@@ -367,7 +367,7 @@
       "quick_win": 0.68,
       "cross_subject_value": 0.9,
       "estimated_minutes": 120,
-      "raw_tags": ["§8"],
+      "raw_tags": ["§8", "§8.1"],
       "resources": ["exam-bank/20-reliability.md", "knowledge-index/20-reliability.md", "notes/08-software-reliability/README.md", "past-papers/case-types/13-reliability-design.md", "past-papers/paper-topics/03-reliability-design.md"]
     },
     {
@@ -381,7 +381,7 @@
       "quick_win": 0.62,
       "cross_subject_value": 0.85,
       "estimated_minutes": 120,
-      "raw_tags": ["§9"],
+      "raw_tags": ["§4.11", "§9", "§9.1", "§9.2", "§9.4"],
       "resources": ["exam-bank/26-soa-evolution.md", "notes/09-architecture-evolution/README.md", "past-papers/case-types/11-architecture-evolution.md", "past-papers/paper-topics/09-architecture-evolution.md"]
     },
     {
@@ -395,7 +395,7 @@
       "quick_win": 0.8,
       "cross_subject_value": 0.65,
       "estimated_minutes": 90,
-      "raw_tags": ["§10"],
+      "raw_tags": ["§10", "§10.1", "§10.2", "§10.3", "§10.4", "§10.5", "§10.6"],
       "resources": ["exam-bank/28-emerging-tech.md", "notes/10-emerging-tech/README.md", "notes/23-frontier-tech/README.md", "past-papers/2026上-recall-signals.md", "past-papers/HIGH_FREQ.md", "past-papers/SURVIVAL_CARD.md"]
     },
     {
@@ -409,7 +409,7 @@
       "quick_win": 0.58,
       "cross_subject_value": 0.2,
       "estimated_minutes": 90,
-      "raw_tags": ["§12"],
+      "raw_tags": ["§12", "§12.1", "§12.2", "§12.3", "§12.4"],
       "resources": ["exam-bank/29-applied-math.md", "notes/20-math-foundations/README.md", "past-papers/HIGH_FREQ.md", "past-papers/comprehensive-by-year/2019下.md", "past-papers/comprehensive-by-year/2025上.md"]
     },
     {

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -194,6 +195,334 @@ if __name__ == "__main__":
 
 class PastPaperParsingTests(unittest.TestCase):
     """真题（past-papers）走同一套脱敏契约，必须同样不泄答案。"""
+
+    def test_curated_answer_match_does_not_consume_following_explanation(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 1. 【题干】",
+                    "测试题干。",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "**答案：C**  |  **考点**：§4",
+                    "**解析**：这是解析正文。",
+                ]
+            ),
+            "2024上",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["tag"], "§4")
+        self.assertEqual(item["tag_label"], "")
+        self.assertEqual(item["explanation"], "这是解析正文。")
+
+    def test_canonical_curated_metadata_uses_independent_lines(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 1. 【题干】",
+                    "规范版题干。",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "**答案**：B",
+                    "**考点**：§5.2 关系代数",
+                    "**解析**：规范版解析。",
+                ]
+            ),
+            "2024上",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["correct"], ["B"])
+        self.assertEqual(item["tag"], "§5.2")
+        self.assertEqual(item["tag_label"], "关系代数")
+        self.assertEqual(item["explanation"], "规范版解析。")
+
+    def test_normalised_transcript_keeps_legacy_singleton_range_identity(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 1. 【题干】",
+                    "题干。",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "**答案**：A",
+                    "**考点**：§1 操作系统",
+                    "**解析**：解析。",
+                ]
+            ),
+            "2010下",
+        )
+        self.assertTrue(sanitize_bank.parse_paper(path)[0]["id"].endswith("#1-1"))
+
+    def test_canonicalised_transcript_ignores_image_and_blank_marker_in_stem(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 1. 【题干】",
+                    "题干保留。",
+                    "![题图](../assets/example.webp)",
+                    "(1)",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "**答案**：B",
+                    "**考点**：§1.3 操作系统",
+                    "**解析**：解析保留。",
+                ]
+            ),
+            "2024上",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["stem"], "题干保留。")
+
+    def test_legacy_inline_metadata_adapter_keeps_metadata_out_of_stem(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 1. 回忆版题干",
+                    "题干正文。答案：C | 考点：§4.7 软件测试 解析：旧版解析。",
+                ]
+            ),
+            "2023下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["stem"], "回忆版题干 题干正文。")
+        self.assertEqual(item["correct"], ["C"])
+        self.assertEqual(item["tag"], "§4.7")
+        self.assertEqual(item["tag_label"], "软件测试")
+        self.assertEqual(item["explanation"], "旧版解析。")
+
+    def test_group_heading_supplies_safe_domain_label_when_metadata_has_only_domain(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "## 第 1 题：[§6 系统架构—构件平台]",
+                    "",
+                    "### 1. 【题干】",
+                    "测试题干。",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "**答案**：A",
+                    "**考点**：§6",
+                    "**解析**：解析。",
+                ]
+            ),
+            "2018下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["tag_label"], "系统架构—构件平台")
+        self.assertEqual(item["candidate_topics"], ["K11.COMPONENTS_4PLUS1"])
+
+    def test_inline_multi_blank_options_stay_as_an_unsplittable_stem_group(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 6-7. 【题干】",
+                    "两个填空题。",
+                    "（6）A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "（7）A. 戊",
+                    "B. 己",
+                    "C. 庚",
+                    "D. 辛",
+                    "**答案**：D A",
+                    "**考点**：§5.2 关系理论",
+                    "**解析**：保留题组解析。",
+                ]
+            ),
+            "2019下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["options"], [])
+        self.assertIn("（6）A. 甲 B. 乙", item["stem"])
+        self.assertIn("（7）A. 戊 B. 己", item["stem"])
+
+    def test_repeated_option_sets_stay_in_the_legacy_group_stem(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 26-27. 【题干】",
+                    "两道题共享多个选项集。",
+                    "选项集：",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "A. 戊",
+                    "B. 己",
+                    "C. 庚",
+                    "D. 辛",
+                    "**答案**：26.A 27.B",
+                    "**考点**：§4.1 软件过程",
+                    "**解析**：保留题组解析。",
+                ]
+            ),
+            "2019下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["options"], [])
+        self.assertIn("A. 甲 B. 乙 C. 丙 D. 丁 A. 戊", item["stem"])
+
+    def test_standalone_subquestion_markers_keep_the_first_legacy_option_set(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 1-2. 【题干】",
+                    "共享题干。",
+                    "(1)",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "(2)",
+                    "A. 戊",
+                    "B. 己",
+                    "C. 庚",
+                    "D. 辛",
+                    "**答案**：A D",
+                    "**考点**：§1 操作系统",
+                    "**解析**：保留解析。",
+                ]
+            ),
+            "2014下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["stem"], "共享题干。")
+        self.assertEqual(
+            item["options"],
+            [
+                {"label": "A", "text": "甲"},
+                {"label": "B", "text": "乙"},
+                {"label": "C", "text": "丙"},
+                {"label": "D", "text": "丁"},
+            ],
+        )
+
+    def test_formula_only_option_markers_do_not_leak_into_canonical_stem(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 8. 【题干】",
+                    "关系代数表达式与（8）等价。",
+                    "A.",
+                    "$$A$$",
+                    "B.",
+                    "$$B$$",
+                    "C.",
+                    "$$C$$",
+                    "D.",
+                    "$$D$$",
+                    "**答案**：B",
+                    "**考点**：§5.2 关系代数",
+                    "**解析**：解析。",
+                ]
+            ),
+            "2010下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["stem"], "关系代数表达式与（8）等价。")
+        self.assertEqual(item["options"], [])
+
+    def test_canonical_markdown_table_keeps_blank_paragraph_boundaries(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 70. 【题干】",
+                    "根据下表计算结果。",
+                    "| 项目 | 值 |",
+                    "| --- | ---: |",
+                    "| 甲 | 1 |",
+                    "计算结果为（70）。",
+                    "A. 1",
+                    "B. 2",
+                    "C. 3",
+                    "D. 4",
+                    "**答案**：A",
+                    "**考点**：§12.2 运筹",
+                    "**解析**：解析。",
+                ]
+            ),
+            "2011下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertIn("根据下表计算结果。\n\n| 项目 | 值 |", item["stem"])
+        self.assertIn("| 甲 | 1 |\n\n计算结果为（70）。", item["stem"])
+
+    def test_reading_passage_context_is_attached_to_following_blanks(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 68. 阅读以下英文段落，回答第69-70题。",
+                    "The（69）is followed by the（70）.",
+                    "**答案**：A",
+                    "**考点**：§13 专业英语",
+                    "**解析**：阅读材料。",
+                    "### 69.",
+                    "（69）处应填入（ ）。",
+                    "A. first",
+                    "B. second",
+                    "C. third",
+                    "D. fourth",
+                    "**答案**：A",
+                    "**考点**：§13 专业英语",
+                    "**解析**：first。",
+                    "### 70.",
+                    "A. first",
+                    "B. second",
+                    "C. third",
+                    "D. fourth",
+                    "**答案**：B",
+                    "**考点**：§13 专业英语",
+                    "**解析**：second。",
+                ]
+            ),
+            "2024上",
+        )
+        items = sanitize_bank.parse_paper(path)
+        by_number = {item["range"][0]: item for item in items}
+        self.assertEqual(by_number[70]["stem"], "（70）处应填入（ ）")
+        self.assertEqual(by_number[70]["context_title"], "阅读材料")
+        self.assertIn("The（69）", by_number[70]["context"])
+
+    def test_clean_stem_keeps_compact_option_sets_after_line_normalisation(self) -> None:
+        self.assertEqual(
+            sanitize_bank.clean_stem("选项集：\nA. 甲\nD. 丁；\nA. 戊"),
+            "选项集：A. 甲 D. 丁；A. 戊",
+        )
+
+    def test_shipped_papers_never_put_explanation_in_tag_label(self) -> None:
+        polluted = []
+        for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
+            for item in sanitize_bank.parse_paper(path):
+                if str(item.get("tag_label") or "").lstrip().startswith("**解析**"):
+                    polluted.append(item["id"])
+        self.assertEqual([], polluted)
+
+    def test_shipped_papers_use_independent_canonical_metadata_lines(self) -> None:
+        legacy_markers = []
+        inline_answer_tags = []
+        for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
+            text = path.read_text(encoding="utf-8")
+            if re.search(r"^【(?:答案|解析)】", text, re.MULTILINE):
+                legacy_markers.append(path.name)
+            if re.search(
+                r"^\*\*答案(?:\*\*)?[:：].*\|.*\*\*考点\*\*[:：]",
+                text,
+                re.MULTILINE,
+            ):
+                inline_answer_tags.append(path.name)
+        self.assertEqual([], legacy_markers)
+        self.assertEqual([], inline_answer_tags)
 
     def test_explanation_cleaning_drops_next_question_and_asset_paths(self) -> None:
         polluted = (
@@ -448,6 +777,24 @@ class PastPaperParsingTests(unittest.TestCase):
         for item_id, reason in expected.items():
             with self.subTest(item_id=item_id):
                 self.assertIn(item_id, items)
+                self.assertEqual("invalid", items[item_id]["quality_status"])
+                self.assertIn(f"excluded:{reason}", items[item_id]["quality_issues"])
+
+    def test_conflicting_or_out_of_scope_pending_items_are_excluded(self) -> None:
+        expected = {
+            "past-papers/comprehensive-by-year/2025下.md#1": "conflicting_source_evidence",
+            "past-papers/comprehensive-by-year/2026上.md#69": "outside_curriculum_scope",
+            "past-papers/comprehensive-by-year/2026上.md#70": "outside_curriculum_scope",
+        }
+        items = {
+            item["id"]: item
+            for year in ("2025下", "2026上")
+            for item in sanitize_bank.parse_paper(
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / f"{year}.md"
+            )
+        }
+        for item_id, reason in expected.items():
+            with self.subTest(item_id=item_id):
                 self.assertEqual("invalid", items[item_id]["quality_status"])
                 self.assertIn(f"excluded:{reason}", items[item_id]["quality_issues"])
 
@@ -896,6 +1243,13 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertIn("K10.DATABASE_MODELING", sanitize_bank.candidate_topics("§5.2", topic_tags))
         self.assertIn("K01.OS_MEMORY_KERNEL", sanitize_bank.candidate_topics("§1", topic_tags))
 
+    def test_exact_subtag_wins_when_its_label_has_no_keyword_alias(self) -> None:
+        topic_tags = sanitize_bank.load_topic_tags()
+        self.assertEqual(
+            sanitize_bank.candidate_topics("§5.5", topic_tags, label="数据仓库四特性"),
+            ["K10.DATABASE_MODELING"],
+        )
+
     def test_domain_level_labels_narrow_to_the_intended_tutor_topic(self) -> None:
         topic_tags = sanitize_bank.load_topic_tags()
         self.assertEqual(
@@ -915,6 +1269,9 @@ class PastPaperParsingTests(unittest.TestCase):
                 "§6", topic_tags, label="系统架构—SOA与ESB"
             ),
             ["K12.PATTERNS_SOA_MICROSERVICES"],
+        )
+        self.assertEqual(
+            sanitize_bank.candidate_topics("§6", topic_tags, label="待复核"), []
         )
 
     def test_shipped_domain_level_question_uses_detailed_label_mapping(self) -> None:
@@ -945,6 +1302,25 @@ class PastPaperParsingTests(unittest.TestCase):
             ["K17.IP_COPYRIGHT"],
         )
 
+    def test_complete_untagged_source_blocks_use_evidence_backed_overrides(self) -> None:
+        expectations = {
+            "past-papers/comprehensive-by-year/2019下.md#16-17": "K18.COMPUTER_ARCH_STORAGE",
+            "past-papers/comprehensive-by-year/2020.md#20": "K12.PATTERNS_SOA_MICROSERVICES",
+            "past-papers/comprehensive-by-year/2024下.md#67": "K19.ATAM_TACTICS",
+        }
+        items = {
+            item["id"]: item
+            for path in (
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2019下.md",
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2020.md",
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2024下.md",
+            )
+            for item in sanitize_bank.parse_paper(path)
+        }
+        for item_id, topic_id in expectations.items():
+            with self.subTest(item_id=item_id):
+                self.assertEqual(items[item_id]["candidate_topics"], [topic_id])
+
     def test_cross_year_ip_variants_share_a_family_for_quiz_deduplication(self) -> None:
         ids = (
             "past-papers/comprehensive-by-year/2016下.md#68-68",
@@ -971,7 +1347,8 @@ class PastPaperParsingTests(unittest.TestCase):
 
     def test_real_paper_files_parse_with_expected_coverage(self) -> None:
         """仓库内真题必须能被脱敏器读出题块，且核心考期可用题数达标。"""
-        expectations = {"2013下": 30, "2016下": 40, "2017下": 40, "2024下": 70, "2025下": 70}
+        # 2024下的多空题保留为不可拆分题组，不能伪装成单选题以凑可用数。
+        expectations = {"2013下": 30, "2016下": 40, "2017下": 40, "2024下": 69, "2025下": 70}
         for year, minimum in expectations.items():
             path = REPO_ROOT / "past-papers" / "comprehensive-by-year" / f"{year}.md"
             with self.subTest(year=year):

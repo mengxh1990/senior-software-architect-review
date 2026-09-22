@@ -173,6 +173,15 @@ def rendered(snapshot: dict[str, Any]) -> str:
     return json.dumps(snapshot, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
 
+def display_path(path: Path) -> str:
+    """Render repository paths compactly without rejecting an external output."""
+
+    try:
+        return path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=OUTPUT_PATH)
@@ -201,7 +210,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.write:
         args.output.write_text(content, encoding="utf-8")
-        print(f"wrote {args.output.relative_to(REPO_ROOT)}")
+        print(f"wrote {display_path(args.output)}")
         return 0
     print(content, end="")
     return 0

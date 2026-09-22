@@ -36,6 +36,21 @@
       "item_id": "past-papers/comprehensive-by-year/2026上.md#57",
       "reason": "ambiguous_answer_key",
       "note": "解析承认 B 项表述不严谨，同时以 C 项错误更直接为由维持单选答案；至少存在两个可争议选项，不适合盲练。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2025下.md#1",
+      "reason": "conflicting_source_evidence",
+      "note": "题干与 2012下第70题为同一约束问题，但 2012下随卷解析推导 A22=6，而 2025下回忆版答案为 A22=4；跨源答案冲突，不能作为唯一答案题进入训练。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2026上.md#69",
+      "reason": "outside_curriculum_scope",
+      "note": "编译过程题本身有答案依据，但当前私教课程没有可审计的编译原理稳定考点，避免硬映射到计算机组成或操作系统。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2026上.md#70",
+      "reason": "outside_curriculum_scope",
+      "note": "移进-归约语法分析属于编译原理；当前课程没有可审计的稳定承接考点，避免为了覆盖率强行归类。"
     }
   ]
 }
