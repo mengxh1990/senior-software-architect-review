@@ -882,6 +882,60 @@ class TutorAcceptanceTest(unittest.TestCase):
             expected_type = re.search(r"/(\d{2})-", case_resource).group(1)
             self.assertEqual(f"案例 {expected_type}", payload["case_type"])
 
+    def test_progress_is_read_only_and_returns_three_subject_overview(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(
+                data_dir,
+                "configure",
+                "--subject-policy",
+                "essay=manual_trigger",
+                "--subject-policy-reason",
+                "考生主动要求",
+            )
+            before = _snapshot_files(data_dir)
+            payload = _json_output(
+                _run_cli(
+                    data_dir,
+                    "progress",
+                    "--json",
+                    "--limit",
+                    "5",
+                    "--today",
+                    "2026-09-22",
+                )
+            )
+            self.assertEqual(before, _snapshot_files(data_dir))
+            self.assertEqual(set(payload["subjects"]), SUBJECTS)
+            self.assertLessEqual(len(payload["weakpoints"]), 5)
+            self.assertLessEqual(len(payload["due_reviews"]), 5)
+            self.assertIn("next_action", payload)
+            self.assertEqual(payload["subject_allocation"]["essay"], 0.0)
+            self.assertAlmostEqual(
+                sum(payload["subject_allocation"].values()), 1.0, places=3
+            )
+            self.assertEqual(
+                [item["subject"] for item in payload["suppressed_subjects"]],
+                ["essay"],
+            )
+
+    def test_configured_case_route_cannot_be_bypassed_by_k_topic(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(data_dir, "configure", "--case-track", "C02.CASE_DATABASE")
+            payload = _json_output(
+                _run_cli(data_dir, "case-prepare", "--today", "2026-09-22")
+            )
+            self.assertEqual("C02.CASE_DATABASE", payload["route_lock"]["track_id"])
+            self.assertEqual("C02.CASE_DATABASE", payload["route_lock"]["topic_id"])
+            self.assertEqual("案例 02", payload["case_type"])
+            self.assertEqual(
+                ["K10.DATABASE_MODELING"],
+                payload["route_lock"]["supporting_topic_ids"],
+            )
+
     def test_case_prepare_explicit_topic_maps_through_curriculum(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
@@ -897,6 +951,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 )
             )
             self.assertEqual("K25.RELIABILITY_ENGINEERING", payload["route_lock"]["topic_id"])
+            self.assertIsNone(payload["route_lock"]["track_id"])
             self.assertEqual("案例 13", payload["case_type"])
             self.assertEqual("case", payload["record"]["subject"])
             self.assertEqual("application", payload["record"]["skill"])
@@ -3080,12 +3135,8 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertNotIn("K07.REALTIME_EMBEDDED", comprehensive_ids)
 
     def test_mastery_is_not_shared_across_subject_skills(self) -> None:
-        topic = next(
-            item
-            for item in self.topics
-            if {"recognition", "application"}.issubset(item.get("skills", []))
-            and {"comprehensive", "case"}.issubset(item.get("subjects", []))
-        )
+        topic = next(item for item in self.topics if item["id"] == "K09.QUALITY_SCENARIOS")
+        route = next(item for item in self.topics if item["id"] == "C01.CASE_ATAM")
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
             self._init(data_dir)
@@ -3124,7 +3175,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             recommendation = next(
                 item
                 for item in _recommendation_items(payload)
-                if _recommendation_topic_id(item) == topic["id"]
+                if _recommendation_topic_id(item) == route["id"]
             )
             self.assertEqual(
                 recommendation.get("mastery"),
@@ -3133,12 +3184,8 @@ class TutorAcceptanceTest(unittest.TestCase):
             )
 
     def test_recognition_review_date_does_not_mark_application_due(self) -> None:
-        topic = next(
-            item
-            for item in self.topics
-            if {"recognition", "application"}.issubset(item.get("skills", []))
-            and {"comprehensive", "case"}.issubset(item.get("subjects", []))
-        )
+        topic = next(item for item in self.topics if item["id"] == "K09.QUALITY_SCENARIOS")
+        route = next(item for item in self.topics if item["id"] == "C01.CASE_ATAM")
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
             self._init(data_dir)
@@ -3174,7 +3221,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             application_item = next(
                 item
                 for item in _recommendation_items(payload)
-                if _recommendation_topic_id(item) == topic["id"]
+                if _recommendation_topic_id(item) == route["id"]
             )
             self.assertFalse(application_item["review_due"])
 

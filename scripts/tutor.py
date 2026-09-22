@@ -210,6 +210,22 @@ def load_curriculum() -> dict[str, Any]:
         topic_id not in seen for topic_id in grouped_ids
     ):
         raise TutorError("课程表冷启动分组包含重复或未知考点 ID")
+    for topic in curriculum["topics"]:
+        case_type = topic.get("case_type")
+        covered_topic_ids = topic.get("covered_topic_ids", [])
+        if case_type is not None and not re.fullmatch(r"\d{2}", str(case_type)):
+            raise TutorError(f"课程表考点 {topic['id']} case_type 无效")
+        if (
+            not isinstance(covered_topic_ids, list)
+            or any(
+                not isinstance(topic_id, str) or topic_id not in seen
+                for topic_id in covered_topic_ids
+            )
+            or len(covered_topic_ids) != len(set(covered_topic_ids))
+        ):
+            raise TutorError(f"课程表考点 {topic['id']} covered_topic_ids 无效")
+        if covered_topic_ids and not str(topic["id"]).startswith("C"):
+            raise TutorError(f"课程表考点 {topic['id']} 不能声明案例路线覆盖")
     return curriculum
 
 
@@ -1469,6 +1485,42 @@ def subject_allocations(state: dict[str, Any], today: date) -> dict[str, float]:
     return {subject: round(raw[subject] / total, 4) for subject in SUBJECTS}
 
 
+def effective_subject_allocations(
+    state: dict[str, Any], today: date
+) -> tuple[dict[str, float], dict[str, float]]:
+    """Return raw need and the actionable allocation after policy filtering."""
+
+    raw = subject_allocations(state, today)
+    paused = manual_trigger_subjects(state)
+    active = [subject for subject in SUBJECTS if subject not in paused]
+    if not active:
+        return raw, raw
+    total = sum(raw[subject] for subject in active)
+    effective = {
+        subject: (
+            round(raw[subject] / total, 4)
+            if subject in active and total > 0
+            else 0.0
+        )
+        for subject in SUBJECTS
+    }
+    return raw, effective
+
+
+def case_track_by_supporting_topic(
+    curriculum: dict[str, Any],
+) -> dict[str, str]:
+    """Map fine-grained knowledge topics to their canonical case track."""
+
+    result: dict[str, str] = {}
+    for topic in curriculum.get("topics", []):
+        if not str(topic.get("id", "")).startswith("C"):
+            continue
+        for topic_id in topic.get("covered_topic_ids", []):
+            result[topic_id] = topic["id"]
+    return result
+
+
 def topic_mastery(state: dict[str, Any], topic_id: str, skill: str) -> float:
     record = state.get("topics", {}).get(topic_id)
     if not record:
@@ -1539,7 +1591,7 @@ def next_training_action(
             "command": "quiz-variant-grade",
             "user_override_allowed": True,
         }
-    allocations = subject_allocations(state, today)
+    _, allocations = effective_subject_allocations(state, today)
     subject = select_target_subject(state, allocations)
     if subject == "comprehensive":
         mode = "quiz_prepare"
@@ -2090,6 +2142,143 @@ def cmd_weakpoints(args: argparse.Namespace) -> int:
     return 0
 
 
+def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
+    """Build one compact, read-only coaching overview."""
+
+    profile, state = load_profile_and_state(args.data_dir)
+    today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
+    status = status_payload(profile, state)
+    raw_allocations, allocations = effective_subject_allocations(state, today)
+    paused = manual_trigger_subjects(state)
+    recommendation_args = argparse.Namespace(
+        data_dir=args.data_dir,
+        subject=None,
+        limit=max(args.limit, 5),
+        today=today.isoformat(),
+    )
+    plan = build_recommendation_payload(recommendation_args)
+
+    per_subject: dict[str, Any] = {}
+    active_rows: dict[tuple[str, str, str], dict[str, Any]] = {}
+    due_rows: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for subject in SUBJECTS:
+        weakpoints = weakpoints_payload(
+            args.data_dir,
+            subject,
+            today,
+            days=args.days,
+            limit=max(args.limit * 4, 20),
+        )
+        per_subject[subject] = {
+            "counts": weakpoints["counts"],
+            "subject_policy": weakpoints.get("subject_policy"),
+        }
+        for section in ("due", "recent", "uncovered"):
+            for row in weakpoints[section]:
+                enriched = {**row, "subject": subject}
+                key = (subject, row["topic_id"], row["skill"])
+                if subject not in paused:
+                    active_rows.setdefault(key, enriched)
+                if section == "due" and subject not in paused:
+                    due_rows.setdefault(key, enriched)
+
+    def weakpoint_key(row: dict[str, Any]) -> tuple[Any, ...]:
+        overdue = row.get("overdue_days")
+        due_rank = 0 if overdue is not None and overdue >= 0 else 1
+        accuracy = row.get("recent_accuracy")
+        return (
+            due_rank,
+            -(overdue or 0) if due_rank == 0 else 0,
+            accuracy if accuracy is not None else 1.1,
+            row.get("mastery", 0.0),
+            -float(row.get("frequency_count") or 0),
+            row["topic_id"],
+        )
+
+    recommendations = plan.get("recommendations") or []
+    next_action = next_training_action(state, today)
+    if recommendations:
+        first = recommendations[0]
+        next_action = {
+            **next_action,
+            "topic_id": first.get("topic_id"),
+            "topic_name": first.get("name"),
+            "reason": first.get("reason"),
+            "estimated_minutes": first.get("estimated_minutes"),
+        }
+    exam_date = profile.get("exam_date")
+    return {
+        "today": today.isoformat(),
+        "profile": {
+            "exam_date": exam_date,
+            "days_left": (
+                (parse_date(exam_date) - today).days if exam_date else None
+            ),
+            "daily_minutes": profile.get("daily_minutes"),
+        },
+        "pass_line": state.get("strategy", {}).get("pass_line", 45),
+        "safe_target": state.get("strategy", {}).get("safe_target", 52),
+        "subjects": status["subjects"],
+        "focus_subject": plan["target_subject"],
+        "subject_allocation": allocations,
+        "raw_subject_allocation": raw_allocations,
+        "suppressed_subjects": [
+            {
+                "subject": subject,
+                "policy": state.get("strategy", {})
+                .get("subject_policies", {})
+                .get(subject),
+                "status": status["subjects"][subject]["status"],
+            }
+            for subject in SUBJECTS
+            if subject in paused
+        ],
+        "weakpoints": sorted(active_rows.values(), key=weakpoint_key)[: args.limit],
+        "due_reviews": sorted(due_rows.values(), key=weakpoint_key)[: args.limit],
+        "weakpoint_counts": per_subject,
+        "next_action": next_action,
+    }
+
+
+def cmd_progress(args: argparse.Namespace) -> int:
+    payload = build_progress_payload(args)
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+
+    print(
+        f"距离考试 {payload['profile']['days_left'] if payload['profile']['days_left'] is not None else '未知'} 天；"
+        f"每日预算 {payload['profile']['daily_minutes']} 分钟"
+    )
+    labels = {"comprehensive": "综合", "case": "案例", "essay": "论文"}
+    for subject in SUBJECTS:
+        item = payload["subjects"][subject]
+        print(
+            f"{labels[subject]}：{item['status']}；保守下界 "
+            f"{item.get('lower_bound_score') if item.get('lower_bound_score') is not None else '未测'}；"
+            f"证据 {item['evidence_level']}"
+        )
+    if payload["suppressed_subjects"]:
+        print(
+            "仅主动触发："
+            + "、".join(
+                labels[item["subject"]] for item in payload["suppressed_subjects"]
+            )
+        )
+    print("薄弱 Top：")
+    for index, row in enumerate(payload["weakpoints"], 1):
+        print(
+            f"{index}. [{labels[row['subject']]}] {row['topic_id']} "
+            f"{row['topic_name']} — {row['action']}"
+        )
+    action = payload["next_action"]
+    print(
+        f"下一步：[{labels[action['subject']]}] "
+        f"{action.get('topic_name') or action.get('topic_id') or action['command']}"
+    )
+    return 0
+
+
 def cmd_register_question(args: argparse.Namespace) -> int:
     curriculum = load_curriculum()
     topics = topic_map(curriculum)
@@ -2244,12 +2433,13 @@ def cmd_configure(args: argparse.Namespace) -> int:
 
 def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
     curriculum = load_curriculum()
+    topics = topic_map(curriculum)
     profile, state = load_profile_and_state(args.data_dir)
     today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
     exam_date = parse_date(profile["exam_date"]) if profile.get("exam_date") else None
     days_to_exam = (exam_date - today).days if exam_date else None
     crunch_mode = days_to_exam is not None and 0 <= days_to_exam <= 3
-    allocations = subject_allocations(state, today)
+    raw_allocations, allocations = effective_subject_allocations(state, today)
     target_subject = args.subject or select_target_subject(state, allocations)
     maintenance_subject = (
         None
@@ -2261,6 +2451,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
     configured_essay_themes = set(strategy.get("essay_themes", []))
     strategic_skips = set(strategy.get("strategic_skips", {}))
     paused_subjects = set() if args.subject else manual_trigger_subjects(state)
+    case_support_map = case_track_by_supporting_topic(curriculum)
     minimum_interval = int(strategy.get("min_review_interval_days", 0) or 0)
     cold_start_groups = curriculum.get("strategy", {}).get(
         "comprehensive_cold_start_groups", []
@@ -2304,6 +2495,11 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         # explicitly with --subject.
         if not args.subject and chosen_subject in paused_subjects:
             continue
+        # Automatic case planning operates on the canonical Cxx route layer.
+        # Fine-grained Kxx topics contribute evidence to a route below, but
+        # may only be selected directly through case-prepare --topic.
+        if chosen_subject == "case" and not topic["id"].startswith("C"):
+            continue
         skill = {
             "comprehensive": "recognition",
             "case": "application",
@@ -2312,7 +2508,22 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         if skill not in topic.get("skills", []):
             skill = topic.get("skills", [skill])[0]
         mastery = topic_mastery(state, topic["id"], skill)
-        need = max(0.08, 1.0 - mastery)
+        supporting_topic_ids = list(topic.get("covered_topic_ids", []))
+        supporting_masteries = [
+            topic_mastery(state, topic_id, "application")
+            for topic_id in supporting_topic_ids
+            if isinstance(
+                state.get("topics", {})
+                .get(topic_id, {})
+                .get("mastery", {})
+                .get("application"),
+                dict,
+            )
+        ]
+        need = max(
+            [0.08, 1.0 - mastery]
+            + [1.0 - supporting_mastery for supporting_mastery in supporting_masteries]
+        )
         skill_progress = progress.get("mastery", {}).get(skill, {})
         review_at = (
             skill_progress.get("next_review_at")
@@ -2335,8 +2546,53 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
                 )
             except TutorError:
                 due = True
+        supporting_due_names: list[str] = []
+        for supporting_topic_id in supporting_topic_ids:
+            supporting_progress = state.get("topics", {}).get(supporting_topic_id, {})
+            supporting_record = supporting_progress.get("mastery", {}).get(
+                "application", {}
+            )
+            supporting_review_at = (
+                supporting_record.get("next_review_at")
+                if isinstance(supporting_record, dict)
+                else None
+            )
+            if not supporting_review_at:
+                continue
+            try:
+                supporting_is_due = (
+                    parse_date(
+                        effective_review_date(
+                            supporting_review_at,
+                            supporting_record.get("last_attempt_at"),
+                            minimum_interval,
+                            supporting_record.get("status"),
+                        )
+                    )
+                    <= today
+                )
+            except TutorError:
+                supporting_is_due = True
+            if supporting_is_due:
+                due = True
+                supporting_due_names.append(
+                    topics[supporting_topic_id]["name"]
+                    if supporting_topic_id in topics
+                    else supporting_topic_id
+                )
         due_factor = 1.7 if due else 1.0
-        frequency = max(0.0, float(topic.get("frequency_count", 0)))
+        supporting_topics = [
+            topics[topic_id]
+            for topic_id in supporting_topic_ids
+            if topic_id in topics
+        ]
+        frequency = max(
+            [max(0.0, float(topic.get("frequency_count", 0)))]
+            + [
+                max(0.0, float(supporting_topic.get("frequency_count", 0)))
+                for supporting_topic in supporting_topics
+            ]
+        )
         confidence_factor = {
             "high": 1.0,
             "medium": 0.9,
@@ -2347,8 +2603,25 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
             (1.0 + math.log1p(frequency))
             * confidence_factor
             * float(topic.get("priority_weight", 0.5))
-            * (1.0 + 0.2 * float(topic.get("quick_win", 0)))
-            * (1.0 + 0.2 * float(topic.get("cross_subject_value", 0)))
+            * (
+                1.0
+                + 0.2
+                * max(
+                    [float(topic.get("quick_win", 0))]
+                    + [float(item.get("quick_win", 0)) for item in supporting_topics]
+                )
+            )
+            * (
+                1.0
+                + 0.2
+                * max(
+                    [float(topic.get("cross_subject_value", 0))]
+                    + [
+                        float(item.get("cross_subject_value", 0))
+                        for item in supporting_topics
+                    ]
+                )
+            )
         )
         cost = max(0.5, float(topic.get("estimated_minutes", 60)) / 60)
         score = allocations[chosen_subject] * need * due_factor * value / cost
@@ -2373,6 +2646,8 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
             reasons.append("该科保守下界未过线")
         if due:
             reasons.append("已到复习日")
+        if supporting_due_names:
+            reasons.append("关联应用考点到期：" + "、".join(supporting_due_names))
         if crunch_mode:
             reasons.append("考前 3 天，只做错题、保命卡或答题骨架")
         if frequency >= 6:
@@ -2393,6 +2668,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
                 "estimated_minutes": topic.get("estimated_minutes"),
                 "reason": "；".join(reasons),
                 "resources": topic.get("resources", []),
+                "supporting_topic_ids": supporting_topic_ids,
                 "_gate": gate,
                 "_track_gate": track_gate,
                 "_strategy_rank": int(topic.get("strategy_rank", 999)),
@@ -2423,25 +2699,37 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
     except TutorError as error:
         diagnosis = {"subject": target_subject, "mock": None, "issues": []}
         diagnosis_error = str(error)
-    active_diagnostics = [
-        issue
-        for issue in diagnosis["issues"]
-        if issue["status"] in {"pending_remediation", "due_review"}
-        # The configured route gates apply to diagnostic gaps too: an
-        # explicitly skipped topic or an unselected track stays out of the
-        # plan even at priority 999.
-        and issue["topic_id"] not in strategic_skips
-        and not (
+    active_diagnostics: list[dict[str, Any]] = []
+    for issue in diagnosis["issues"]:
+        if issue["status"] not in {"pending_remediation", "due_review"}:
+            continue
+        issue = dict(issue)
+        original_topic_id = issue["topic_id"]
+        if target_subject == "case":
+            track_id = (
+                original_topic_id
+                if original_topic_id.startswith("C")
+                else case_support_map.get(original_topic_id)
+            )
+            if track_id is None:
+                continue
+            issue["topic_id"] = track_id
+            issue["supporting_topic_id"] = original_topic_id
+        if issue["topic_id"] in strategic_skips:
+            continue
+        if (
             issue["topic_id"].startswith("C")
             and strategy.get("case_tracks_configured")
             and issue["topic_id"] not in configured_case_tracks
-        )
-        and not (
+        ):
+            continue
+        if (
             issue["topic_id"].startswith("P")
             and strategy.get("essay_themes_configured")
             and issue["topic_id"] not in configured_essay_themes
-        )
-    ]
+        ):
+            continue
+        active_diagnostics.append(issue)
     diagnostic_items = [
         {
             "topic_id": issue["topic_id"],
@@ -2460,6 +2748,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
             "source_mock_id": issue["source_mock_id"],
             "source_item_ids": issue["source_item_ids"],
             "wrong_reasons": issue["wrong_reasons"],
+            "supporting_topic_id": issue.get("supporting_topic_id"),
             "avoid_item_ids": issue["avoid_item_ids"],
             "avoid_question_family_ids": issue["avoid_question_family_ids"],
         }
@@ -2506,6 +2795,8 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         "crunch_mode": crunch_mode,
         "days_to_exam": days_to_exam,
         "subject_allocation": allocations,
+        "raw_subject_allocation": raw_allocations,
+        "suppressed_subjects": sorted(paused_subjects),
         "recommendations": recommendations,
         "diagnosis_error": diagnosis_error,
         "profile": {
@@ -2549,6 +2840,9 @@ def case_type_for_topic(topic: dict[str, Any]) -> str | None:
     tracks and recommendation priorities.
     """
 
+    explicit = topic.get("case_type")
+    if explicit is not None:
+        return f"案例 {explicit}"
     for resource in topic.get("resources", []):
         match = CASE_RESOURCE_RE.match(str(resource))
         if match:
@@ -2707,11 +3001,24 @@ def cmd_case_prepare(args: argparse.Namespace) -> int:
         "只呈现 stem，不展示答案；若 figure_assets 非空，按顺序查看后用文字准确描述图意，"
         "不要向考生输出本地路径；作答后再按 year + numeral 调用 paper_practice --reveal。"
     )
+    selected_topic_definition = topics[chosen_recommendation["topic_id"]]
+    track_id = (
+        chosen_recommendation["topic_id"]
+        if chosen_recommendation["topic_id"].startswith("C")
+        else case_track_by_supporting_topic(curriculum).get(
+            chosen_recommendation["topic_id"]
+        )
+    )
+    supporting_topic_ids = list(
+        selected_topic_definition.get("covered_topic_ids", [])
+    )
     payload = {
         "route_lock": {
             "mode": "case_start",
             "subject": "case",
+            "track_id": track_id,
             "topic_id": chosen_recommendation["topic_id"],
+            "supporting_topic_ids": supporting_topic_ids,
             "case_type": chosen_case_type,
             "item_id": public_item["id"],
         },
@@ -2723,6 +3030,8 @@ def cmd_case_prepare(args: argparse.Namespace) -> int:
             "review_due": chosen_recommendation.get("review_due"),
             "priority_score": chosen_recommendation.get("priority_score"),
             "reason": chosen_recommendation["reason"],
+            "track_id": track_id,
+            "supporting_topic_ids": supporting_topic_ids,
         },
         "case_type": chosen_case_type,
         "item": public_item,
@@ -4236,6 +4545,15 @@ def build_parser() -> argparse.ArgumentParser:
     status_parser = subparsers.add_parser("status", help="查看三科独立进度")
     status_parser.add_argument("--json", action="store_true")
     status_parser.set_defaults(func=cmd_status)
+
+    progress_parser = subparsers.add_parser(
+        "progress", help="只读汇总三科状态、薄弱点与下一步"
+    )
+    progress_parser.add_argument("--limit", type=int, default=5)
+    progress_parser.add_argument("--days", type=int, default=21)
+    progress_parser.add_argument("--today")
+    progress_parser.add_argument("--json", action="store_true")
+    progress_parser.set_defaults(func=cmd_progress)
 
     recommend_parser = subparsers.add_parser("recommend", help="推荐下一项高收益任务")
     recommend_parser.add_argument("--json", action="store_true")
