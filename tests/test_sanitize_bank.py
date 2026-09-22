@@ -278,6 +278,29 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual(item["tag_label"], "软件测试")
         self.assertEqual(item["explanation"], "旧版解析。")
 
+    def test_group_heading_supplies_safe_domain_label_when_metadata_has_only_domain(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "## 第 1 题：[§6 系统架构—构件平台]",
+                    "",
+                    "### 1. 【题干】",
+                    "测试题干。",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "**答案**：A",
+                    "**考点**：§6",
+                    "**解析**：解析。",
+                ]
+            ),
+            "2018下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["tag_label"], "系统架构—构件平台")
+        self.assertEqual(item["candidate_topics"], ["K11.COMPONENTS_4PLUS1"])
+
     def test_inline_multi_blank_options_stay_as_an_unsplittable_stem_group(self) -> None:
         path = self._write(
             "\n".join(
@@ -329,6 +352,41 @@ class PastPaperParsingTests(unittest.TestCase):
         item = sanitize_bank.parse_paper(path)[0]
         self.assertEqual(item["options"], [])
         self.assertIn("A. 甲 B. 乙 C. 丙 D. 丁 A. 戊", item["stem"])
+
+    def test_standalone_subquestion_markers_keep_the_first_legacy_option_set(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 1-2. 【题干】",
+                    "共享题干。",
+                    "(1)",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "(2)",
+                    "A. 戊",
+                    "B. 己",
+                    "C. 庚",
+                    "D. 辛",
+                    "**答案**：A D",
+                    "**考点**：§1 操作系统",
+                    "**解析**：保留解析。",
+                ]
+            ),
+            "2014下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["stem"], "共享题干。")
+        self.assertEqual(
+            item["options"],
+            [
+                {"label": "A", "text": "甲"},
+                {"label": "B", "text": "乙"},
+                {"label": "C", "text": "丙"},
+                {"label": "D", "text": "丁"},
+            ],
+        )
 
     def test_clean_stem_keeps_compact_option_sets_after_line_normalisation(self) -> None:
         self.assertEqual(
@@ -1045,6 +1103,13 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertIn("K10.DATABASE_MODELING", sanitize_bank.candidate_topics("§5.2", topic_tags))
         self.assertIn("K01.OS_MEMORY_KERNEL", sanitize_bank.candidate_topics("§1", topic_tags))
 
+    def test_exact_subtag_wins_when_its_label_has_no_keyword_alias(self) -> None:
+        topic_tags = sanitize_bank.load_topic_tags()
+        self.assertEqual(
+            sanitize_bank.candidate_topics("§5.5", topic_tags, label="数据仓库四特性"),
+            ["K10.DATABASE_MODELING"],
+        )
+
     def test_domain_level_labels_narrow_to_the_intended_tutor_topic(self) -> None:
         topic_tags = sanitize_bank.load_topic_tags()
         self.assertEqual(
@@ -1096,6 +1161,25 @@ class PastPaperParsingTests(unittest.TestCase):
             by_id["past-papers/comprehensive-by-year/2016下.md#68-68"]["candidate_topics"],
             ["K17.IP_COPYRIGHT"],
         )
+
+    def test_complete_untagged_source_blocks_use_evidence_backed_overrides(self) -> None:
+        expectations = {
+            "past-papers/comprehensive-by-year/2019下.md#16-17": "K18.COMPUTER_ARCH_STORAGE",
+            "past-papers/comprehensive-by-year/2020.md#20": "K12.PATTERNS_SOA_MICROSERVICES",
+            "past-papers/comprehensive-by-year/2024下.md#67": "K19.ATAM_TACTICS",
+        }
+        items = {
+            item["id"]: item
+            for path in (
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2019下.md",
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2020.md",
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2024下.md",
+            )
+            for item in sanitize_bank.parse_paper(path)
+        }
+        for item_id, topic_id in expectations.items():
+            with self.subTest(item_id=item_id):
+                self.assertEqual(items[item_id]["candidate_topics"], [topic_id])
 
     def test_cross_year_ip_variants_share_a_family_for_quiz_deduplication(self) -> None:
         ids = (

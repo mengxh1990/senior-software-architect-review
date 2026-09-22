@@ -101,6 +101,11 @@ CURATED_METADATA_LINE_RE = re.compile(
 )
 IMAGE_ONLY_RE = re.compile(r"^!\[[^\]]*\]\([^)]*\)$")
 QUESTION_GROUP_HEADER_RE = re.compile(r"^##\s*第\s*\d+(?:\s*[-–—]\s*\d+)?\s*题")
+PAPER_GROUP_TAG_RE = re.compile(
+    r"^##\s*第\s*\d+(?:\s*[-–—]\s*\d+)?\s*题\s*[:：]?\s*"
+    r"\[\s*(§[0-9]+(?:\.[0-9]+)?)\s*([^\]\n]*)\]\s*$",
+    re.MULTILINE,
+)
 PASSAGE_HEADER_RE = re.compile(r"^##\s+(Passage\s+\d+[^\n]*)\s*$", re.MULTILINE)
 TRAILING_OPTIONS_LABEL_RE = re.compile(r"(?:\s|^)(?:选项(?:如下)?|options?)\s*[:：]\s*$", re.IGNORECASE)
 PLACEHOLDER_STEM_RE = re.compile(r"^[（(]\s*\d{1,3}\s*[)）]$")
@@ -204,51 +209,80 @@ DOMAIN_NAMES = {
 # advertising every topic in the same domain as an equally valid candidate.
 DOMAIN_LABEL_TOPIC_RULES = {
     "§1": (
-        ("K07.REALTIME_EMBEDDED", ("嵌入式", "实时系统", "实时操作系统", "rtos")),
-        ("K02.NETWORK_PROTOCOLS", ("网络", "协议", "通信", "域名解析")),
+        ("K21.MESSAGING_CACHE", ("中间件",)),
+        ("K07.REALTIME_EMBEDDED", ("嵌入式", "实时系统", "实时操作系统", "rtos", "实时调度", "截止期", "混成", "片上系统", "soc")),
+        ("K02.NETWORK_PROTOCOLS", ("网络", "协议", "通信", "域名解析", "dns", "dhcp", "tcp", "crc", "web", "intserv")),
         ("K14.OS_SCHEDULING_FILES", ("磁盘调度", "文件系统", "文件索引", "调度算法")),
-        ("K01.OS_MEMORY_KERNEL", ("操作系统", "进程", "线程", "死锁", "pv操作", "页式", "存储管理")),
-        ("K18.COMPUTER_ARCH_STORAGE", ("计算机系统", "存储系统", "处理器", "cpu", "mips", "指令", "总线", "性能")),
+        ("K01.OS_MEMORY_KERNEL", ("操作系统", "进程", "线程", "死锁", "pv操作", "页式", "段页", "存储管理", "前趋", "位示图")),
+        ("K18.COMPUTER_ARCH_STORAGE", ("计算机系统", "存储系统", "存储器", "处理器", "cpu", "mips", "指令", "总线", "性能", "哈佛", "主频")),
     ),
     "§2": (("K24.INFORMATION_SYSTEMS", ("信息系统", "erp", "crm", "电子政务", "商业智能", "企业信息", "系统集成")),),
     "§3": (("K20.SECURITY_FOUNDATIONS", ("信息安全", "安全", "加密", "认证", "pki", "kerberos", "攻击")),),
     "§4": (
-        ("K03.SOFTWARE_DESIGN_UML", ("uml", "面向对象", "内聚", "耦合", "类图", "用例")),
-        ("K05.TEST_CMMI_PATTERNS", ("测试", "cmmi", "质量保证", "设计模式")),
+        ("K03.SOFTWARE_DESIGN_UML", ("uml", "面向对象", "内聚", "耦合", "类图", "用例", "设计原则", "迪米特", "里氏", "依赖倒置", "mvc", "模块化", "软件工具")),
+        ("K05.TEST_CMMI_PATTERNS", ("测试", "cmmi", "质量保证", "设计模式", "静态分析", "净室")),
         ("K15.STRUCTURED_ANALYSIS_DFD", ("结构化", "dfd", "数据流图")),
-        ("K16.REQUIREMENTS_MANAGEMENT", ("需求", "基线", "变更控制")),
-        ("K23.PROJECT_MANAGEMENT_METRICS", ("项目", "范围", "进度", "成本", "挣值", "配置项", "活动定义", "度量")),
-        ("K08.SOFTWARE_PROCESS_MODELS", ("软件过程", "开发模型", "rup", "敏捷", "原型", "迭代")),
-        ("K06.DESIGN_DATA_VIEWS", ("概要设计", "数据设计", "界面设计", "输入设计", "输出设计", "详细设计")),
+        ("K16.REQUIREMENTS_MANAGEMENT", ("需求", "基线", "变更控制", "输入校验", "可行性分析")),
+        ("K23.PROJECT_MANAGEMENT_METRICS", ("项目", "范围", "进度", "成本", "挣值", "配置项", "配置管理", "产品配置", "版本控制", "sccs", "活动定义", "度量", "mccabe")),
+        ("K08.SOFTWARE_PROCESS_MODELS", ("软件过程", "开发模型", "开发方法", "螺旋", "生命周期", "生存周期", "软件重用", "自顶向下", "rup", "敏捷", "原型", "迭代")),
+        ("K26.ARCH_EVOLUTION", ("软件维护",)),
+        ("K06.DESIGN_DATA_VIEWS", ("概要设计", "软件结构", "数据设计", "界面设计", "输入设计", "输出设计", "详细设计", "用户文档", "处理流程", "系统建议", "系统设计")),
     ),
     "§5": (("K10.DATABASE_MODELING", ("数据库", "关系", "范式", "sql", "事务", "索引")),),
     "§6": (
-        ("K12.PATTERNS_SOA_MICROSERVICES", ("微服务", "soa", "esb", "web服务", "soap", "wsdl", "设计模式")),
+        ("K12.PATTERNS_SOA_MICROSERVICES", ("微服务", "soa", "esb", "web服务", "soap", "wsdl", "设计模式", "接口标准化", "接口描述")),
         ("K21.MESSAGING_CACHE", ("消息", "缓存", "中间件")),
         ("K26.ARCH_EVOLUTION", ("演化", "迁移", "维护")),
-        ("K11.COMPONENTS_4PLUS1", ("构件", "4+1")),
-        ("K13.VIEWS_SOA_LAYERING", ("分层", "层次", "架构视图")),
-        ("K04.ARCH_STYLES_ABSD", ("架构风格", "absd", "dssa", "架构需求", "架构设计", "架构复审", "架构定义", "架构作用", "架构描述")),
+        ("K11.COMPONENTS_4PLUS1", ("构件", "4+1", "com", "j2ee", "javaee", "corba")),
+        ("K13.VIEWS_SOA_LAYERING", ("分层", "层次", "架构视图", "c/s", "客户机", "逻辑层", "负载均衡", "网络架构")),
+        ("K04.ARCH_STYLES_ABSD", ("架构风格", "absd", "dssa", "架构需求", "架构设计", "架构复审", "架构定义", "架构作用", "架构描述", "架构与生命周期", "架构重要性", "架构文档", "需求模型转")),
     ),
     "§7": (
         ("K19.ATAM_TACTICS", ("atam", "saam", "架构评估", "四类点", "敏感点", "权衡点")),
-        ("K09.QUALITY_SCENARIOS", ("质量属性", "质量场景", "质量战术", "质量策略")),
+        ("K09.QUALITY_SCENARIOS", ("质量属性", "质量场景", "质量战术", "质量策略", "性能", "可用性", "可修改性", "安全性")),
     ),
     "§8": (("K25.RELIABILITY_ENGINEERING", ("可靠性", "容错", "故障")),),
     "§9": (("K26.ARCH_EVOLUTION", ("演化", "迁移", "维护", "遗留")),),
-    "§10": (("K27.EMERGING_TECH", ("人工智能", "云计算", "物联网", "区块链", "边缘计算", "数字孪生", "cps", "大模型")),),
+    "§10": (("K27.EMERGING_TECH", ("人工智能", "ai芯片", "云计算", "物联网", "区块链", "边缘计算", "数字孪生", "cps", "大模型", "sdn")),),
     "§11": (("K17.IP_COPYRIGHT", ("知识产权", "标准", "著作权", "商标", "专利", "商业秘密")),),
-    "§12": (("K28.MATH_OPERATIONS", ("应用数学", "概率", "图论", "运筹", "线性规划", "决策")),),
+    "§12": (
+        ("K23.PROJECT_MANAGEMENT_METRICS", ("关键路径", "赶工", "工期", "网络计划")),
+        ("K28.MATH_OPERATIONS", ("应用数学", "概率", "图论", "运筹", "线性规划", "决策", "灵敏性", "盈亏平衡")),
+    ),
     "§13": (("K22.ENGLISH_READING", ("专业英语", "英语", "阅读")),),
 }
 
 ITEM_TOPIC_OVERRIDES = {
+    # Source blocks whose old transcript omitted a stable §N.M tag.  Each
+    # override is grounded in the complete stem rather than a guessed domain.
+    "past-papers/comprehensive-by-year/2009下.md#28-29": "K26.ARCH_EVOLUTION",
+    "past-papers/comprehensive-by-year/2009下.md#35-37": "K11.COMPONENTS_4PLUS1",
+    "past-papers/comprehensive-by-year/2010下.md#29-30": "K03.SOFTWARE_DESIGN_UML",
+    "past-papers/comprehensive-by-year/2012下.md#32-34": "K21.MESSAGING_CACHE",
+    "past-papers/comprehensive-by-year/2012下.md#39-41": "K13.VIEWS_SOA_LAYERING",
+    "past-papers/comprehensive-by-year/2013下.md#29-30": "K26.ARCH_EVOLUTION",
+    "past-papers/comprehensive-by-year/2013下.md#40-42": "K04.ARCH_STYLES_ABSD",
+    "past-papers/comprehensive-by-year/2019下.md#16-17": "K18.COMPUTER_ARCH_STORAGE",
+    "past-papers/comprehensive-by-year/2019下.md#18-19": "K24.INFORMATION_SYSTEMS",
+    "past-papers/comprehensive-by-year/2019下.md#35-37": "K11.COMPONENTS_4PLUS1",
+    "past-papers/comprehensive-by-year/2019下.md#39-40": "K26.ARCH_EVOLUTION",
+    "past-papers/comprehensive-by-year/2019下.md#42-43": "K05.TEST_CMMI_PATTERNS",
+    "past-papers/comprehensive-by-year/2020.md#10": "K24.INFORMATION_SYSTEMS",
+    "past-papers/comprehensive-by-year/2020.md#20": "K12.PATTERNS_SOA_MICROSERVICES",
+    "past-papers/comprehensive-by-year/2023下.md#1-2": "K23.PROJECT_MANAGEMENT_METRICS",
     "past-papers/comprehensive-by-year/2016下.md#7-8": "K14.OS_SCHEDULING_FILES",
     "past-papers/comprehensive-by-year/2012下.md#17-17": "K18.COMPUTER_ARCH_STORAGE",
     "past-papers/comprehensive-by-year/2022.md#32": "K12.PATTERNS_SOA_MICROSERVICES",
     "past-papers/comprehensive-by-year/2024下.md#1": "K20.SECURITY_FOUNDATIONS",
     "past-papers/comprehensive-by-year/2024下.md#38": "K03.SOFTWARE_DESIGN_UML",
+    "past-papers/comprehensive-by-year/2024下.md#65": "K12.PATTERNS_SOA_MICROSERVICES",
+    "past-papers/comprehensive-by-year/2024下.md#66": "K05.TEST_CMMI_PATTERNS",
+    "past-papers/comprehensive-by-year/2024下.md#67": "K19.ATAM_TACTICS",
+    "past-papers/comprehensive-by-year/2024下.md#68": "K20.SECURITY_FOUNDATIONS",
+    "past-papers/comprehensive-by-year/2024下.md#69": "K10.DATABASE_MODELING",
     "past-papers/comprehensive-by-year/2025上.md#23": "K01.OS_MEMORY_KERNEL",
+    "past-papers/comprehensive-by-year/2025上.md#19-20": "K13.VIEWS_SOA_LAYERING",
+    "past-papers/comprehensive-by-year/2025上.md#27-28": "K10.DATABASE_MODELING",
 }
 
 
@@ -292,13 +326,21 @@ def candidate_topics(
     for topic_id, keywords in DOMAIN_LABEL_TOPIC_RULES.get(domain, ()):
         if any(keyword.casefold() in normalized_label for keyword in keywords):
             return [topic_id]
+    exact_topics = sorted(set(exact))
+    # A confirmed §N.M curriculum tag is stronger evidence than an unmatched
+    # human-readable label.  The previous order discarded these exact matches
+    # whenever a detailed label lacked a hand-maintained keyword synonym.
+    if "." in tag and exact_topics:
+        return exact_topics
     if normalized_label:
         # A detailed source label that cannot be mapped is unknown, not proof
         # that the question belongs to every tutor topic in the same domain.
+        # A one-topic domain is the safe exception: there is no competing
+        # tutor destination to accidentally advertise.
+        unique_domain_topics = sorted(set(exact_topics) | set(prefix))
+        if len(unique_domain_topics) == 1:
+            return unique_domain_topics
         return []
-    exact_topics = sorted(set(exact))
-    if "." in tag and exact_topics:
-        return exact_topics
     return exact_topics + sorted(set(prefix) - set(exact_topics))
 
 
@@ -609,6 +651,7 @@ def _curated_stem_lines(lines: Sequence[str]) -> List[str]:
 def parse_paper_transcript(text: str, year: str) -> List[Dict]:
     """Parse the 2009–2017 transcript layout (【答案】/【解析】 blocks)."""
     answers = list(PAPER_ANSWER_RE.finditer(text))
+    group_tags = list(PAPER_GROUP_TAG_RE.finditer(text))
     items: List[Dict] = []
     for position, answer in enumerate(answers):
         window_start = answers[position - 1].end() if position else 0
@@ -663,6 +706,13 @@ def parse_paper_transcript(text: str, year: str) -> List[Dict]:
         tag_match = PAPER_TAG_RE.search(text, answer.end())
         tag = tag_match.group(1) if tag_match and tag_match.start() < (answers[position + 1].start() if position + 1 < len(answers) else len(text)) else ""
         label = tag_match.group(2).strip() if tag_match and tag else ""
+        if tag and not label:
+            source_group = next(
+                (match for match in reversed(group_tags) if match.start() < answer.start()),
+                None,
+            )
+            if source_group and source_group.group(1) == tag:
+                label = source_group.group(2).strip()
         items.append(
             {
                 "id": f"past-papers/comprehensive-by-year/{year}.md#{start}-{end}",
@@ -702,6 +752,7 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
     following line such as ``**解析**：…``.
     """
     headers = list(CURATED_HEADER_RE.finditer(text))
+    group_tags = list(PAPER_GROUP_TAG_RE.finditer(text))
     items: List[Dict] = []
     for position, header in enumerate(headers):
         end = headers[position + 1].start() if position + 1 < len(headers) else len(text)
@@ -740,6 +791,13 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
                 correct = []
                 tag = ""
                 label = ""
+        if tag and not label:
+            source_group = next(
+                (match for match in reversed(group_tags) if match.start() < header.start()),
+                None,
+            )
+            if source_group and source_group.group(1) == tag:
+                label = source_group.group(2).strip()
 
         body_lines = lines[1:]
         content_lines: List[str] = []
@@ -766,10 +824,19 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
         # one-to-one option set), so retain that contract after reformatting.
         # A canonical group that has a standalone ``(6)`` line followed by
         # A–D remains safely parseable and uses the usual option path.
+        has_inline_subquestion_option = any(
+            INLINE_SUBQUESTION_OPTION_RE.match(line.strip()) for line in content_lines
+        )
+        has_standalone_subquestion_marker = any(
+            SUBQUESTION_MARKER_RE.match(line.strip()) for line in content_lines
+        )
         if (
-            any(INLINE_SUBQUESTION_OPTION_RE.match(line.strip()) for line in content_lines)
+            has_inline_subquestion_option
             or "选项集" in "\n".join(content_lines)
-            or len(option_labels) != len(set(option_labels))
+            or (
+                len(option_labels) != len(set(option_labels))
+                and not has_standalone_subquestion_marker
+            )
         ):
             option_start = len(content_lines)
         else:
