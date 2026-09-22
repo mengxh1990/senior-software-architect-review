@@ -476,7 +476,37 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertEqual(status["mastery"]["recognition"]["status"], "pass_ready")
             self.assertEqual(
                 status["mastery"]["recognition"]["next_review_at"],
-                "2026-09-02",
+                "2026-08-13",
+                "达到 pass_ready 不能把已经临近的复习日推迟",
+            )
+            for suffix, at in (
+                ("three-day", "2026-08-13T09:00:00+08:00"),
+                ("seven-day", "2026-08-16T09:00:00+08:00"),
+                ("maintenance", "2026-08-23T09:00:00+08:00"),
+            ):
+                _run_cli(
+                    data_dir,
+                    "record",
+                    "--topic",
+                    topic_id,
+                    "--skill",
+                    "recognition",
+                    "--score",
+                    "1",
+                    "--max-score",
+                    "1",
+                    "--attempt-id",
+                    f"pass-ready-floor-{suffix}",
+                    "--item-id",
+                    f"pass-ready-item-{suffix}",
+                    "--at",
+                    at,
+                )
+            maintenance = _find_topic_record(self._status(data_dir), topic_id)
+            self.assertEqual(
+                maintenance["mastery"]["recognition"]["next_review_at"],
+                "2026-09-13",
+                "进入 14 天维护阶段后才应用 21 天最小间隔",
             )
 
     def test_every_command_refuses_a_copied_unignored_private_directory(self) -> None:
@@ -1440,7 +1470,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertIn(_status_label(after_outline), PASS_READY_STATES)
             self.assertEqual(
                 after_outline["mastery"]["production"]["next_review_at"],
-                "2026-08-26",
+                "2026-08-15",
             )
 
     def test_cold_start_rotates_diagnostics_across_all_three_subjects(self) -> None:
@@ -1967,6 +1997,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertIsNone(conceded[0]["selected_answer"])
             self.assertEqual(0, conceded[0]["score"])
             self.assertEqual(["knowledge_gap"], conceded[0]["wrong_reasons"])
+            self.assertEqual("response_state", conceded[0]["wrong_reason_source"])
 
             # Replaying the same explicit "不会" stays idempotent, a different
             # answer set is rejected, and X may not be mixed with option letters.
@@ -2014,6 +2045,89 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "AX,X,X,X,X",
                 expected_returncode=2,
             )
+
+    def test_quiz_grade_only_records_explicit_wrong_reasons(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir, limit=2)
+            manifest = self._quiz_manifest(data_dir, prepared["quiz_id"])
+            wrong_answers = [
+                next(letter for letter in "ABCD" if letter not in question["correct"])
+                for question in manifest["questions"]
+            ]
+            graded = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-grade",
+                    "--quiz-id",
+                    prepared["quiz_id"],
+                    "--answers",
+                    ",".join(wrong_answers),
+                    "--wrong-reason",
+                    "1=recall_failure",
+                )
+            )
+            first, second = graded["results"]
+            self.assertEqual(["recall_failure"], first["wrong_reasons"])
+            self.assertEqual("learner", first["wrong_reason_source"])
+            self.assertEqual("confirmed", first["wrong_reason_status"])
+            self.assertEqual([], second["wrong_reasons"])
+            self.assertIsNone(second["wrong_reason_source"])
+            self.assertEqual("unclassified", second["wrong_reason_status"])
+
+            attempts = [
+                json.loads(line)
+                for line in (data_dir / "attempts.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if line.strip()
+            ]
+            self.assertEqual("learner", attempts[-2]["wrong_reason_source"])
+            self.assertEqual([], attempts[-1]["wrong_reasons"])
+
+    def test_review_schedule_advances_one_three_seven_fourteen_thirty_days(self) -> None:
+        topic_id = self._recognition_topic()["id"]
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+
+            def record(number: int, day: str, score: int) -> str:
+                arguments = [
+                    "record",
+                    "--topic",
+                    topic_id,
+                    "--skill",
+                    "recognition",
+                    "--score",
+                    str(score),
+                    "--max-score",
+                    "1",
+                    "--attempt-id",
+                    f"review-ladder-{number}",
+                    "--item-id",
+                    f"review-ladder-item-{number}",
+                    "--mode",
+                    "review",
+                    "--at",
+                    f"{day}T09:00:00+08:00",
+                ]
+                if score == 0:
+                    arguments.extend(["--wrong-reason", "recall_failure"])
+                _run_cli(data_dir, *arguments)
+                status = _find_topic_record(self._status(data_dir), topic_id)
+                return status["mastery"]["recognition"]["next_review_at"]
+
+            self.assertEqual("2026-08-11", record(1, "2026-08-10", 0))
+            self.assertEqual(
+                "2026-08-11",
+                record(2, "2026-08-10", 1),
+                "当天纠偏不得取消次日复测",
+            )
+            self.assertEqual("2026-08-14", record(3, "2026-08-11", 1))
+            self.assertEqual("2026-08-21", record(4, "2026-08-14", 1))
+            self.assertEqual("2026-09-04", record(5, "2026-08-21", 1))
+            self.assertEqual("2026-10-04", record(6, "2026-09-04", 1))
 
     def test_quiz_grade_invalidates_broken_questions_without_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -2362,6 +2476,9 @@ class TutorAcceptanceTest(unittest.TestCase):
                     result["next_review_at"],
                     "答错或明确不会的变式题必须进入 1 天后的纠错复习",
                 )
+            for result in recorded["results"][1:]:
+                self.assertEqual([], result["wrong_reasons"])
+                self.assertEqual("unclassified", result["wrong_reason_status"])
             attempted_ids = {
                 json.loads(line)["item_id"]
                 for line in (data_dir / "attempts.jsonl")
@@ -3346,6 +3463,38 @@ class TutorAcceptanceTest(unittest.TestCase):
                 repaired["strategy"]["subject_policies"]["essay"]["reason"],
                 "考生仅在主动要求时练论文",
             )
+
+    def test_repair_can_recompute_valid_derived_state_without_changing_attempts(self) -> None:
+        topic_id = self._recognition_topic()["id"]
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(
+                data_dir,
+                "record",
+                "--topic",
+                topic_id,
+                "--skill",
+                "recognition",
+                "--score",
+                "0",
+                "--max-score",
+                "1",
+                "--attempt-id",
+                "recompute-derived-001",
+                "--item-id",
+                "recompute-derived-item-001",
+                "--wrong-reason",
+                "recall_failure",
+                "--at",
+                "2026-08-10T09:00:00+08:00",
+            )
+            attempts_before = (data_dir / "attempts.jsonl").read_bytes()
+            result = _run_cli(data_dir, "repair", "--recompute-derived")
+            self.assertIn("已依据事件日志重建", result.stdout)
+            self.assertEqual(attempts_before, (data_dir / "attempts.jsonl").read_bytes())
+            self.assertTrue(list(data_dir.glob("state.json.pre-recompute.*")))
+            _run_cli(data_dir, "doctor")
 
     def test_concurrent_records_are_serialized_without_lost_progress(self) -> None:
         topic_id = self._recognition_topic()["id"]

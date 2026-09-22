@@ -50,6 +50,13 @@ WRONG_REASONS = {
     "careless",
     "guessed_correct",
 }
+WRONG_REASON_SOURCES = {
+    "learner",
+    "response_state",
+    "confidence",
+    "learner_postmortem",
+}
+REVIEW_INTERVAL_DAYS = (1, 3, 7, 14, 30)
 QUIZ_SCHEMA_VERSION = 1
 QUIZ_SESSIONS_DIR = "quiz-sessions"
 RECALLED_REAL_YEARS = {"2023下", "2024上", "2024下", "2025上", "2025下", "2026上"}
@@ -441,6 +448,22 @@ def validate_state(state: Any) -> dict[str, Any]:
                 parse_date(successful_date)
             if not isinstance(record.get("wrong_reason_counts"), dict):
                 raise TutorError(f"state.json topics.{topic_id}.{skill}.wrong_reason_counts 无效")
+            for key in (
+                "confirmed_wrong_reason_counts",
+                "legacy_inferred_wrong_reason_counts",
+            ):
+                value = record.get(key, {})
+                if not isinstance(value, dict):
+                    raise TutorError(f"state.json topics.{topic_id}.{skill}.{key} 无效")
+            unclassified = record.get("unclassified_wrong_count", 0)
+            if (
+                not isinstance(unclassified, int)
+                or isinstance(unclassified, bool)
+                or unclassified < 0
+            ):
+                raise TutorError(
+                    f"state.json topics.{topic_id}.{skill}.unclassified_wrong_count 无效"
+                )
             if record.get("last_attempt_at") is not None:
                 parse_datetime(record["last_attempt_at"])
             if record.get("next_review_at") is not None:
@@ -542,11 +565,54 @@ def effective_review_date(
     if not next_review:
         return next_review
     effective = parse_date(next_review)
-    if status == "pass_ready" and minimum_interval > 0 and last_attempt:
+    stored_interval = None
+    if last_attempt:
+        stored_interval = (effective - parse_datetime(last_attempt).date()).days
+    if (
+        status == "pass_ready"
+        and minimum_interval > 0
+        and last_attempt
+        and stored_interval is not None
+        and stored_interval >= 14
+    ):
         floor = parse_datetime(last_attempt).date() + timedelta(days=minimum_interval)
         if floor > effective:
             effective = floor
     return effective.isoformat()
+
+
+def scheduled_review_date(
+    previous_last_at: str | None,
+    previous_due_at: str | None,
+    attempted_at: datetime,
+    *,
+    stable_success: bool,
+) -> date:
+    """Advance the 1/3/7/14/30-day ladder without postponing early reviews."""
+
+    attempted_on = attempted_at.date()
+    if not stable_success:
+        return attempted_on + timedelta(days=REVIEW_INTERVAL_DAYS[0])
+    if previous_due_at:
+        previous_due = parse_date(previous_due_at)
+        if attempted_on < previous_due:
+            return previous_due
+        previous_delay = 0
+        if previous_last_at:
+            previous_delay = max(
+                0,
+                (previous_due - parse_datetime(previous_last_at).date()).days,
+            )
+        next_delay = next(
+            (
+                delay
+                for delay in REVIEW_INTERVAL_DAYS[1:]
+                if delay > previous_delay
+            ),
+            REVIEW_INTERVAL_DAYS[-1],
+        )
+        return attempted_on + timedelta(days=next_delay)
+    return attempted_on + timedelta(days=REVIEW_INTERVAL_DAYS[1])
 
 
 def status_payload(profile: dict[str, Any], state: dict[str, Any]) -> dict[str, Any]:
@@ -685,6 +751,9 @@ def new_skill_record() -> dict[str, Any]:
         "qualified_evidence": [],
         "successful_dates": [],
         "wrong_reason_counts": {},
+        "confirmed_wrong_reason_counts": {},
+        "legacy_inferred_wrong_reason_counts": {},
+        "unclassified_wrong_count": 0,
         "last_attempt_at": None,
         "next_review_at": None,
     }
@@ -974,11 +1043,15 @@ def validate_record_event(event: dict[str, Any], curriculum: dict[str, Any]) -> 
     invalid_reasons = set(reasons) - WRONG_REASONS
     if invalid_reasons:
         raise TutorError("未知错因：" + ", ".join(sorted(invalid_reasons)))
+    wrong_reason_source = event.get("wrong_reason_source")
+    if wrong_reason_source is not None and wrong_reason_source not in WRONG_REASON_SOURCES:
+        raise TutorError("wrong_reason_source 无效")
     for key in (
         "concept_id",
         "question_family_id",
         "question_fingerprint",
         "variant_of",
+        "wrong_reason_source",
     ):
         value = event.get(key)
         if value is not None and (not isinstance(value, str) or not value.strip()):
@@ -1037,6 +1110,7 @@ def apply_record_event(
     record["attempted_items"] = sorted(attempted_items)
 
     previous_last = record.get("last_attempt_at")
+    previous_due = record.get("next_review_at")
     is_latest = not previous_last or attempted_at >= parse_datetime(previous_last)
     is_mastery_assessment = skill != "production" or event.get("mode") == "full_timed"
     if is_latest:
@@ -1098,11 +1172,29 @@ def apply_record_event(
     if skill == "production" and event.get("mode") == "full_timed":
         record["full_timed_count"] = int(record.get("full_timed_count", 0)) + 1
 
-    for reason in event.get("wrong_reasons", []):
+    reasons = event.get("wrong_reasons", [])
+    source = event.get("wrong_reason_source")
+    legacy_inferred = (
+        source is None
+        and re.fullmatch(r"quiz-.+-(?:q|v)-\d+", str(event.get("attempt_id", "")))
+        and reasons == ["concept_confusion"]
+    )
+    for reason in reasons:
         counts = record["wrong_reason_counts"]
         counts[reason] = int(counts.get(reason, 0)) + 1
         topic_counts = topic_record["wrong_reason_counts"]
         topic_counts[reason] = int(topic_counts.get(reason, 0)) + 1
+        target_key = (
+            "legacy_inferred_wrong_reason_counts"
+            if legacy_inferred
+            else "confirmed_wrong_reason_counts"
+        )
+        target_counts = record.setdefault(target_key, {})
+        target_counts[reason] = int(target_counts.get(reason, 0)) + 1
+    if ratio < 1.0 and not reasons:
+        record["unclassified_wrong_count"] = int(
+            record.get("unclassified_wrong_count", 0)
+        ) + 1
 
     evidence_target = {"recognition": 6, "application": 2, "production": 1}[skill]
     evidence_factor = min(1.0, len(attempted_items) / evidence_target)
@@ -1115,17 +1207,13 @@ def apply_record_event(
         record["ever_pass_ready"] = True
         record["regression_active"] = False
 
-    if record.get("regression_active"):
-        interval_days = 1
-    elif record["status"] == "pass_ready":
-        interval_days = 14
-    elif ratio < 0.8 or event.get("confidence") == "guess":
-        interval_days = 1
-    else:
-        interval_days = 3
-    # Store the organic interval; the configured minimum interval is a floor
-    # applied wherever the date is read, so it can change in both directions.
-    next_review = attempted_at.date() + timedelta(days=interval_days)
+    stable_success = qualifies and event.get("confidence") == "sure"
+    next_review = scheduled_review_date(
+        previous_last,
+        previous_due,
+        attempted_at,
+        stable_success=stable_success,
+    )
     if is_latest and (is_mastery_assessment or not record.get("next_review_at")):
         record["next_review_at"] = next_review.isoformat()
 
@@ -1267,6 +1355,7 @@ def cmd_record(args: argparse.Namespace) -> int:
         "complete": args.complete,
         "confidence": args.confidence,
         "wrong_reasons": args.wrong_reason or [],
+        "wrong_reason_source": "learner" if args.wrong_reason else None,
         "source_type": args.source_type,
         "source": args.source,
         "feedback_seen": False,
@@ -2531,6 +2620,8 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
             else None
         )
         due = False
+        urgent_due = False
+        maintenance_due = False
         if review_at:
             try:
                 due = (
@@ -2544,8 +2635,11 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
                     )
                     <= today
                 )
+                urgent_due = due and skill_progress.get("status") != "pass_ready"
+                maintenance_due = due and not urgent_due
             except TutorError:
                 due = True
+                urgent_due = True
         supporting_due_names: list[str] = []
         for supporting_topic_id in supporting_topic_ids:
             supporting_progress = state.get("topics", {}).get(supporting_topic_id, {})
@@ -2575,12 +2669,16 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
                 supporting_is_due = True
             if supporting_is_due:
                 due = True
+                if supporting_record.get("status") == "pass_ready":
+                    maintenance_due = True
+                else:
+                    urgent_due = True
                 supporting_due_names.append(
                     topics[supporting_topic_id]["name"]
                     if supporting_topic_id in topics
                     else supporting_topic_id
                 )
-        due_factor = 1.7 if due else 1.0
+        due_factor = 1.7 if urgent_due else (1.15 if maintenance_due else 1.0)
         supporting_topics = [
             topics[topic_id]
             for topic_id in supporting_topic_ids
@@ -2645,7 +2743,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         elif state["subjects"][chosen_subject]["lower_bound_score"] < 45:
             reasons.append("该科保守下界未过线")
         if due:
-            reasons.append("已到复习日")
+            reasons.append("已到复习日" if urgent_due else "已到维护复习日")
         if supporting_due_names:
             reasons.append("关联应用考点到期：" + "、".join(supporting_due_names))
         if crunch_mode:
@@ -2665,6 +2763,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
                 "priority_score": round(score, 4),
                 "mastery": round(mastery, 4),
                 "review_due": due,
+                "urgent_review_due": urgent_due,
                 "estimated_minutes": topic.get("estimated_minutes"),
                 "reason": "；".join(reasons),
                 "resources": topic.get("resources", []),
@@ -2680,7 +2779,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
     ranked.sort(
         key=lambda item: (
             -item["_gate"],
-            -int(item["review_due"]),
+            -int(item.get("urgent_review_due", item["review_due"])),
             -item["_track_gate"],
             item["_cold_start_group"],
             -item["priority_score"],
@@ -3436,10 +3535,7 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         chosen["mode"] = (
             "review" if recommendation.get("diagnostic_status") else "practice"
         )
-        prior_reasons = recommendation.get("wrong_reasons") or []
-        chosen["wrong_reason_hint"] = (
-            prior_reasons[0] if prior_reasons else "concept_confusion"
-        )
+        chosen["prior_wrong_reasons"] = recommendation.get("wrong_reasons") or []
         selected.append(chosen)
         chosen_recommendations.append(recommendation)
         used_items.add(chosen["item_id"])
@@ -3850,6 +3946,12 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
         aliases=QUIZ_INVALIDATION_ALIASES,
     )
     audits = parse_quiz_marks(args.audit, len(questions), label="--audit")
+    declared_wrong_reasons = parse_quiz_marks(
+        args.wrong_reason,
+        len(questions),
+        label="--wrong-reason",
+        allowed=WRONG_REASONS - {"guessed_correct"},
+    )
     response_key = {
         "answers": ["".join(answer) for answer in answers],
         "confidences": confidences,
@@ -3861,6 +3963,11 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
     if audits:
         response_key["audits"] = {
             str(number): note for number, note in sorted(audits.items())
+        }
+    if declared_wrong_reasons:
+        response_key["wrong_reasons"] = {
+            str(number): reason
+            for number, reason in sorted(declared_wrong_reasons.items())
         }
     if manifest.get("status") == "graded":
         if manifest.get("response_key") != response_key:
@@ -3893,7 +4000,10 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
     ):
         correct = sorted(question["correct"])
         invalid_reason = invalidations.get(index)
+        declared_reason = declared_wrong_reasons.get(index)
         if invalid_reason:
+            if declared_reason:
+                raise TutorError(f"第 {index} 题已标记无效，不能同时记录错因")
             # A broken question is not learner evidence: no attempt is written
             # and the rest of the batch still grades normally.
             results.append(
@@ -3914,13 +4024,20 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
         conceded = selected == ["X"]
         is_correct = selected == correct
         if conceded:
+            if declared_reason and declared_reason != "knowledge_gap":
+                raise TutorError(f"第 {index} 题明确不会时错因只能是 knowledge_gap")
             wrong_reasons = ["knowledge_gap"]
+            wrong_reason_source = "response_state"
             event_confidence = None
         elif is_correct:
+            if declared_reason:
+                raise TutorError(f"第 {index} 题答对，不能记录错因")
             wrong_reasons = ["guessed_correct"] if confidence == "guess" else []
+            wrong_reason_source = "confidence" if wrong_reasons else None
             event_confidence = confidence
         else:
-            wrong_reasons = [question.get("wrong_reason_hint") or "concept_confusion"]
+            wrong_reasons = [declared_reason] if declared_reason else []
+            wrong_reason_source = "learner" if declared_reason else None
             event_confidence = confidence
         event = {
             "attempt_id": f"{args.quiz_id}-q-{index}",
@@ -3942,6 +4059,7 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
             "selected_answer": None if conceded else "".join(selected),
             "correct_answer": "".join(correct),
             "wrong_reasons": wrong_reasons,
+            "wrong_reason_source": wrong_reason_source,
             "source_type": question["source_type"],
             "source": question.get("source"),
             "feedback_seen": False,
@@ -3971,6 +4089,11 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
                 "counted": True,
                 "confidence": event_confidence,
                 "wrong_reasons": wrong_reasons,
+                "wrong_reason_source": wrong_reason_source,
+                "wrong_reason_status": (
+                    "confirmed" if wrong_reasons else "unclassified"
+                ),
+                "prior_wrong_reasons": question.get("prior_wrong_reasons", []),
                 "explanation": question.get("explanation"),
                 "memory_hook": (
                     private_registry.get(question["item_id"], {}) or {}
@@ -4115,10 +4238,21 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
     if len(answers) != len(served):
         raise TutorError(f"变式答案数量为 {len(answers)}，变式题数量为 {len(served)}")
     confidences = parse_variant_confidences(args.confidences, len(served))
+    declared_wrong_reasons = parse_quiz_marks(
+        args.wrong_reason,
+        len(served),
+        label="--wrong-reason",
+        allowed=WRONG_REASONS - {"guessed_correct"},
+    )
     variant_key = {
         "answers": ["".join(answer) for answer in answers],
         "confidences": confidences,
     }
+    if declared_wrong_reasons:
+        variant_key["wrong_reasons"] = {
+            str(number): reason
+            for number, reason in sorted(declared_wrong_reasons.items())
+        }
     if manifest.get("variant_result") is not None:
         if manifest.get("variant_key") != variant_key:
             raise TutorError(f"quiz-id {args.quiz_id} 的变式题已使用不同答案完成")
@@ -4169,14 +4303,22 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
         correct = sorted(variant["answer"])
         conceded = selected == ["X"]
         is_correct = selected == correct
+        declared_reason = declared_wrong_reasons.get(index)
         if conceded:
+            if declared_reason and declared_reason != "knowledge_gap":
+                raise TutorError(f"第 {index} 道变式明确不会时错因只能是 knowledge_gap")
             wrong_reasons = ["knowledge_gap"]
+            wrong_reason_source = "response_state"
             event_confidence = None
         elif is_correct:
+            if declared_reason:
+                raise TutorError(f"第 {index} 道变式答对，不能记录错因")
             wrong_reasons = ["guessed_correct"] if confidence == "guess" else []
+            wrong_reason_source = "confidence" if wrong_reasons else None
             event_confidence = confidence
         else:
-            wrong_reasons = ["concept_confusion"]
+            wrong_reasons = [declared_reason] if declared_reason else []
+            wrong_reason_source = "learner" if declared_reason else None
             event_confidence = confidence
         event = {
             "attempt_id": f"{args.quiz_id}-v-{index}",
@@ -4198,6 +4340,7 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
             "selected_answer": None if conceded else "".join(selected),
             "correct_answer": "".join(correct),
             "wrong_reasons": wrong_reasons,
+            "wrong_reason_source": wrong_reason_source,
             "source_type": candidate["source_type"],
             "source": candidate.get("source"),
             "feedback_seen": False,
@@ -4228,6 +4371,10 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
                 "is_correct": is_correct,
                 "confidence": event_confidence,
                 "wrong_reasons": wrong_reasons,
+                "wrong_reason_source": wrong_reason_source,
+                "wrong_reason_status": (
+                    "confirmed" if wrong_reasons else "unclassified"
+                ),
                 "memory_hook": (
                     private_registry.get(candidate["item_id"], {}) or {}
                 ).get("memory_hook"),
@@ -4473,7 +4620,7 @@ def cmd_repair(args: argparse.Namespace) -> int:
     except TutorError:
         pass
     else:
-        if set(current["applied_attempt_ids"]) == logged_ids:
+        if set(current["applied_attempt_ids"]) == logged_ids and not args.recompute_derived:
             try:
                 validate_state(load_json(backup_path, "状态备份"))
             except TutorError:
@@ -4514,7 +4661,8 @@ def cmd_repair(args: argparse.Namespace) -> int:
     corrupt_path: Path | None = None
     if state_path.exists():
         stamp = datetime.now().astimezone().strftime("%Y%m%dT%H%M%S.%f%z")
-        corrupt_path = state_path.with_name(f"{state_path.name}.corrupt.{stamp}")
+        suffix = "pre-recompute" if args.recompute_derived else "corrupt"
+        corrupt_path = state_path.with_name(f"{state_path.name}.{suffix}.{stamp}")
         atomic_write_bytes(corrupt_path, state_path.read_bytes())
     save_state_bundle(args.data_dir, profile, rebuilt, backup=True)
     if corrupt_path is None:
@@ -4602,6 +4750,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--audit",
         help="标记需要维护核对的题，写成 题号=说明（如 3=答案键疑似有误）",
     )
+    quiz_grade_parser.add_argument(
+        "--wrong-reason",
+        help="仅记录考生明确说明的错因，写成 题号=原因（可用分号分隔）",
+    )
     quiz_grade_parser.add_argument("--duration-seconds", type=int)
     quiz_grade_parser.add_argument("--at")
     quiz_grade_parser.set_defaults(func=cmd_quiz_grade)
@@ -4617,6 +4769,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="按变式出现顺序作答，逗号分隔；明确不会写 X",
     )
     quiz_variant_parser.add_argument("--confidences")
+    quiz_variant_parser.add_argument(
+        "--wrong-reason",
+        help="仅记录考生明确说明的变式错因，写成 题号=原因",
+    )
     quiz_variant_parser.add_argument("--at")
     quiz_variant_parser.set_defaults(func=cmd_quiz_variant_grade)
 
@@ -4715,6 +4871,11 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_parser.set_defaults(func=cmd_doctor)
 
     repair_parser = subparsers.add_parser("repair", help="从最近有效备份恢复损坏状态")
+    repair_parser.add_argument(
+        "--recompute-derived",
+        action="store_true",
+        help="即使当前状态有效，也按事件日志重算复习日期和派生统计",
+    )
     repair_parser.set_defaults(func=cmd_repair)
     return parser
 
