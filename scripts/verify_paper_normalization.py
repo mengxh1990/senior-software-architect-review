@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import re
 import subprocess
 import sys
 import tempfile
@@ -33,6 +34,25 @@ BASELINE_UNPARSEABLE_ADDITIONS = {
     },
     "past-papers/comprehensive-by-year/2013下.md": {
         (47, 51): "baseline_html_table_option_set_unparseable",
+    },
+}
+# The old transcript parser consumed following blocks into this explanation.
+# The canonical split must remove only that trailing parser pollution; require
+# the corrected text to be a non-empty prefix of the baseline value.
+BASELINE_TRAILING_POLLUTION_FIELDS = {
+    "past-papers/comprehensive-by-year/2013下.md": {
+        (45, 46): {"explanation": "baseline_consumed_following_question_blocks"},
+    },
+    "past-papers/comprehensive-by-year/2011下.md": {
+        (70, 70): {"explanation": "baseline_consumed_following_english_passage"},
+    },
+}
+# The source image remains in canonical Markdown, but the strict curated
+# parser intentionally keeps raw asset paths out of learner-facing text.
+BASELINE_RAW_ASSET_FIELD_EXCEPTIONS = {
+    "past-papers/comprehensive-by-year/2011下.md": {
+        (2, 4): {"stem": "baseline_embedded_raw_figure_path"},
+        (69, 69): {"stem": "baseline_embedded_raw_figure_path"},
     },
 }
 
@@ -91,6 +111,8 @@ def compare_paper(module: Any, path: Path, base_ref: str) -> List[str]:
 
     relative = path.relative_to(REPO_ROOT).as_posix()
     allowed_additions = BASELINE_UNPARSEABLE_ADDITIONS.get(relative, {})
+    allowed_polluted_fields = BASELINE_TRAILING_POLLUTION_FIELDS.get(relative, {})
+    allowed_asset_fields = BASELINE_RAW_ASSET_FIELD_EXCEPTIONS.get(relative, {})
     unexpected_current = set(current) - set(baseline) - set(allowed_additions)
     missing_current = set(baseline) - set(current)
     if unexpected_current or missing_current:
@@ -111,6 +133,24 @@ def compare_paper(module: Any, path: Path, base_ref: str) -> List[str]:
     for key in sorted(baseline):
         for field in FIELDS:
             if baseline[key].get(field) != current[key].get(field):
+                exception = allowed_polluted_fields.get(key, {}).get(field)
+                baseline_value = baseline[key].get(field)
+                current_value = current[key].get(field)
+                if (
+                    exception
+                    and isinstance(baseline_value, str)
+                    and isinstance(current_value, str)
+                    and current_value
+                    and baseline_value.startswith(current_value)
+                ):
+                    continue
+                asset_exception = allowed_asset_fields.get(key, {}).get(field)
+                if asset_exception and isinstance(baseline_value, str) and isinstance(current_value, str):
+                    stripped_baseline = re.sub(r"!?\[[^\]]*\]\([^)]+\)", "", baseline_value)
+                    normalized_baseline = re.sub(r"\s+", " ", stripped_baseline).strip()
+                    normalized_current = re.sub(r"\s+", " ", current_value).strip()
+                    if normalized_baseline == normalized_current:
+                        continue
                 issues.append(
                     f"{relative}#{key[0]}-{key[1]}：{field} 内容发生变化"
                 )

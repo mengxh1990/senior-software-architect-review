@@ -648,6 +648,31 @@ def _curated_stem_lines(lines: Sequence[str]) -> List[str]:
     return result
 
 
+def _join_curated_stem(lines: Sequence[str]) -> str:
+    """Join canonical stem lines while preserving Markdown-table paragraphs."""
+
+    segments: List[str] = []
+    prose: List[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if MARKDOWN_TABLE_RE.match(line):
+            if prose:
+                segments.append(" ".join(prose))
+                prose = []
+            table_lines: List[str] = []
+            while index < len(lines) and MARKDOWN_TABLE_RE.match(lines[index]):
+                table_lines.append(lines[index])
+                index += 1
+            segments.append("\n".join(table_lines))
+            continue
+        prose.append(line)
+        index += 1
+    if prose:
+        segments.append(" ".join(prose))
+    return "\n\n".join(segment for segment in segments if segment)
+
+
 def parse_paper_transcript(text: str, year: str) -> List[Dict]:
     """Parse the 2009–2017 transcript layout (【答案】/【解析】 blocks)."""
     answers = list(PAPER_ANSWER_RE.finditer(text))
@@ -864,11 +889,6 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
             and not PLACEHOLDER_STEM_RE.match(line.strip())
         ])
         options = _parse_options(content_lines[option_start:])
-        separator = (
-            "\n"
-            if any(MARKDOWN_TABLE_RE.search(line) for line in stem_lines)
-            else " "
-        )
 
         explanation = ""
         explain_match = EXPLAIN_LINE.search(block)
@@ -887,7 +907,7 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
                 "range": [first_number, last_number],
                 "tag": tag,
                 "tag_label": label,
-                "stem": clean_stem(separator.join(stem_lines)),
+                "stem": clean_stem(_join_curated_stem(stem_lines)),
                 "options": options,
                 "correct": correct,
                 "explanation": explanation,

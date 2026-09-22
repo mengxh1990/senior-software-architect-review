@@ -35,6 +35,21 @@ class VerifyPaperNormalizationTests(unittest.TestCase):
             additions["past-papers/comprehensive-by-year/2013下.md"],
             {(47, 51): "baseline_html_table_option_set_unparseable"},
         )
+        self.assertEqual(
+            verify_paper_normalization.BASELINE_TRAILING_POLLUTION_FIELDS[
+                "past-papers/comprehensive-by-year/2013下.md"
+            ],
+            {(45, 46): {"explanation": "baseline_consumed_following_question_blocks"}},
+        )
+        self.assertEqual(
+            verify_paper_normalization.BASELINE_RAW_ASSET_FIELD_EXCEPTIONS[
+                "past-papers/comprehensive-by-year/2011下.md"
+            ],
+            {
+                (2, 4): {"stem": "baseline_embedded_raw_figure_path"},
+                (69, 69): {"stem": "baseline_embedded_raw_figure_path"},
+            },
+        )
 
     def test_shipped_papers_match_the_normalization_baseline(self) -> None:
         result = subprocess.run(

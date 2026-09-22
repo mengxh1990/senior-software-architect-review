@@ -414,6 +414,31 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual(item["stem"], "关系代数表达式与（8）等价。")
         self.assertEqual(item["options"], [])
 
+    def test_canonical_markdown_table_keeps_blank_paragraph_boundaries(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 70. 【题干】",
+                    "根据下表计算结果。",
+                    "| 项目 | 值 |",
+                    "| --- | ---: |",
+                    "| 甲 | 1 |",
+                    "计算结果为（70）。",
+                    "A. 1",
+                    "B. 2",
+                    "C. 3",
+                    "D. 4",
+                    "**答案**：A",
+                    "**考点**：§12.2 运筹",
+                    "**解析**：解析。",
+                ]
+            ),
+            "2011下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertIn("根据下表计算结果。\n\n| 项目 | 值 |", item["stem"])
+        self.assertIn("| 甲 | 1 |\n\n计算结果为（70）。", item["stem"])
+
     def test_clean_stem_keeps_compact_option_sets_after_line_normalisation(self) -> None:
         self.assertEqual(
             sanitize_bank.clean_stem("选项集：\nA. 甲\nD. 丁；\nA. 戊"),
