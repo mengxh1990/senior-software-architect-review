@@ -216,6 +216,29 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual(item["tag_label"], "")
         self.assertEqual(item["explanation"], "这是解析正文。")
 
+    def test_canonical_curated_metadata_uses_independent_lines(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 1. 【题干】",
+                    "规范版题干。",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "**答案**：B",
+                    "**考点**：§5.2 关系代数",
+                    "**解析**：规范版解析。",
+                ]
+            ),
+            "2024上",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["correct"], ["B"])
+        self.assertEqual(item["tag"], "§5.2")
+        self.assertEqual(item["tag_label"], "关系代数")
+        self.assertEqual(item["explanation"], "规范版解析。")
+
     def test_shipped_papers_never_put_explanation_in_tag_label(self) -> None:
         polluted = []
         for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
@@ -944,6 +967,9 @@ class PastPaperParsingTests(unittest.TestCase):
                 "§6", topic_tags, label="系统架构—SOA与ESB"
             ),
             ["K12.PATTERNS_SOA_MICROSERVICES"],
+        )
+        self.assertEqual(
+            sanitize_bank.candidate_topics("§6", topic_tags, label="待复核"), []
         )
 
     def test_shipped_domain_level_question_uses_detailed_label_mapping(self) -> None:

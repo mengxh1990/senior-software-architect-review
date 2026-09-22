@@ -60,7 +60,8 @@ PAPER_DIR = REPO_ROOT / "past-papers" / "comprehensive-by-year"
 
 # ---------------------------------------------------------------- past papers
 # 2009–2017 转录版：题干段落 + (N) A. … 选项 + 【答案】X + **考点**：§… + 【解析】…
-# 2018 起整理版：### N. 【题干】 + 选项 + **答案：X** ｜ **考点**：§… + **解析**：
+# 规范版：### N. 【题干】 + 每行一个选项 + **答案**：X + **考点**：§… + **解析**：
+# 历史整理版的 ``**答案：X** | **考点**：§…`` 仅走显式兼容适配，不能放宽规范版解析。
 PAPER_ANSWER_RE = re.compile(r"^【\s*答案\s*】\s*(.*)$", re.MULTILINE)
 PAPER_EXPLAIN_RE = re.compile(r"【\s*解析\s*】")
 PAPER_TAG_RE = re.compile(r"^\*\*考点\*\*[:：]\s*(§[0-9]+(?:\.[0-9]+)?)\s*(.*)$", re.MULTILINE)
@@ -71,6 +72,14 @@ CURATED_HEADER_RE = re.compile(
     r"^###\s*(\d+)(?:\s*[-–—]\s*(\d+))?[.、]\s*", re.MULTILINE
 )
 CURATED_ANSWER_RE = re.compile(
+    r"^\*\*[ \t]*答案[ \t]*\*\*[ \t]*[:：][ \t]*([A-Z](?:[ \t]*[、,，]?[ \t]*[A-Z])*)[ \t]*$",
+    re.MULTILINE,
+)
+CURATED_TAG_RE = re.compile(
+    r"^\*\*[ \t]*考点[ \t]*\*\*[ \t]*[:：][ \t]*(§[0-9]+(?:\.[0-9]+)?)(?:[ \t]+([^\r\n]*))?[ \t]*$",
+    re.MULTILINE,
+)
+LEGACY_CURATED_ANSWER_RE = re.compile(
     r"^\*\*[ \t]*答案[ \t]*[:：][ \t]*([A-Z](?:[ \t]*[、,，]?[ \t]*[A-Z])*)[ \t]*\*\*"
     r"(?:[ \t]*\|[ \t]*\*\*[ \t]*考点[ \t]*\*\*[ \t]*[:：][ \t]*(§[0-9]+(?:\.[0-9]+)?)(?:[ \t]+([^\r\n]*))?)?[ \t]*$",
     re.MULTILINE,
@@ -247,6 +256,8 @@ def candidate_topics(
     if override:
         return [override]
     if not tag:
+        return []
+    if "待复核" in normalize_label(label):
         return []
     domain = tag.split(".")[0]
     exact, prefix = [], []
@@ -632,7 +643,13 @@ def parse_paper_transcript(text: str, year: str) -> List[Dict]:
 
 
 def parse_paper_curated(text: str, year: str) -> List[Dict]:
-    """Parse the 2018+ curated layout (``### N.`` headers)."""
+    """Parse canonical curated blocks and the explicit legacy adapter layout.
+
+    Canonical blocks keep answer, tag and explanation on three separate lines.
+    The historical inline ``答案 | 考点`` form is recognized only by
+    :data:`LEGACY_CURATED_ANSWER_RE`, so a metadata match can never consume a
+    following line such as ``**解析**：…``.
+    """
     headers = list(CURATED_HEADER_RE.finditer(text))
     items: List[Dict] = []
     for position, header in enumerate(headers):
@@ -650,9 +667,20 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
         header_text = re.sub(r"^【题干】\s*", "", header_text).strip()
 
         answer_match = CURATED_ANSWER_RE.search(block)
-        correct = sorted(set(re.findall(r"[A-Z]", answer_match.group(1)))) if answer_match else []
-        tag = answer_match.group(2) if answer_match and answer_match.group(2) else ""
-        label = (answer_match.group(3) or "").strip() if answer_match else ""
+        tag_match = CURATED_TAG_RE.search(block)
+        if answer_match:
+            correct = sorted(set(re.findall(r"[A-Z]", answer_match.group(1))))
+            tag = tag_match.group(1) if tag_match else ""
+            label = (tag_match.group(2) or "").strip() if tag_match else ""
+        else:
+            legacy_match = LEGACY_CURATED_ANSWER_RE.search(block)
+            correct = (
+                sorted(set(re.findall(r"[A-Z]", legacy_match.group(1))))
+                if legacy_match
+                else []
+            )
+            tag = legacy_match.group(2) if legacy_match and legacy_match.group(2) else ""
+            label = (legacy_match.group(3) or "").strip() if legacy_match else ""
 
         body_lines = lines[1:]
         option_start = next(
