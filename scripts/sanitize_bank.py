@@ -844,7 +844,10 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
                 (
                     i
                     for i, line in enumerate(content_lines)
-                    if OPTION_LINE.match(line.strip().lstrip("-*").strip())
+                    if (
+                        OPTION_LINE.match(line.strip().lstrip("-*").strip())
+                        or FORMULA_OPTION_MARKER_RE.match(line)
+                    )
                 ),
                 len(content_lines),
             )
@@ -1008,6 +1011,7 @@ OPTION_LINE = re.compile(
         \s*$""",
     re.VERBOSE,
 )
+FORMULA_OPTION_MARKER_RE = re.compile(r"^\s*[A-D][.．、]\s*$")
 BOLD_MARK = re.compile(r"\*\*(.+?)\*\*")
 ANSWER_LINE = re.compile(
     r"^\s*\*\*\s*答\s*案\s*\*\*\s*[:：]\s*(.+?)\s*$", re.MULTILINE

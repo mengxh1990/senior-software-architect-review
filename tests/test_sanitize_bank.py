@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -388,6 +389,31 @@ class PastPaperParsingTests(unittest.TestCase):
             ],
         )
 
+    def test_formula_only_option_markers_do_not_leak_into_canonical_stem(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 8. 【题干】",
+                    "关系代数表达式与（8）等价。",
+                    "A.",
+                    "$$A$$",
+                    "B.",
+                    "$$B$$",
+                    "C.",
+                    "$$C$$",
+                    "D.",
+                    "$$D$$",
+                    "**答案**：B",
+                    "**考点**：§5.2 关系代数",
+                    "**解析**：解析。",
+                ]
+            ),
+            "2010下",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["stem"], "关系代数表达式与（8）等价。")
+        self.assertEqual(item["options"], [])
+
     def test_clean_stem_keeps_compact_option_sets_after_line_normalisation(self) -> None:
         self.assertEqual(
             sanitize_bank.clean_stem("选项集：\nA. 甲\nD. 丁；\nA. 戊"),
@@ -401,6 +427,22 @@ class PastPaperParsingTests(unittest.TestCase):
                 if str(item.get("tag_label") or "").lstrip().startswith("**解析**"):
                     polluted.append(item["id"])
         self.assertEqual([], polluted)
+
+    def test_shipped_papers_use_independent_canonical_metadata_lines(self) -> None:
+        legacy_markers = []
+        inline_answer_tags = []
+        for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
+            text = path.read_text(encoding="utf-8")
+            if re.search(r"^【(?:答案|解析)】", text, re.MULTILINE):
+                legacy_markers.append(path.name)
+            if re.search(
+                r"^\*\*答案(?:\*\*)?[:：].*\|.*\*\*考点\*\*[:：]",
+                text,
+                re.MULTILINE,
+            ):
+                inline_answer_tags.append(path.name)
+        self.assertEqual([], legacy_markers)
+        self.assertEqual([], inline_answer_tags)
 
     def test_explanation_cleaning_drops_next_question_and_asset_paths(self) -> None:
         polluted = (

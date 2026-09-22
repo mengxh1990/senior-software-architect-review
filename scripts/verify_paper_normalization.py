@@ -22,6 +22,19 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 PAPER_DIR = REPO_ROOT / "past-papers" / "comprehensive-by-year"
 SANITIZER_PATH = REPO_ROOT / "scripts" / "sanitize_bank.py"
 FIELDS = ("stem", "options", "correct", "explanation")
+# These source fragments were present in the baseline Markdown but could not
+# produce a parser item because their scan lost required options/table text.
+# Normalising their headers makes them visible to the quality gate; they must
+# remain invalid and are never admitted to the quiz pool.  Keep this allowlist
+# exact so a newly introduced usable question still fails the lossless check.
+BASELINE_UNPARSEABLE_ADDITIONS = {
+    "past-papers/comprehensive-by-year/2012下.md": {
+        (69, 69): "baseline_missing_required_options",
+    },
+    "past-papers/comprehensive-by-year/2013下.md": {
+        (47, 51): "baseline_html_table_option_set_unparseable",
+    },
+}
 
 
 def load_sanitizer() -> Any:
@@ -76,18 +89,30 @@ def compare_paper(module: Any, path: Path, base_ref: str) -> List[str]:
     current = index_items(module.parse_paper(path))
     issues: List[str] = []
 
-    if baseline.keys() != current.keys():
+    relative = path.relative_to(REPO_ROOT).as_posix()
+    allowed_additions = BASELINE_UNPARSEABLE_ADDITIONS.get(relative, {})
+    unexpected_current = set(current) - set(baseline) - set(allowed_additions)
+    missing_current = set(baseline) - set(current)
+    if unexpected_current or missing_current:
         issues.append(
-            f"{path.relative_to(REPO_ROOT)}：题号范围不一致，"
+            f"{relative}：题号范围不一致，"
             f"基线={sorted(baseline)}，当前={sorted(current)}"
         )
         return issues
+    for key, reason in allowed_additions.items():
+        item = current.get(key)
+        if item is None:
+            continue
+        if item.get("quality_status") == "ready":
+            issues.append(
+                f"{relative}#{key[0]}-{key[1]}：基线不可解析块意外变为可用题（{reason}）"
+            )
 
     for key in sorted(baseline):
         for field in FIELDS:
             if baseline[key].get(field) != current[key].get(field):
                 issues.append(
-                    f"{path.relative_to(REPO_ROOT)}#{key[0]}-{key[1]}：{field} 内容发生变化"
+                    f"{relative}#{key[0]}-{key[1]}：{field} 内容发生变化"
                 )
     return issues
 
