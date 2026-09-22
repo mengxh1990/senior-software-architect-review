@@ -1,0 +1,373 @@
+{
+  "activation_thresholds": {
+    "recent_coverage": 0.8,
+    "stable_coverage": 0.9
+  },
+  "as_of": "2026-09-22",
+  "coverage": {
+    "recent": {
+      "mapped_questions": 154,
+      "papers": 5,
+      "ratio": 0.4464,
+      "ready_questions": 345,
+      "unmapped_questions": 191
+    },
+    "stable": {
+      "mapped_questions": 369,
+      "papers": 14,
+      "ratio": 0.7165,
+      "ready_questions": 515,
+      "unmapped_questions": 146
+    }
+  },
+  "mode": "report_only",
+  "papers": [
+    {
+      "cohort": "stable",
+      "coverage": 0.8261,
+      "mapped_questions": 38,
+      "ready_questions": 46,
+      "source_type": "real",
+      "unmapped_questions": 8,
+      "year": "2009下"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.8636,
+      "mapped_questions": 38,
+      "ready_questions": 44,
+      "source_type": "real",
+      "unmapped_questions": 6,
+      "year": "2010下"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.7895,
+      "mapped_questions": 30,
+      "ready_questions": 38,
+      "source_type": "real",
+      "unmapped_questions": 8,
+      "year": "2011下"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.7826,
+      "mapped_questions": 18,
+      "ready_questions": 23,
+      "source_type": "real",
+      "unmapped_questions": 5,
+      "year": "2012下"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.9167,
+      "mapped_questions": 22,
+      "ready_questions": 24,
+      "source_type": "real",
+      "unmapped_questions": 2,
+      "year": "2013下"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.8519,
+      "mapped_questions": 23,
+      "ready_questions": 27,
+      "source_type": "real",
+      "unmapped_questions": 4,
+      "year": "2014下"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.8846,
+      "mapped_questions": 23,
+      "ready_questions": 26,
+      "source_type": "real",
+      "unmapped_questions": 3,
+      "year": "2015下"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.8846,
+      "mapped_questions": 23,
+      "ready_questions": 26,
+      "source_type": "real",
+      "unmapped_questions": 3,
+      "year": "2016下"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.7222,
+      "mapped_questions": 13,
+      "ready_questions": 18,
+      "source_type": "real",
+      "unmapped_questions": 5,
+      "year": "2017下"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.4118,
+      "mapped_questions": 28,
+      "ready_questions": 68,
+      "source_type": "real",
+      "unmapped_questions": 40,
+      "year": "2018下"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.6,
+      "mapped_questions": 12,
+      "ready_questions": 20,
+      "source_type": "real",
+      "unmapped_questions": 8,
+      "year": "2019下"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.8333,
+      "mapped_questions": 10,
+      "ready_questions": 12,
+      "source_type": "real",
+      "unmapped_questions": 2,
+      "year": "2020"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.8028,
+      "mapped_questions": 57,
+      "ready_questions": 71,
+      "source_type": "real",
+      "unmapped_questions": 14,
+      "year": "2021"
+    },
+    {
+      "cohort": "stable",
+      "coverage": 0.4722,
+      "mapped_questions": 34,
+      "ready_questions": 72,
+      "source_type": "real",
+      "unmapped_questions": 38,
+      "year": "2022"
+    },
+    {
+      "cohort": "recent",
+      "coverage": 0.0411,
+      "mapped_questions": 3,
+      "ready_questions": 73,
+      "source_type": "recalled_real",
+      "unmapped_questions": 70,
+      "year": "2024上"
+    },
+    {
+      "cohort": "recent",
+      "coverage": 0.5775,
+      "mapped_questions": 41,
+      "ready_questions": 71,
+      "source_type": "recalled_real",
+      "unmapped_questions": 30,
+      "year": "2024下"
+    },
+    {
+      "cohort": "recent",
+      "coverage": 0.7576,
+      "mapped_questions": 50,
+      "ready_questions": 66,
+      "source_type": "recalled_real",
+      "unmapped_questions": 16,
+      "year": "2025上"
+    },
+    {
+      "cohort": "recent",
+      "coverage": 0.5362,
+      "mapped_questions": 37,
+      "ready_questions": 69,
+      "source_type": "recalled_real",
+      "unmapped_questions": 32,
+      "year": "2025下"
+    },
+    {
+      "cohort": "recent",
+      "coverage": 0.3485,
+      "mapped_questions": 23,
+      "ready_questions": 66,
+      "source_type": "recalled_real",
+      "unmapped_questions": 43,
+      "year": "2026上"
+    }
+  ],
+  "schema_version": 1,
+  "source_digest": "783a47947e6bd8f34ea795095a811c26ff6da1daa39a21158a72dd8053baba34",
+  "topics": [
+    {
+      "recent_questions_per_paper": 2.4223,
+      "stable_questions_per_paper": 2.2213,
+      "topic_id": "K01.OS_MEMORY_KERNEL",
+      "weighted_questions_per_paper": 2.2615
+    },
+    {
+      "recent_questions_per_paper": 1.5589,
+      "stable_questions_per_paper": 5.3776,
+      "topic_id": "K02.NETWORK_PROTOCOLS",
+      "weighted_questions_per_paper": 4.6139
+    },
+    {
+      "recent_questions_per_paper": 2.4101,
+      "stable_questions_per_paper": 1.0222,
+      "topic_id": "K03.SOFTWARE_DESIGN_UML",
+      "weighted_questions_per_paper": 1.2998
+    },
+    {
+      "recent_questions_per_paper": 1.1265,
+      "stable_questions_per_paper": 6.7452,
+      "topic_id": "K04.ARCH_STYLES_ABSD",
+      "weighted_questions_per_paper": 5.6214
+    },
+    {
+      "recent_questions_per_paper": 3.1362,
+      "stable_questions_per_paper": 2.3602,
+      "topic_id": "K05.TEST_CMMI_PATTERNS",
+      "weighted_questions_per_paper": 2.5154
+    },
+    {
+      "recent_questions_per_paper": 0.0,
+      "stable_questions_per_paper": 0.1576,
+      "topic_id": "K06.DESIGN_DATA_VIEWS",
+      "weighted_questions_per_paper": 0.1261
+    },
+    {
+      "recent_questions_per_paper": 1.0948,
+      "stable_questions_per_paper": 3.9591,
+      "topic_id": "K07.REALTIME_EMBEDDED",
+      "weighted_questions_per_paper": 3.3862
+    },
+    {
+      "recent_questions_per_paper": 1.1105,
+      "stable_questions_per_paper": 0.7599,
+      "topic_id": "K08.SOFTWARE_PROCESS_MODELS",
+      "weighted_questions_per_paper": 0.83
+    },
+    {
+      "recent_questions_per_paper": 1.9617,
+      "stable_questions_per_paper": 0.7243,
+      "topic_id": "K09.QUALITY_SCENARIOS",
+      "weighted_questions_per_paper": 0.9718
+    },
+    {
+      "recent_questions_per_paper": 2.6496,
+      "stable_questions_per_paper": 3.8678,
+      "topic_id": "K10.DATABASE_MODELING",
+      "weighted_questions_per_paper": 3.6241
+    },
+    {
+      "recent_questions_per_paper": 1.302,
+      "stable_questions_per_paper": 2.7773,
+      "topic_id": "K11.COMPONENTS_4PLUS1",
+      "weighted_questions_per_paper": 2.4822
+    },
+    {
+      "recent_questions_per_paper": 1.1044,
+      "stable_questions_per_paper": 1.5,
+      "topic_id": "K12.PATTERNS_SOA_MICROSERVICES",
+      "weighted_questions_per_paper": 1.4208
+    },
+    {
+      "recent_questions_per_paper": 0.4385,
+      "stable_questions_per_paper": 0.4464,
+      "topic_id": "K13.VIEWS_SOA_LAYERING",
+      "weighted_questions_per_paper": 0.4449
+    },
+    {
+      "recent_questions_per_paper": 0.6719,
+      "stable_questions_per_paper": 0.4998,
+      "topic_id": "K14.OS_SCHEDULING_FILES",
+      "weighted_questions_per_paper": 0.5342
+    },
+    {
+      "recent_questions_per_paper": 0.6818,
+      "stable_questions_per_paper": 0.3433,
+      "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
+      "weighted_questions_per_paper": 0.411
+    },
+    {
+      "recent_questions_per_paper": 0.6559,
+      "stable_questions_per_paper": 1.63,
+      "topic_id": "K16.REQUIREMENTS_MANAGEMENT",
+      "weighted_questions_per_paper": 1.4352
+    },
+    {
+      "recent_questions_per_paper": 2.62,
+      "stable_questions_per_paper": 6.1913,
+      "topic_id": "K17.IP_COPYRIGHT",
+      "weighted_questions_per_paper": 5.477
+    },
+    {
+      "recent_questions_per_paper": 0.8634,
+      "stable_questions_per_paper": 3.4706,
+      "topic_id": "K18.COMPUTER_ARCH_STORAGE",
+      "weighted_questions_per_paper": 2.9492
+    },
+    {
+      "recent_questions_per_paper": 1.948,
+      "stable_questions_per_paper": 0.8312,
+      "topic_id": "K19.ATAM_TACTICS",
+      "weighted_questions_per_paper": 1.0545
+    },
+    {
+      "recent_questions_per_paper": 1.3098,
+      "stable_questions_per_paper": 3.405,
+      "topic_id": "K20.SECURITY_FOUNDATIONS",
+      "weighted_questions_per_paper": 2.986
+    },
+    {
+      "recent_questions_per_paper": 1.0727,
+      "stable_questions_per_paper": 0.0788,
+      "topic_id": "K21.MESSAGING_CACHE",
+      "weighted_questions_per_paper": 0.2776
+    },
+    {
+      "recent_questions_per_paper": 0.0,
+      "stable_questions_per_paper": 0.3773,
+      "topic_id": "K22.ENGLISH_READING",
+      "weighted_questions_per_paper": 0.3018
+    },
+    {
+      "recent_questions_per_paper": 1.0945,
+      "stable_questions_per_paper": 1.3996,
+      "topic_id": "K23.PROJECT_MANAGEMENT_METRICS",
+      "weighted_questions_per_paper": 1.3386
+    },
+    {
+      "recent_questions_per_paper": 0.4545,
+      "stable_questions_per_paper": 2.9419,
+      "topic_id": "K24.INFORMATION_SYSTEMS",
+      "weighted_questions_per_paper": 2.4444
+    },
+    {
+      "recent_questions_per_paper": 0.4545,
+      "stable_questions_per_paper": 0.0744,
+      "topic_id": "K25.RELIABILITY_ENGINEERING",
+      "weighted_questions_per_paper": 0.1504
+    },
+    {
+      "recent_questions_per_paper": 0.4225,
+      "stable_questions_per_paper": 0.7861,
+      "topic_id": "K26.ARCH_EVOLUTION",
+      "weighted_questions_per_paper": 0.7134
+    },
+    {
+      "recent_questions_per_paper": 1.1204,
+      "stable_questions_per_paper": 0.5208,
+      "topic_id": "K27.EMERGING_TECH",
+      "weighted_questions_per_paper": 0.6407
+    },
+    {
+      "recent_questions_per_paper": 0.2273,
+      "stable_questions_per_paper": 2.5414,
+      "topic_id": "K28.MATH_OPERATIONS",
+      "weighted_questions_per_paper": 2.0786
+    }
+  ],
+  "weights": {
+    "recent": 0.2,
+    "stable": 0.8
+  }
+}

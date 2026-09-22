@@ -62,6 +62,8 @@ python3 scripts/serve.py
 - [`topic-map.md`](./topic-map.md) — 考点↔资源↔facet 映射表（脚本自动生成，请勿手改）
 - [`../scripts/tutor.py`](../scripts/tutor.py) — 私人进度 CLI（含 `quiz-prepare` / `quiz-grade` 一体化客观题循环，以及只读的 `weakpoints` 薄弱点排名）
 - [`../scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) — exam-bank 答案脱敏器与题目质量门禁（题库维护、抽查与人工修复用，不在答题循环内调用）
+- [`frequency-snapshot.json`](./frequency-snapshot.json) — 双层考频审计快照；覆盖率达标前只报告、不替换运行时权重
+- [`../scripts/build_frequency_snapshot.py`](../scripts/build_frequency_snapshot.py) — 从质量门禁后的真题生成并校验考频快照
 - [`../scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) — 由 `curriculum.json` 重新生成 `topic-map.md`
 
 ## 常用说法
@@ -69,13 +71,13 @@ python3 scripts/serve.py
 | 你说 | 私教会做 |
 |---|---|
 | `开始私教` | 建档或恢复进度，安排轻量诊断 |
-| `今天学什么？` | 选择当前最高收益任务并直接开始 |
+| `今天学什么？` | 先读取只读进度汇总，再按统一路由直接开始最高收益任务 |
 | `来 10 道题` | 从到期错题和高频薄弱点出题 |
 | `复习错题` | 按遗忘节奏做变式与跨日复测 |
 | `练案例` | 选择 ATAM 或已确定的案例主赛道；作答后按得分点估分、解析，并给出逐问参考标准答案 |
 | `练论文` | 围绕一个匿名项目练选题、摘要、提纲或整篇 |
 | `模拟考试` | 独立计时并记录真实分数证据 |
-| `看看进度` | 分别显示三科风险、证据等级和下一步 |
+| `看看进度` | 只读显示三科风险、证据等级、薄弱 Top 5 和下一步，不创建答题会话 |
 | `今天收工` | 写入本次证据并安排下次复习 |
 
 斜杠形式 `/start`、`/today`、`/quiz`、`/review`、`/case`、`/essay`、`/mock`、`/status`、`/done` 只是别名；自然语言是主入口。
@@ -91,6 +93,9 @@ python3 scripts/tutor.py --data-dir .study init \
 
 # 查看三科状态
 python3 scripts/tutor.py --data-dir .study status
+
+# 一次只读获取三科状态、薄弱 Top 5、到期项和下一步
+python3 scripts/tutor.py --data-dir .study progress --limit 5 --json
 
 # 推荐下一项
 python3 scripts/tutor.py --data-dir .study recommend
@@ -112,6 +117,11 @@ python3 scripts/tutor.py --data-dir .study case-prepare \
 # 一次完成判分、批量记档与状态更新
 python3 scripts/tutor.py --data-dir .study quiz-grade \
   --quiz-id <quiz-id> --answers 'C,A,D,BD,B'
+
+# 只有考生明确说明时才记录错因；未提供的答错保持 unclassified
+python3 scripts/tutor.py --data-dir .study quiz-grade \
+  --quiz-id <quiz-id> --answers 'C,B,A,D,B' \
+  --wrong-reason '2=recall_failure;5=misread'
 
 # 考生明确说“不会”时用 X（0 分、记为 knowledge_gap，不需要补答）
 python3 scripts/tutor.py --data-dir .study quiz-grade \
@@ -168,6 +178,12 @@ python3 scripts/tutor.py --data-dir .study mock \
 
 # 检查内容、状态与隐私设置
 python3 scripts/tutor.py --data-dir .study doctor
+
+# 代码升级后按原始事件重算复习日期和派生统计；attempts.jsonl 不变
+python3 scripts/tutor.py --data-dir .study repair --recompute-derived
+
+# 检查双层考频快照是否与当前题库一致
+python3 scripts/build_frequency_snapshot.py --check
 ```
 
 脚本不联网、不上传数据、没有第三方依赖。状态格式、掌握判据和排课公式见 [进度协议](./PROGRESS_PROTOCOL.md)。
@@ -175,7 +191,7 @@ python3 scripts/tutor.py --data-dir .study doctor
 ## 第一版边界
 
 - 历年卷用于统计考频，但其中部分是回忆版或缺失题，不直接全部纳入自动判分。
-- 确定性选择题优先使用 `exam-bank/` 中带答案和解析的自编题。
+- 自动训练优先使用通过质量与讲解门禁的历年真题，自编题作为补充。
 - 案例与论文分数只能称为“AI 估分”，并必须展示评分依据。案例完成作答后还必须提供逐问“标准答案（参考）”；主观题答案以核心采分点为准，不宣称存在唯一官方文字答案。
 - 没有完整限时证据时，只显示“待诊断/低置信度”，不制造精确通过率。
 - 第一版使用必填的稳定 `item_id` 追踪独立题目；公共题库的全量题目级映射仍会继续细化。当前对容易混淆的聚合考点已用必填 `facet` 强制覆盖子主题，其他题目由私教按资源定位并保留来源。

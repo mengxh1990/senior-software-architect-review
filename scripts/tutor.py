@@ -32,6 +32,8 @@ import sanitize_bank
 SCHEMA_VERSION = 1
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CURRICULUM_PATH = REPO_ROOT / "tutor" / "curriculum.json"
+FREQUENCY_SNAPSHOT_PATH = REPO_ROOT / "tutor" / "frequency-snapshot.json"
+FREQUENCY_BUILDER_PATH = REPO_ROOT / "scripts" / "build_frequency_snapshot.py"
 SUBJECTS = ("comprehensive", "case", "essay")
 SKILLS = ("recognition", "application", "production")
 WRONG_REASONS = {
@@ -217,6 +219,8 @@ def load_curriculum() -> dict[str, Any]:
         topic_id not in seen for topic_id in grouped_ids
     ):
         raise TutorError("课程表冷启动分组包含重复或未知考点 ID")
+    case_type_ids: set[str] = set()
+    covered_case_topics: set[str] = set()
     for topic in curriculum["topics"]:
         case_type = topic.get("case_type")
         covered_topic_ids = topic.get("covered_topic_ids", [])
@@ -233,6 +237,16 @@ def load_curriculum() -> dict[str, Any]:
             raise TutorError(f"课程表考点 {topic['id']} covered_topic_ids 无效")
         if covered_topic_ids and not str(topic["id"]).startswith("C"):
             raise TutorError(f"课程表考点 {topic['id']} 不能声明案例路线覆盖")
+        if case_type is not None and str(topic["id"]).startswith("C"):
+            if str(case_type) in case_type_ids:
+                raise TutorError(f"课程表案例题型重复：{case_type}")
+            case_type_ids.add(str(case_type))
+        duplicate_coverage = covered_case_topics.intersection(covered_topic_ids)
+        if duplicate_coverage:
+            raise TutorError(
+                "课程表案例路线重复覆盖考点：" + ", ".join(sorted(duplicate_coverage))
+            )
+        covered_case_topics.update(covered_topic_ids)
     return curriculum
 
 
@@ -3341,6 +3355,15 @@ def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
             normalized = dict(item)
             normalized["source"] = paper.relative_to(REPO_ROOT).as_posix()
             normalized["source_type"] = paper_source_type(item.get("year"))
+            normalized["teaching_status"] = (
+                "not_applicable"
+                if normalized.get("quality_status") != "ready"
+                else (
+                    "ready"
+                    if str(normalized.get("explanation") or "").strip()
+                    else "missing_explanation"
+                )
+            )
             topics = set(item.get("candidate_topics", []))
             override = question_registry.topic_override(item["id"])
             if override:
@@ -3372,6 +3395,15 @@ def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
                 "source_type": "self_authored",
                 "candidate_topics": sorted(candidate_ids),
             }
+            normalized["teaching_status"] = (
+                "not_applicable"
+                if normalized.get("quality_status") != "ready"
+                else (
+                    "ready"
+                    if str(normalized.get("explanation") or "").strip()
+                    else "missing_explanation"
+                )
+            )
             merged[item_id] = normalized
     return list(merged.values())
 
@@ -3385,7 +3417,7 @@ def quiz_question_for_topic(
     # The quality gate is absolute: an item that is missing its figure, table
     # or a legal answer key never reaches a quiz, and the coach never repairs
     # it live.
-    if raw.get("quality_status") != "ready":
+    if raw.get("quality_status") != "ready" or raw.get("teaching_status") != "ready":
         return None
     if topic_id not in raw.get("candidate_topics", []):
         return None
@@ -4547,11 +4579,19 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
 
     try:
         pool = load_quiz_question_pool(load_curriculum())
-        ready = [item for item in pool if item.get("quality_status") == "ready"]
-        blocked = [item for item in pool if item.get("quality_status") != "ready"]
+        ready = [
+            item
+            for item in pool
+            if item.get("quality_status") == "ready"
+            and item.get("teaching_status") == "ready"
+        ]
+        blocked = [item for item in pool if item not in ready]
         reason_counts: dict[str, int] = {}
         for item in blocked:
-            for issue in item.get("quality_issues", []):
+            issues = list(item.get("quality_issues", []))
+            if item.get("teaching_status") == "missing_explanation":
+                issues.append("missing_explanation")
+            for issue in issues:
                 name = issue.split(":", 1)[0]
                 reason_counts[name] = reason_counts.get(name, 0) + 1
         top_reasons = ", ".join(
@@ -4588,6 +4628,38 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
     except (TutorError, ValueError) as error:
         checks.append(
             {"name": "question-bank", "healthy": False, "message": str(error)}
+        )
+        healthy = False
+
+    try:
+        snapshot = load_json(FREQUENCY_SNAPSHOT_PATH, "考频快照")
+        checked = subprocess.run(
+            [sys.executable, str(FREQUENCY_BUILDER_PATH), "--check"],
+            cwd=REPO_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        coverage = snapshot.get("coverage", {})
+        stable = float(coverage.get("stable", {}).get("ratio", 0))
+        recent = float(coverage.get("recent", {}).get("ratio", 0))
+        ok = checked.returncode == 0
+        checks.append(
+            {
+                "name": "frequency-model",
+                "healthy": ok,
+                "message": (
+                    f"快照 {snapshot.get('mode', 'unknown')}；"
+                    f"稳定层映射 {stable:.1%}，趋势层映射 {recent:.1%}"
+                    if ok
+                    else (checked.stderr.strip() or "考频快照已过期")
+                ),
+            }
+        )
+        healthy = healthy and ok
+    except (TutorError, ValueError, TypeError) as error:
+        checks.append(
+            {"name": "frequency-model", "healthy": False, "message": str(error)}
         )
         healthy = False
     return healthy, checks

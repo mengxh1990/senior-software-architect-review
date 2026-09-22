@@ -85,6 +85,7 @@ unseen → learning → fragile → pass_ready
   "selected_answer": "B",
   "correct_answer": "B",
   "wrong_reasons": [],
+  "wrong_reason_source": null,
   "source_type": "self_authored",
   "feedback_seen": false
 }
@@ -93,7 +94,8 @@ unseen → learning → fragile → pass_ready
 要求：
 
 - `attempt_id` 全局唯一；重复写入必须幂等，内容冲突必须拒绝。
-- `response_state` 只有 `answered` 与 `conceded` 两种取值，缺失时按 `answered` 处理。`conceded` 表示考生明确表示"不会"，是有效的负向知识证据：得 0 分、错因固定为 `knowledge_gap`、`confidence` 为 `null`，并进入 1/3/7/14 复习队列；它**不**等于猜测，也不允许用伪造的错误选项代替。完全没有回应（既没答也没说不会）不写事件。
+- `response_state` 只有 `answered` 与 `conceded` 两种取值，缺失时按 `answered` 处理。`conceded` 表示考生明确表示"不会"，是有效的负向知识证据：得 0 分、错因固定为 `knowledge_gap`、`confidence` 为 `null`，并进入 1/3/7/14/30 复习阶梯；它**不**等于猜测，也不允许用伪造的错误选项代替。完全没有回应（既没答也没说不会）不写事件。
+- 普通答错只能在考生明确说明时记录 `wrong_reasons`，并标记 `wrong_reason_source=learner`；未说明时保持空数组并作为 `unclassified` 统计，不得默认推断为 `concept_confusion`。`knowledge_gap`（明确不会）和 `guessed_correct`（明确猜测）属于可由输入直接确认的事实。
 - 题目本身无效（缺关键图表、答案不在选项中、题干被解析污染）时不写事件：判分时用 `--invalidate` 排除该题，只对有效题记档；题库疑点用 `--audit` 写入 `.study/quiz-audit-queue.jsonl`，由独立维护任务处理。
 - `item_id` 必填并稳定标识一道独立题目；不得用新的 `attempt_id` 兜底。复做同一 `item_id` 可以验证遗忘，但不能冒充多个独立掌握证据。
 - 自编题先登记题干、选项、稳定细考点 `concept_id`、题型族 `question_family_id` 和内容指纹；同内容换 ID 不得作为新证据。同一细考点的变式用 `variant_of` 关联来源题。
@@ -196,7 +198,7 @@ priority =
 
 ## 9. 间隔复习
 
-答错或脆弱题默认安排：当天变式、1 天、3 天、7 天、14 天。连续跨日独立答对后逐步延长，最长 30 天。
+答错或脆弱题默认安排：当天变式，并按相邻间隔 1 天、3 天、7 天、14 天、30 天推进。当天变式答对只完成纠偏，不能取消次日复测；提前练习不能把已有到期日向后推；只有到期且确定答对才进入下一间隔。再次答错、明确不会或猜测后重置到 1 天。
 
 以下情况立即重置为脆弱：
 

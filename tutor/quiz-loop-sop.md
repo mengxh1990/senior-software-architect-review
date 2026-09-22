@@ -13,6 +13,7 @@
 - 用户明确要求"选择器点选式"作答
 
 **不用**这套流程的场景：
+- 纯“看看进度”或 `/status`：只调用 `python3 scripts/tutor.py progress --json`，不得创建 quiz session
 - 只讲教材、不考核（passive lecture）
 - 案例题、论文题的完整训练（用 coach 人格里的对应流程）
 - `.study/` 损坏或缺失 → 先按 coach 人格里的建档步骤走
@@ -24,22 +25,30 @@
 - 已读 [`PROGRESS_PROTOCOL.md`](./PROGRESS_PROTOCOL.md) 与
   [`.claude/agents/senior-architect-pass-coach.md`](../.claude/agents/senior-architect-pass-coach.md)
 - `.study/` 存在（若无，先按 coach 人格建档）
-- 已跑过 `python3 scripts/tutor.py doctor`，三项 PASS
+- 已跑过 `python3 scripts/tutor.py doctor`，全部检查 PASS
 
 ## 回合预算与结束条件
 
-- 出题回合只调用一次 `quiz-prepare`；判分回合只调用一次 `quiz-grade`。只有命令失败且直接阻塞本轮时，才允许增加一次修复或诊断调用。
-- **运行时白名单**：出题回合只允许 `quiz-prepare`，判分回合只允许 `quiz-grade`，变式回合只允许 `quiz-variant-grade`。不得用 `cat` / `rg` / `sed` 读取源码、题库、`quiz-sessions/*.json`、`state.json` 或知识库来"确认"答案，也不得手工改 manifest、伪造选项或要求考生补答"不会"的题。命令非零退出且直接阻塞本轮时，最多做一次只读诊断；仍失败就如实报告阻塞，改开维护任务。
+- “今天学什么／安排训练”先调用一次只读 `progress --json`，再按其 `next_action` 调用对应训练入口；综合出题回合只调用一次 `quiz-prepare`，判分回合只调用一次 `quiz-grade`。只有命令失败且直接阻塞本轮时，才允许增加一次修复或诊断调用。
+- **运行时白名单**：统一路由阶段只允许 `progress`，综合出题回合只允许 `quiz-prepare`，判分回合只允许 `quiz-grade`，变式回合只允许 `quiz-variant-grade`。不得用 `cat` / `rg` / `sed` 读取源码、题库、`quiz-sessions/*.json`、`state.json` 或知识库来"确认"答案，也不得手工改 manifest、伪造选项或要求考生补答"不会"的题。命令非零退出且直接阻塞本轮时，最多做一次只读诊断；仍失败就如实报告阻塞，改开维护任务。
 - **上下文预算**：非题面输出保持简短，不把完整题库、候选池或状态全集带进教学线程；题目本身不受此限制。为了"确认"重复运行确定性命令也算违规。每个日历日用新任务从 `.study/` 恢复；同一任务一旦发生源码/题库排查，后续教学转到新任务，避免维护上下文跨日累积。
 - `quiz-prepare` 每轮只调用一次。出题前已被识别为缺图、缺表、答案不清或题干截断的题，必须立即丢弃；命令在同一稳定考点内继续选择其他已通过门禁的题目，绝不向考生展示、临场补全或为该题重跑命令。
 - 题目质量在进入本循环前已由门禁判定：`quiz-prepare` 只会给出 `ready_for_quiz` 的题。若某题在作答后才发现残缺（例如依赖的表其实没给出），用 `--invalidate` 把它排除出本组，不要临场补内容；在本回合结束后，按 `item_id + 原因` 去重，新开独立维护任务尝试以权威原卷做最小修复。只有题干、必要材料和唯一答案均可可靠恢复时才能重新放行，否则维持拦截。
-- 同一轮同时要求"看薄弱点 + 安排训练"时，先用一次批量只读调用算出薄弱点（优先 `python3 scripts/tutor.py weakpoints --subject <科目>`），再出题；两段之间不插入探索性调用。分析结论只用于解释与排期，不用于手工挑题。
+- 同一轮同时要求"看薄弱点 + 安排训练"时，使用一次 `progress --json` 获取三科状态、薄弱点和统一路由，再按 `next_action` 出题；两段之间不插入探索性调用。`weakpoints` 只用于明确要求某科详细排名的只读请求。
 - 第一次调用必须批量收集推荐、到期错题、候选题、题目元数据和去重信息，不得按题逐次搜索。
 - 非阻塞的诊断状态异常、元数据瑕疵或维护建议不得在训练回合内追查源码；记录后另开仓库维护任务处理。
 - `quiz-grade` 成功返回即表示判分、原子记档和状态更新完成。收到整组答案后只调用一次 `quiz-grade`，判分前后都不得追加 `status` 或 `diagnose`；给出必要反馈后立即结束本轮。
 - **路由锁定**：优先服从 `quiz-grade` / `quiz-variant-grade` 返回的 `next_action`。`await_variants` 只收变式答案；`quiz_prepare` 直接进入下一组；`case_prepare` 直接调用一次 `case-prepare`。除非用户明确改题型或命令失败，否则同一回合不得重新比较"继续综合还是切案例"。
 
 ## Step 1 · 一次准备整组题
+
+开始新训练任务时先获取统一路由：
+
+```bash
+python3 scripts/tutor.py progress --json
+```
+
+只有 `next_action.mode=quiz_prepare` 时进入本客观题流程：
 
 ```bash
 python3 scripts/tutor.py quiz-prepare --subject comprehensive --limit 5
@@ -228,6 +237,15 @@ python3 scripts/tutor.py quiz-grade \
 
 `X` 不能与选项混写（`AX` 直接报错）。考生说"不会"时直接传 `X`，**不要**让他随便蒙一个字母，也不要为了补齐原子判分去改文件。
 
+考生在作答时明确说明了错因，才在同一次判分中传入，例如：
+
+```bash
+python3 scripts/tutor.py quiz-grade --quiz-id <id> --answers 'C,B,A,D,B' \
+  --wrong-reason '2=recall_failure;5=misread'
+```
+
+没有明确说明的普通答错保持 `unclassified`，不得为了填满字段自动写成 `concept_confusion`。
+
 题目本身有问题时用同一次调用处理，不要中断本组：
 
 ```bash
@@ -251,8 +269,8 @@ python3 scripts/tutor.py quiz-grade --quiz-id <id> --answers 'C,B,A,X,B' \
 | 字段 | 含义 |
 |---|---|
 | `response_state` / `selected` / `correct` / `is_correct` | 作答状态与判分；`conceded` 的 `selected` 为 `null` |
-| `wrong_reasons` | 错因（`conceded` 固定为 `knowledge_gap`） |
-| `explanation` | 已清洗的解析，可直接展示；答对且确定时可能为 `null` |
+| `wrong_reasons` / `wrong_reason_status` | 只保存考生明确说明的错因；未说明的普通答错为 `unclassified`，`conceded` 固定为 `knowledge_gap` |
+| `explanation` | 已清洗的解析，是微课的事实素材；答对且确定时可能为 `null` |
 | `memory_hook` | 登记过的记忆钩子；为 `null` 时用一句话概括即可，不得检索 |
 | `variant_question` | 已验证的同细考点变式题（含 `stem` / `options` / `answer`）；没有精确匹配时返回 `null`，不得用同一大考点下的无关题兜底 |
 | `next_review_at` | 该考点的下次复习日 |
@@ -273,18 +291,9 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 
 ### 聚合考点必须传 `--facet`
 
-以下考点漏掉 `--facet` 会报错或数据被并入 `default`（详见
-[`tutor/topic-map.md`](./topic-map.md#1-聚合考点record---facet-必填)）：
-
-| Topic | Facets |
-|---|---|
-| `K05.TEST_CMMI_PATTERNS` | `testing` / `cmmi` / `design_patterns` |
-| `K06.DESIGN_DATA_VIEWS` | `high_level_design` / `data_design` / `uml_views` |
-| `K12.PATTERNS_SOA_MICROSERVICES` | `design_patterns` / `soa` / `microservices` |
-| `K13.VIEWS_SOA_LAYERING` | `four_plus_one` / `soa` / `layering` |
-
-上表由 [`scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) 从
-`curriculum.json` 生成。**发现出入以 topic-map.md 为准。**
+聚合考点及其合法 facet 只以自动生成的
+[`tutor/topic-map.md`](./topic-map.md#1-聚合考点record---facet-必填) 为准；
+本文不再复制清单，避免与 `curriculum.json` 漂移。
 
 ### 证据分级（详见 PROGRESS_PROTOCOL §4）
 
@@ -292,11 +301,11 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 |---|---|---|---|---|
 | 客观题（含真题）、闭卷、答对、`sure` | ✅ | recognition | diagnostic/practice | 是（累积 6 条证据 + 跨日 2 次） |
 | 答对但 `guess` | ✅ | recognition | diagnostic | 否，只算 fragile |
-| 答错 | ✅ | recognition | diagnostic | 否，进 1/3/7/14 复习队列 |
+| 答错 | ✅ | recognition | diagnostic | 否，进 1/3/7/14/30 复习阶梯 |
 | 案例独立作答 + 逐项估分 | ✅ | application | practice/mock | 需 2 次 15/25 等价分 |
 | 案例只看讲解未作答 | ⚠️ 只写 note | application | practice | 否 |
 | 论文口述骨架 | ✅ | application | practice | 否 |
-| 论文限时成文 ≥ 2500 字 + 估分 | ✅ | production | mock | 需 2 篇达安全线 |
+| 论文限时成文 ≥ 2500 字 + 估分 | ✅ | production | mock | 1 篇达到安全线（以 PROGRESS_PROTOCOL 为准） |
 | 学员纯聊天没作答 | ❌ | — | — | — |
 
 正常客观题循环不得在 `quiz-grade` 后追加 `status` 或 `diagnose`；其 JSON 返回值
@@ -304,14 +313,14 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 
 ## Step 5 · 反馈与换科
 
-对每道错题给三件套（口头即可，不再走 AskUserQuestion 免得打断节奏）：
+对每道错题给三件套。错因只有考生明确说明时才写入 `--wrong-reason`；否则展示为“未分类”，不得根据一次错误臆测认知原因：
 
 1. **错因分类**：
    - `recall_failure`：概念记得但顺序/名字想不起来
    - `concept_confusion`：混淆了两个相邻概念（例：CMM 老版 vs CMMI）
-   - `careless_reading`：题干"错误的是/不属于"读反
+   - `misread`：题干"错误的是/不属于"读反
    - `knowledge_gap`：完全没学过
-   - `application_error`：知识点会但套错场景（案例常见）
+   - `application`：知识点会但套错场景（案例常见）
 
 2. **最小记忆钩子**：一句口诀 / 一张对比表 / 一个反例。
    例：
@@ -325,11 +334,13 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 
 ```bash
 python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
-  --answers 'B,C' --confidences 'sure,unsure'
+  --answers 'B,C' --confidences 'sure,unsure' \
+  --wrong-reason '2=recall_failure'
 ```
 
 变式题的作答会写成正式 `recognition` attempt，`variant_of` 指回产生它的原题：
-答错或明确不会的变式自动进入 1/3/7/14 复习队列，答对且确定的题进入题目冷却。
+答错或明确不会的变式进入 1/3/7/14/30 复习阶梯；当天纠偏答对仍保留次日复测，
+只有到期且确定答对才推进到下一间隔。答对且确定的题进入题目冷却。
 不填 `--confidences` 时按 `unsure` 记录，避免未声明把握度的变式冒充确定掌握。
 命令返回值含逐题 `is_correct` / `wrong_reasons` / `next_review_at` 和唯一的
 `next_action`，直接用它做反馈和下一步路由。
@@ -383,7 +394,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 - [ ] 蒙对/不确定的题 `--confidence` 标了 `unsure` / `guess`
 - [ ] 自编题已登记细考点、题型族和内容指纹
 - [ ] 未重复原题、同题型或当天已经纠偏的细考点
-- [ ] 错题给了错因 + 记忆钩子 + 变式题
+- [ ] 错题给了知识缺口 + 记忆钩子 + 变式题；未获考生明确说明时没有伪造错因
 - [ ] 变式题的作答已用 `quiz-variant-grade` 记录，没有只停留在对话里
 - [ ] 没把 `✅` / `**答案**` / `**解析**` 泄给学员
 - [ ] 向考生说明作答格式时只用了占位符（如 `1_ 2_ 3_ 4_ 5_`），没有用真实字母组合举例——示例串不得恰好等于答案串
@@ -398,7 +409,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 
 | 工具 | 位置 | 作用 |
 |---|---|---|
-| CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / weakpoints / recommend / quiz-prepare / quiz-grade / quiz-variant-grade / record / configure / doctor |
+| CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / progress / weakpoints / recommend / quiz-prepare / quiz-grade / quiz-variant-grade / record / configure / doctor |
 | 脱敏器 | [`scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) | 题库维护、抽查与人工修复用；支持 `--topic` / `--tag` / `--year` / `--list`，不在答题循环内调用 |
 | 质量排除表 | [`scripts/quiz_quality_exclusions.json`](../scripts/quiz_quality_exclusions.json) | 人工确认的坏题黑名单；`doctor` 报告拦截数量，`quiz-prepare` 机械跳过 |
 | 考点表生成 | [`scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) | 由 `curriculum.json` 生成 `topic-map.md` |
