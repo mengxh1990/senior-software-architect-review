@@ -687,7 +687,18 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
             (i for i, line in enumerate(body_lines) if OPTION_LINE.match(line.strip().lstrip("-*").strip())),
             len(body_lines),
         )
-        stem_lines = [header_text] + [line for line in body_lines[:option_start] if line.strip()]
+        # A canonicalised transcript may retain source images and an explicit
+        # ``(N)`` sub-question marker immediately before its first option.
+        # Those are layout scaffolding, not learner-facing stem content; the
+        # legacy transcript adapter already omitted them, so the canonical
+        # path must do the same to preserve its public payload exactly.
+        stem_lines = [header_text] + [
+            line
+            for line in body_lines[:option_start]
+            if line.strip()
+            and not IMAGE_ONLY_RE.match(line.strip())
+            and not PLACEHOLDER_STEM_RE.match(line.strip())
+        ]
         options = _parse_options(body_lines[option_start:])
         separator = (
             "\n"

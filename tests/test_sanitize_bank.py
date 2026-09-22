@@ -239,6 +239,28 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual(item["tag_label"], "关系代数")
         self.assertEqual(item["explanation"], "规范版解析。")
 
+    def test_canonicalised_transcript_ignores_image_and_blank_marker_in_stem(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 1. 【题干】",
+                    "题干保留。",
+                    "![题图](../assets/example.webp)",
+                    "(1)",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "**答案**：B",
+                    "**考点**：§1.3 操作系统",
+                    "**解析**：解析保留。",
+                ]
+            ),
+            "2024上",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual(item["stem"], "题干保留。")
+
     def test_shipped_papers_never_put_explanation_in_tag_label(self) -> None:
         polluted = []
         for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
