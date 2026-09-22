@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -13,6 +14,20 @@ SNAPSHOT = REPO_ROOT / "tutor" / "frequency-snapshot.json"
 
 
 class FrequencySnapshotTest(unittest.TestCase):
+    def test_write_supports_an_output_outside_the_repository(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "frequency-snapshot.json"
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--output", str(output), "--write"],
+                cwd=REPO_ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertTrue(output.is_file())
+            self.assertIn(str(output), result.stdout)
+
     def test_snapshot_is_current_and_auditable(self) -> None:
         result = subprocess.run(
             [sys.executable, str(SCRIPT), "--check"],

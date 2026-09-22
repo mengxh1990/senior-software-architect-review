@@ -57,6 +57,19 @@ from typing import Dict, Iterable, List, Sequence
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CURRICULUM_PATH = REPO_ROOT / "tutor" / "curriculum.json"
 PAPER_DIR = REPO_ROOT / "past-papers" / "comprehensive-by-year"
+LEGACY_TRANSCRIPT_YEARS = frozenset(
+    {
+        "2009下",
+        "2010下",
+        "2011下",
+        "2012下",
+        "2013下",
+        "2014下",
+        "2015下",
+        "2016下",
+        "2017下",
+    }
+)
 
 # ---------------------------------------------------------------- past papers
 # 2009–2017 转录版：题干段落 + (N) A. … 选项 + 【答案】X + **考点**：§… + 【解析】…
@@ -283,6 +296,10 @@ ITEM_TOPIC_OVERRIDES = {
     "past-papers/comprehensive-by-year/2025上.md#23": "K01.OS_MEMORY_KERNEL",
     "past-papers/comprehensive-by-year/2025上.md#19-20": "K13.VIEWS_SOA_LAYERING",
     "past-papers/comprehensive-by-year/2025上.md#27-28": "K10.DATABASE_MODELING",
+}
+CURATED_SOURCE_FIGURE_STATUS_OVERRIDES = {
+    "past-papers/comprehensive-by-year/2011下.md#24-24": "figure_not_renderable",
+    "past-papers/comprehensive-by-year/2017下.md#6-6": "figure_not_renderable",
 }
 
 
@@ -786,7 +803,7 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
         last_number = int(header.group(2) or header.group(1))
         number = (
             f"{first_number}-{last_number}"
-            if first_number != last_number
+            if first_number != last_number or year in LEGACY_TRANSCRIPT_YEARS
             else str(first_number)
         )
         lines = block.splitlines()
@@ -816,6 +833,9 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
                 correct = []
                 tag = ""
                 label = ""
+        if tag_match and not tag:
+            tag = tag_match.group(1)
+            label = (tag_match.group(2) or "").strip()
         if tag and not label:
             source_group = next(
                 (match for match in reversed(group_tags) if match.start() < header.start()),
@@ -911,6 +931,9 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
                 "options": options,
                 "correct": correct,
                 "explanation": explanation,
+                "source_figure_status": CURATED_SOURCE_FIGURE_STATUS_OVERRIDES.get(
+                    f"past-papers/comprehensive-by-year/{year}.md#{number}"
+                ),
             }
         )
     return items

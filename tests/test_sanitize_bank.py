@@ -240,6 +240,25 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual(item["tag_label"], "关系代数")
         self.assertEqual(item["explanation"], "规范版解析。")
 
+    def test_normalised_transcript_keeps_legacy_singleton_range_identity(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 1. 【题干】",
+                    "题干。",
+                    "A. 甲",
+                    "B. 乙",
+                    "C. 丙",
+                    "D. 丁",
+                    "**答案**：A",
+                    "**考点**：§1 操作系统",
+                    "**解析**：解析。",
+                ]
+            ),
+            "2010下",
+        )
+        self.assertTrue(sanitize_bank.parse_paper(path)[0]["id"].endswith("#1-1"))
+
     def test_canonicalised_transcript_ignores_image_and_blank_marker_in_stem(self) -> None:
         path = self._write(
             "\n".join(
@@ -1274,7 +1293,8 @@ class PastPaperParsingTests(unittest.TestCase):
 
     def test_real_paper_files_parse_with_expected_coverage(self) -> None:
         """仓库内真题必须能被脱敏器读出题块，且核心考期可用题数达标。"""
-        expectations = {"2013下": 30, "2016下": 40, "2017下": 40, "2024下": 70, "2025下": 70}
+        # 2024下的多空题保留为不可拆分题组，不能伪装成单选题以凑可用数。
+        expectations = {"2013下": 30, "2016下": 40, "2017下": 40, "2024下": 69, "2025下": 70}
         for year, minimum in expectations.items():
             path = REPO_ROOT / "past-papers" / "comprehensive-by-year" / f"{year}.md"
             with self.subTest(year=year):
