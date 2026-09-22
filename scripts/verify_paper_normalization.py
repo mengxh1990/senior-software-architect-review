@@ -67,8 +67,43 @@ REVIEWED_GROUP_SPLITS = {
     "past-papers/comprehensive-by-year/2012下.md": {(44, 48), (56, 61), (71, 75)},
     "past-papers/comprehensive-by-year/2013下.md": {
         (40, 42),
+        (47, 51),
         (52, 56),
         (57, 63),
+        (71, 75),
+    },
+    "past-papers/comprehensive-by-year/2014下.md": {
+        (6, 8),
+        (10, 11),
+        (54, 59),
+        (71, 75),
+    },
+    "past-papers/comprehensive-by-year/2015下.md": {
+        (13, 14),
+        (56, 61),
+        (71, 75),
+    },
+    "past-papers/comprehensive-by-year/2016下.md": {
+        (45, 46),
+        (47, 48),
+        (49, 50),
+        (54, 57),
+        (58, 63),
+        (71, 75),
+    },
+    "past-papers/comprehensive-by-year/2019下.md": {
+        (22, 23),
+        (51, 53),
+        (58, 63),
+    },
+    "past-papers/comprehensive-by-year/2025上.md": {
+        (31, 35),
+    },
+    "past-papers/comprehensive-by-year/2017下.md": {
+        (42, 43),
+        (44, 46),
+        (48, 50),
+        (69, 70),
         (71, 75),
     },
 }
