@@ -964,6 +964,59 @@ def _attach_curated_followup_context(items: List[Dict]) -> None:
         item["context"] = previous_stem
 
 
+def _attach_curated_reading_context(items: List[Dict]) -> None:
+    """Attach a preceding English passage to its individual fill-in items.
+
+    Recall-paper transcriptions commonly store the shared reading passage in
+    one block and emit the following blanks as individual ``### N`` blocks.
+    The passage itself is source text, so deriving the short ``（N）处应填入``
+    prompt for an otherwise empty child block does not invent question content.
+    """
+
+    active: Dict[str, object] | None = None
+    for item in items:
+        stem = str(item.get("stem") or "").strip()
+        numbers = [int(match.group(1)) for match in QUESTION_PLACEHOLDER_RE.finditer(stem)]
+        explicit_range = re.search(
+            r"阅读以下.*?第\s*(\d{1,3})\s*(?:[-–—至到]\s*(\d{1,3}))?\s*题",
+            stem,
+        )
+        if explicit_range:
+            start = int(explicit_range.group(1))
+            end = int(explicit_range.group(2) or explicit_range.group(1))
+            active = {
+                "start": start,
+                "end": end,
+                "id": item["id"],
+                "context": stem,
+            }
+            continue
+        if len(numbers) >= 2:
+            active = {
+                "start": min(numbers),
+                "end": max(numbers),
+                "id": item["id"],
+                "context": stem,
+            }
+            continue
+        if not active:
+            continue
+        current_range = item.get("range") or []
+        if len(current_range) != 2:
+            continue
+        current = int(current_range[0])
+        if current > int(active["end"]):
+            active = None
+            continue
+        if current < int(active["start"]):
+            continue
+        if not stem:
+            item["stem"] = f"（{current}）处应填入（ ）"
+        item["context_id"] = f"{active['id']}#reading"
+        item["context_title"] = "阅读材料"
+        item["context"] = str(active["context"])
+
+
 def parse_paper(path: Path) -> List[Dict]:
     """Parse either past-paper layout, detecting the format automatically.
 
@@ -978,6 +1031,7 @@ def parse_paper(path: Path) -> List[Dict]:
     items = curated_items if len(curated_items) > len(transcript_items) else transcript_items
     if items is curated_items:
         _attach_curated_followup_context(items)
+        _attach_curated_reading_context(items)
     topic_tags = load_topic_tags()
     exclusions = load_quality_exclusions()
     for item in items:

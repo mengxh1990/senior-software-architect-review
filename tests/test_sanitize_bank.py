@@ -458,6 +458,42 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertIn("根据下表计算结果。\n\n| 项目 | 值 |", item["stem"])
         self.assertIn("| 甲 | 1 |\n\n计算结果为（70）。", item["stem"])
 
+    def test_reading_passage_context_is_attached_to_following_blanks(self) -> None:
+        path = self._write(
+            "\n".join(
+                [
+                    "### 68. 阅读以下英文段落，回答第69-70题。",
+                    "The（69）is followed by the（70）.",
+                    "**答案**：A",
+                    "**考点**：§13 专业英语",
+                    "**解析**：阅读材料。",
+                    "### 69.",
+                    "（69）处应填入（ ）。",
+                    "A. first",
+                    "B. second",
+                    "C. third",
+                    "D. fourth",
+                    "**答案**：A",
+                    "**考点**：§13 专业英语",
+                    "**解析**：first。",
+                    "### 70.",
+                    "A. first",
+                    "B. second",
+                    "C. third",
+                    "D. fourth",
+                    "**答案**：B",
+                    "**考点**：§13 专业英语",
+                    "**解析**：second。",
+                ]
+            ),
+            "2024上",
+        )
+        items = sanitize_bank.parse_paper(path)
+        by_number = {item["range"][0]: item for item in items}
+        self.assertEqual(by_number[70]["stem"], "（70）处应填入（ ）")
+        self.assertEqual(by_number[70]["context_title"], "阅读材料")
+        self.assertIn("The（69）", by_number[70]["context"])
+
     def test_clean_stem_keeps_compact_option_sets_after_line_normalisation(self) -> None:
         self.assertEqual(
             sanitize_bank.clean_stem("选项集：\nA. 甲\nD. 丁；\nA. 戊"),
@@ -741,6 +777,24 @@ class PastPaperParsingTests(unittest.TestCase):
         for item_id, reason in expected.items():
             with self.subTest(item_id=item_id):
                 self.assertIn(item_id, items)
+                self.assertEqual("invalid", items[item_id]["quality_status"])
+                self.assertIn(f"excluded:{reason}", items[item_id]["quality_issues"])
+
+    def test_conflicting_or_out_of_scope_pending_items_are_excluded(self) -> None:
+        expected = {
+            "past-papers/comprehensive-by-year/2025下.md#1": "conflicting_source_evidence",
+            "past-papers/comprehensive-by-year/2026上.md#69": "outside_curriculum_scope",
+            "past-papers/comprehensive-by-year/2026上.md#70": "outside_curriculum_scope",
+        }
+        items = {
+            item["id"]: item
+            for year in ("2025下", "2026上")
+            for item in sanitize_bank.parse_paper(
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / f"{year}.md"
+            )
+        }
+        for item_id, reason in expected.items():
+            with self.subTest(item_id=item_id):
                 self.assertEqual("invalid", items[item_id]["quality_status"])
                 self.assertIn(f"excluded:{reason}", items[item_id]["quality_issues"])
 
