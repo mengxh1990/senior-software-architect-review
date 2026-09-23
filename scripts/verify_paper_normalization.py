@@ -112,6 +112,7 @@ REVIEWED_GROUP_SPLITS = {
         (31, 35),
     },
     "past-papers/comprehensive-by-year/2017下.md": {
+        (39, 40),
         (42, 43),
         (44, 46),
         (48, 50),
