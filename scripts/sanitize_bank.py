@@ -1385,11 +1385,21 @@ def assess_quality(
         issues.append("incomplete_stem")
     if ORPHANED_STEM_PREFIX_RE.match(stem) and not has_context:
         issues.append("incomplete_stem")
+    numbered_blanks = {
+        match.group(1) for match in QUESTION_PLACEHOLDER_RE.finditer(stem)
+    }
     if int(item.get("question_count", 1) or 1) > 1:
-        # The objective-quiz runtime currently records one answer per visible
-        # item. A transcript block with several independent blanks would lose
-        # answer order and option ownership, so keep it out until it has a
+        # The objective-quiz runtime records one answer per visible item. A
+        # transcript block with several independent blanks would lose answer
+        # order and option ownership, so keep it out until it has a
         # first-class subquestion representation.
+        issues.append("multi_question_group")
+    elif span > 1 and len(numbered_blanks) > 1:
+        # A block that numbers its own blanks （7）…（8） comes from the original
+        # paper, where every numbered question owns its own option bank. The
+        # parser keeps the first bank only, so the other blanks cannot be
+        # answered at all; the carrier stays out until a reviewed split ships
+        # one item per blank with its authoritative option bank.
         issues.append("multi_question_group")
     source_figure_status = item.get("source_figure_status")
     if source_figure_status:

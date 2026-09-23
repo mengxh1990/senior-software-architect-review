@@ -781,6 +781,56 @@ class PastPaperParsingTests(unittest.TestCase):
         )
         self.assertEqual("ready", single["quality_status"])
 
+    def test_quality_gate_blocks_numbered_multi_blank_carriers(self) -> None:
+        """A numbered block owns one option bank per blank in the paper.
+
+        The normalized papers keep the shared stem in one block, and the
+        transcript used to carry only the first blank's options.  Such a
+        carrier is unanswerable as served, so it must stay invalid even when
+        the answer count matches the number of blanks; the reviewed split
+        ships one ready item per blank instead.
+        """
+
+        carrier = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/comprehensive-by-year/2016下.md#7-8",
+                "range": [7, 8],
+                "stem": (
+                    "该文件系统可表示的单个文件最大长度是 (7) KB。"
+                    "若要访问 iclsClient.dll 文件的逻辑块号分别为 6、520 和 1030，"
+                    "则系统应分别采用 (8)。"
+                ),
+                "options": [
+                    {"label": "A", "text": "1030"},
+                    {"label": "B", "text": "65796"},
+                    {"label": "C", "text": "1049606"},
+                    {"label": "D", "text": "4198424"},
+                ],
+                "correct": ["D", "C"],
+                "explanation": "直接索引 0–5；一级间接 6–1029；二级间接 1030 及以上。",
+            }
+        )
+        self.assertEqual("invalid", carrier["quality_status"])
+        self.assertIn("multi_question_group", carrier["quality_issues"])
+
+        split_child = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/comprehensive-by-year/2016下.md#8-8",
+                "range": [8, 8],
+                "stem": "（8）处应填入（  ）。",
+                "context": "某文件系统文件存储采用文件索引节点法。……",
+                "options": [
+                    {"label": "A", "text": "直接地址索引、一级间接地址索引和二级间接地址索引"},
+                    {"label": "B", "text": "直接地址索引、二级间接地址索引和二级间接地址索引"},
+                    {"label": "C", "text": "一级间接地址索引、一级间接地址索引和二级间接地址索引"},
+                    {"label": "D", "text": "一级间接地址索引、二级间接地址索引和二级间接地址索引"},
+                ],
+                "correct": ["C"],
+                "explanation": "逻辑块号 6、520 在一级间接索引范围内，1030 在二级间接索引范围内。",
+            }
+        )
+        self.assertEqual("ready", split_child["quality_status"])
+
     def test_shipped_multi_blank_blocks_keep_one_answer_per_blank(self) -> None:
         items = {}
         for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):

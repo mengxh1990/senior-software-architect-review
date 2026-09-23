@@ -51,6 +51,11 @@
       "item_id": "past-papers/comprehensive-by-year/2026上.md#70",
       "reason": "outside_curriculum_scope",
       "note": "移进-归约语法分析属于编译原理；当前课程没有可审计的稳定承接考点，避免为了覆盖率强行归类。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2023下.md#1-2",
+      "reason": "conflicting_source_evidence",
+      "note": "希赛回忆清单把「V(g)=m-n+1」「最大范围<10」并列为两个错误项（清单编号 1-2 指向两道单选），rkpass 重建稿则只保留一道单选且答案为 B、并把「McCabe数应小于10」列为正确项；两来源对题量与答案集合不一致，现有块又把两个错误项压成一个组合答案，选项 B 还带「（错误公式）」泄题标注。第二题的题干与选项在现有来源中无法恢复，故维持排除。"
     }
   ]
 }
