@@ -6,10 +6,10 @@
   "as_of": "2026-09-22",
   "coverage": {
     "recent": {
-      "mapped_questions": 326,
+      "mapped_questions": 346,
       "papers": 6,
-      "ratio": 0.9368,
-      "ready_questions": 348,
+      "ratio": 0.9402,
+      "ready_questions": 368,
       "unmapped_questions": 22
     },
     "stable": {
@@ -151,8 +151,8 @@
     {
       "cohort": "recent",
       "coverage": 1.0,
-      "mapped_questions": 1,
-      "ready_questions": 1,
+      "mapped_questions": 21,
+      "ready_questions": 21,
       "source_type": "recalled_real",
       "unmapped_questions": 0,
       "year": "2023下"
@@ -204,7 +204,7 @@
     }
   ],
   "schema_version": 1,
-  "source_digest": "30f3d30cf6bab102b8208f3f09f4b8385799249ecec8cbe2e6f6c067516149d5",
+  "source_digest": "c8c77bf36070ae423a765ab702cd805c0cc652849be147dfd6284a729b060c70",
   "topics": [
     {
       "recent_questions_per_paper": 3.4394,
@@ -219,22 +219,22 @@
       "weighted_questions_per_paper": 3.3521
     },
     {
-      "recent_questions_per_paper": 2.1338,
+      "recent_questions_per_paper": 3.3243,
       "stable_questions_per_paper": 2.5046,
       "topic_id": "K03.SOFTWARE_DESIGN_UML",
-      "weighted_questions_per_paper": 2.4304
+      "weighted_questions_per_paper": 2.6685
     },
     {
-      "recent_questions_per_paper": 5.8297,
+      "recent_questions_per_paper": 7.0202,
       "stable_questions_per_paper": 8.4648,
       "topic_id": "K04.ARCH_STYLES_ABSD",
-      "weighted_questions_per_paper": 7.9378
+      "weighted_questions_per_paper": 8.1759
     },
     {
-      "recent_questions_per_paper": 4.343,
+      "recent_questions_per_paper": 5.5335,
       "stable_questions_per_paper": 2.1538,
       "topic_id": "K05.TEST_CMMI_PATTERNS",
-      "weighted_questions_per_paper": 2.5916
+      "weighted_questions_per_paper": 2.8297
     },
     {
       "recent_questions_per_paper": 0.0,
@@ -255,10 +255,10 @@
       "weighted_questions_per_paper": 2.3905
     },
     {
-      "recent_questions_per_paper": 3.3734,
+      "recent_questions_per_paper": 5.7543,
       "stable_questions_per_paper": 5.46,
       "topic_id": "K09.QUALITY_SCENARIOS",
-      "weighted_questions_per_paper": 5.0426
+      "weighted_questions_per_paper": 5.5188
     },
     {
       "recent_questions_per_paper": 3.7984,
@@ -339,10 +339,10 @@
       "weighted_questions_per_paper": 4.7898
     },
     {
-      "recent_questions_per_paper": 13.7463,
+      "recent_questions_per_paper": 1.8416,
       "stable_questions_per_paper": 1.5983,
       "topic_id": "K23.PROJECT_MANAGEMENT_METRICS",
-      "weighted_questions_per_paper": 4.0279
+      "weighted_questions_per_paper": 1.647
     },
     {
       "recent_questions_per_paper": 1.0598,
@@ -351,22 +351,22 @@
       "weighted_questions_per_paper": 3.6313
     },
     {
-      "recent_questions_per_paper": 0.743,
+      "recent_questions_per_paper": 1.9335,
       "stable_questions_per_paper": 0.2232,
       "topic_id": "K25.RELIABILITY_ENGINEERING",
-      "weighted_questions_per_paper": 0.3272
+      "weighted_questions_per_paper": 0.5653
     },
     {
-      "recent_questions_per_paper": 0.876,
+      "recent_questions_per_paper": 4.4474,
       "stable_questions_per_paper": 1.656,
       "topic_id": "K26.ARCH_EVOLUTION",
-      "weighted_questions_per_paper": 1.5
+      "weighted_questions_per_paper": 2.2143
     },
     {
-      "recent_questions_per_paper": 4.4096,
+      "recent_questions_per_paper": 5.6,
       "stable_questions_per_paper": 0.9077,
       "topic_id": "K27.EMERGING_TECH",
-      "weighted_questions_per_paper": 1.6081
+      "weighted_questions_per_paper": 1.8462
     },
     {
       "recent_questions_per_paper": 1.817,

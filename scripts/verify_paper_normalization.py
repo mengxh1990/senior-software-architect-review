@@ -96,6 +96,18 @@ REVIEWED_GROUP_SPLITS = {
         (51, 53),
         (58, 63),
     },
+    "past-papers/comprehensive-by-year/2023下.md": {
+        (11, 12),
+        (24, 25),
+        (27, 28),
+        (35, 36),
+        (43, 44),
+        (49, 50),
+        (53, 54),
+        (58, 59),
+        (63, 64),
+        (68, 69),
+    },
     "past-papers/comprehensive-by-year/2025上.md": {
         (31, 35),
     },

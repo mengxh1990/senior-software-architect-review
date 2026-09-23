@@ -39,7 +39,7 @@
 | 2020 | 已结构化 | real | [2020.md](./comprehensive-by-year/2020.md) |
 | 2021 | 已结构化 | real | [2021.md](./comprehensive-by-year/2021.md) |
 | 2022 | 已结构化 | real | [2022.md](./comprehensive-by-year/2022.md) |
-| 2023 下 | 已结构化 | recalled_real | [2023下.md](./comprehensive-by-year/2023下.md) |
+| 2023 下 | 已结构化（回忆版考点清单 + rkpass 重建稿按内容匹配互证，多空题组已拆为逐空小题） | recalled_real | [2023下.md](./comprehensive-by-year/2023下.md) |
 | 2024 上 | 已结构化 | recalled_real | [2024上.md](./comprehensive-by-year/2024上.md) |
 | 2024 下 | 已结构化 | recalled_real | [2024下.md](./comprehensive-by-year/2024下.md) |
 | 2025 上 | 已结构化 | recalled_real | [2025上.md](./comprehensive-by-year/2025上.md) |
