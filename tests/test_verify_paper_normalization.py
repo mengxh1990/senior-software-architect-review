@@ -89,7 +89,7 @@ class VerifyPaperNormalizationTests(unittest.TestCase):
                     with self.subTest(path=relative, key=key, field=field):
                         self.assertEqual(expected, items[key][field])
 
-    def test_reviewed_group_splits_expose_one_ready_item_per_blank(self) -> None:
+    def test_reviewed_group_splits_expose_one_usable_item_per_blank(self) -> None:
         import importlib.util
 
         sanitizer_path = REPO_ROOT / "scripts" / "sanitize_bank.py"
@@ -112,7 +112,13 @@ class VerifyPaperNormalizationTests(unittest.TestCase):
                     child = items.get((number, number))
                     with self.subTest(path=relative, child=number):
                         self.assertIsNotNone(child)
-                        self.assertEqual("ready", child["quality_status"])
+                        # A blank may be deliberately retired through the
+                        # maintainer deny-list; otherwise it must be servable.
+                        self.assertTrue(
+                            child["quality_status"] == "ready"
+                            or verify_paper_normalization.retired_by_maintainer(child),
+                            child.get("quality_issues"),
+                        )
                         self.assertEqual(1, sanitizer.question_span(child))
                         self.assertEqual(1, len(child["correct"]))
                         self.assertTrue(child.get("context"), "子题必须带上共享题干")

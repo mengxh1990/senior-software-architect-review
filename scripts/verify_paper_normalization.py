@@ -416,6 +416,21 @@ def item_key(item: Dict[str, Any]) -> Tuple[int, int]:
     return int(item_range[0]), int(item_range[1])
 
 
+def retired_by_maintainer(item: Dict[str, Any]) -> bool:
+    """True when the maintainer deny-list is an item's only gate failure.
+
+    A reviewed split may deliberately retire one of its blanks through
+    ``scripts/quiz_quality_exclusions.json``.  The exclusion has to be the one
+    and only reason the child is unusable, so a genuinely broken child cannot
+    hide behind a deny-list entry.
+    """
+
+    if item.get("quality_status") == "ready":
+        return False
+    issues = [str(issue) for issue in (item.get("quality_issues") or [])]
+    return len(issues) == 1 and issues[0].startswith("excluded:")
+
+
 def index_items(items: Iterable[Dict[str, Any]]) -> Dict[Tuple[int, int], Dict[str, Any]]:
     indexed: Dict[Tuple[int, int], Dict[str, Any]] = {}
     for item in items:
@@ -457,7 +472,10 @@ def compare_paper(module: Any, path: Path, base_ref: str) -> List[str]:
     for start, end in sorted(split_keys):
         for number in range(start, end + 1):
             child = current.get((number, number))
-            if child is None or child.get("quality_status") != "ready":
+            if child is None or (
+                child.get("quality_status") != "ready"
+                and not retired_by_maintainer(child)
+            ):
                 issues.append(f"{relative}#{number}-{number}：拆分出的子题未通过门禁")
         baseline_block = _block_text(baseline_text, start, end)
         region = "\n".join(

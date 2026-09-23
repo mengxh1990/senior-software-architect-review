@@ -56,6 +56,16 @@
       "item_id": "past-papers/comprehensive-by-year/2023下.md#1-2",
       "reason": "conflicting_source_evidence",
       "note": "希赛回忆清单把「V(g)=m-n+1」「最大范围<10」并列为两个错误项（清单编号 1-2 指向两道单选），rkpass 重建稿则只保留一道单选且答案为 B、并把「McCabe数应小于10」列为正确项；两来源对题量与答案集合不一致，现有块又把两个错误项压成一个组合答案，选项 B 还带「（错误公式）」泄题标注。第二题的题干与选项在现有来源中无法恢复，故维持排除。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2016下.md#19-19",
+      "reason": "conflicting_source_evidence",
+      "note": "答案键为 B（政府对居民），但教材把「国家和地方基础信息的采集、处理和利用，如人口信息」明确归入政府与政府（G2G）领域，2020 年同考点真题的官方答案键同样判为 G2G，2016 下真题解析给出的 (19)=A 也写明「属于政府对政府的电子政务活动」；随卷答案详解该行只印答案字母、解析为空，跨源答案冲突且知识层面指向 A，无法唯一判分，故排除出题库。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2017下.md#37-37",
+      "reason": "conflicting_source_evidence",
+      "note": "答案键为 D（值类型），但同源官方解析明确写「接口描述是 IDL 文件中最核心的内容」，对应选项 C，多个题库与 2017 下真题解析均判 C；随卷答案详解该行只印答案字母、解析为空，跨源答案冲突，无法唯一判分，故排除出题库。"
     }
   ]
 }
