@@ -153,6 +153,16 @@ def ensure_private_data_dir(data_dir: Path) -> Path:
     return resolved
 
 
+def require_training_ready(data_dir: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Inspect the learner state without silently migrating historical links."""
+
+    profile, state = tutor.load_profile_and_state(data_dir, persist_pending=False)
+    tutor.ensure_question_links_current(
+        state, tutor.load_attempts(tutor.state_paths(data_dir)["attempts"])
+    )
+    return profile, state
+
+
 def persist_events(
     data_dir: Path,
     practice_events: list[dict[str, Any]],
@@ -162,9 +172,10 @@ def persist_events(
     curriculum = tutor.load_curriculum()
     data_dir = ensure_private_data_dir(data_dir)
     with tutor.data_lock(data_dir):
-        profile, state = tutor.load_profile_and_state(data_dir)
+        profile, state = tutor.load_profile_and_state(data_dir, persist_pending=False)
         paths = tutor.state_paths(data_dir)
         logged = tutor.load_attempts(paths["attempts"])
+        tutor.ensure_question_links_current(state, logged)
         by_id = {event["attempt_id"]: event for event in logged}
         existing_practice = [event for event in practice_events if event["attempt_id"] in by_id]
         if existing_practice and len(existing_practice) != len(practice_events):
@@ -254,6 +265,7 @@ def persist_postmortem(
     feedback_id = f"{session_id}-postmortem"
     with tutor.data_lock(data_dir):
         attempts = tutor.load_attempts(attempts_path)
+        require_training_ready(data_dir)
         trusted_prefix = f"{session_id}-q-"
         trusted_events = [
             event
@@ -378,10 +390,20 @@ class ExamHandler(SimpleHTTPRequestHandler):
 
     def _handle_status(self) -> None:
         try:
-            profile, state = tutor.load_profile_and_state(self.data_dir)
+            with tutor.data_lock(self.data_dir):
+                profile, state = require_training_ready(self.data_dir)
             json_response(self, {"ok": True, "data": tutor.status_payload(profile, state)})
         except tutor.TutorError as error:
-            json_response(self, {"ok": False, "error": str(error), "needs_init": True}, 409)
+            json_response(
+                self,
+                {
+                    "ok": False,
+                    "error": str(error),
+                    "needs_init": not tutor.state_paths(self.data_dir)["state"].exists(),
+                    "needs_repair": isinstance(error, tutor.QuestionLinkMigrationRequired),
+                },
+                409,
+            )
 
     def _handle_curriculum(self) -> None:
         try:
@@ -408,10 +430,33 @@ class ExamHandler(SimpleHTTPRequestHandler):
                 today=None,
                 json=True,
             )
-            json_response(
-                self,
-                {"ok": True, "data": tutor.build_recommendation_payload(args)},
-            )
+            with tutor.data_lock(self.data_dir):
+                plan = tutor.build_recommendation_payload(args)
+                if plan["target_subject"] == "comprehensive":
+                    curriculum = tutor.load_curriculum()
+                    try:
+                        selected, chosen, substitution = tutor.select_quiz_group(
+                            self.data_dir,
+                            tutor.parse_date(plan["today"]),
+                            5,
+                            plan["recommendations"],
+                            curriculum,
+                            tutor.topic_map(curriculum),
+                        )
+                    except tutor.TutorError as error:
+                        plan["practice_preview"] = {
+                            "available": False,
+                            "reason": str(error),
+                        }
+                    else:
+                        plan["practice_preview"] = {
+                            "available": True,
+                            "topic_id": selected[0]["topic_id"],
+                            "topic_name": selected[0]["topic_name"],
+                            "name": chosen[0]["name"],
+                            "substitution": substitution,
+                        }
+            json_response(self, {"ok": True, "data": plan})
         except RequestError as error:
             json_response(self, {"ok": False, "error": str(error)}, 400)
         except tutor.TutorError as error:
@@ -419,7 +464,12 @@ class ExamHandler(SimpleHTTPRequestHandler):
 
     def _handle_mock_paper(self) -> None:
         try:
+            with tutor.data_lock(self.data_dir):
+                if tutor.state_paths(self.data_dir)["state"].exists():
+                    require_training_ready(self.data_dir)
             json_response(self, {"ok": True, "data": public_payload()})
+        except tutor.TutorError as error:
+            json_response(self, {"ok": False, "error": str(error)}, 409)
         except (OSError, ValueError, KeyError) as error:
             json_response(self, {"ok": False, "error": str(error)}, 500)
 

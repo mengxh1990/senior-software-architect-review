@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterable
@@ -1017,7 +1018,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertEqual("C01.CASE_ATAM", prepared["route_lock"]["topic_id"])
             self.assertEqual("application", prepared["record"]["skill"])
 
-    def test_due_pass_ready_case_application_still_routes_to_case(self) -> None:
+    def test_due_pass_ready_case_application_does_not_override_subject_split(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
             self._init(data_dir)
@@ -1036,8 +1037,25 @@ class TutorAcceptanceTest(unittest.TestCase):
             progress = _json_output(
                 _run_cli(data_dir, "progress", "--json", "--today", due_day)
             )
+            self.assertEqual("quiz_prepare", progress["next_action"]["mode"])
+            self.assertEqual("recognition", progress["next_action"]["skill"])
+
+    def test_due_fragile_case_track_precedes_unmeasured_case_tracks(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(data_dir, "configure", "--subject-policy", "essay=manual_trigger")
+            _run_cli(
+                data_dir, "record", "--topic", "C01.CASE_ATAM",
+                "--skill", "application", "--score", "0", "--max-score", "25",
+                "--attempt-id", "urgent-case-track",
+                "--at", "2026-09-20T09:00:00+08:00",
+            )
+            progress = _json_output(
+                _run_cli(data_dir, "progress", "--json", "--today", "2026-09-24")
+            )
             self.assertEqual("case_prepare", progress["next_action"]["mode"])
-            self.assertEqual("application", progress["next_action"]["skill"])
+            self.assertEqual("C01.CASE_ATAM", progress["next_action"]["topic_id"])
 
     def test_due_application_only_promotes_an_actionable_case_track(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -2883,7 +2901,84 @@ class TutorAcceptanceTest(unittest.TestCase):
             )
             # 该细考点的两道题都在 avoid 列表里，本组一道都出不了它；
             # 开场白不得宣称复测这个细考点。
-            self.assertNotIn("UML 2.x 图分类与数量", prepared["objective"])
+            self.assertIn("UML 2.x 图分类与数量", prepared["objective"])
+            self.assertIn("并非该细考点复测", prepared["objective"])
+            self.assertEqual(
+                "K03.uml_diagram_count",
+                prepared["substitution"]["requested_concept_id"],
+            )
+
+    def test_progress_previews_explicit_mda_substitution_without_repeating_it(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(data_dir, "configure", "--subject-policy", "essay=manual_trigger")
+            _append_mock_gap_session(
+                data_dir, "mock-mda-substitution",
+                at="2026-09-20T10:00:00+08:00",
+                wrong_items=[(
+                    "K03.SOFTWARE_DESIGN_UML",
+                    "past-papers/comprehensive-by-year/2022.md#26", None,
+                )],
+            )
+            _run_cli(data_dir, "status", "--json")  # Apply the synthetic pending log first.
+            before = _snapshot_files(data_dir)
+            progress = _json_output(
+                _run_cli(data_dir, "progress", "--json", "--today", "2026-09-24")
+            )
+            self.assertEqual(before, _snapshot_files(data_dir))
+            action = progress["next_action"]
+            self.assertEqual("K03.SOFTWARE_DESIGN_UML", action["topic_id"])
+            self.assertEqual("K03.mda_cim_pim", action["substitution"]["requested_concept_id"])
+            self.assertIn("并非该细考点复测", action["reason"])
+            prepared = _json_output(_run_cli(
+                data_dir, *action["command"].split(), "--limit", "5", "--today", "2026-09-24"
+            ))
+            self.assertEqual(action["substitution"], prepared["substitution"])
+            manifest = self._quiz_manifest(data_dir, prepared["quiz_id"])
+            self.assertEqual({"K03.SOFTWARE_DESIGN_UML"}, {
+                question["topic_id"] for question in manifest["questions"]
+            })
+            self.assertNotIn("K03.mda_cim_pim", {
+                question["concept_id"] for question in manifest["questions"]
+            })
+            answers = ",".join("".join(q["correct"]) for q in manifest["questions"])
+            _run_cli(data_dir, "quiz-grade", "--quiz-id", prepared["quiz_id"],
+                     "--answers", answers)
+            diagnosis = _json_output(_run_cli(
+                data_dir, "diagnose", "--json", "--subject", "comprehensive",
+                "--today", "2026-09-24",
+            ))
+            self.assertIn("K03.mda_cim_pim", {
+                issue["concept_id"] for issue in diagnosis["issues"]
+                if issue["status"] == "pending_remediation"
+            })
+            later = _json_output(_run_cli(
+                data_dir, "progress", "--json", "--today", "2026-09-24"
+            ))
+            self.assertNotEqual("K03.mda_cim_pim", (
+                later["next_action"].get("substitution") or {}
+            ).get("requested_concept_id"))
+
+    def test_manual_quiz_topic_outside_recommendation_cutoff_is_allowed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            ranked = _json_output(_run_cli(
+                data_dir, "recommend", "--json", "--subject", "comprehensive",
+                "--limit", "20", "--today", "2026-09-24",
+            ))
+            self.assertNotIn("K10.DATABASE_MODELING", {
+                item["topic_id"] for item in ranked["recommendations"]
+            })
+            prepared = _json_output(_run_cli(
+                data_dir, "quiz-prepare", "--topic", "K10.DATABASE_MODELING",
+                "--limit", "5", "--today", "2026-09-24",
+            ))
+            manifest = self._quiz_manifest(data_dir, prepared["quiz_id"])
+            self.assertEqual({"K10.DATABASE_MODELING"}, {
+                question["topic_id"] for question in manifest["questions"]
+            })
 
     def test_quiz_prepare_serves_a_gap_with_its_own_concept_variant(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -3576,10 +3671,10 @@ class TutorAcceptanceTest(unittest.TestCase):
             )
             _run_cli(data_dir, *arguments)
             # Simulate a stop after the write-ahead event committed but before
-            # its derived state replacement. Reading status must replay it.
+            # its derived state replacement. Reads project it without writing.
             (data_dir / "state.json").write_bytes(initial_state)
             (data_dir / "state.json.bak").write_bytes(initial_backup)
-
+            pending_snapshot = _snapshot_files(data_dir)
             topic = _find_topic_record(self._status(data_dir), topic_id)
             attempt_counts = [
                 value
@@ -3587,6 +3682,28 @@ class TutorAcceptanceTest(unittest.TestCase):
                 if isinstance(value, (int, float))
             ]
             self.assertIn(1, attempt_counts)
+            progress = _json_output(_run_cli(
+                data_dir, "progress", "--json", "--today", "2026-08-11",
+            ))
+            self.assertEqual(
+                1, progress["subjects"]["comprehensive"]["evidence_count"]
+            )
+            _run_cli(data_dir, "weakpoints", "--json", "--today", "2026-08-11")
+            _run_cli(data_dir, "recommend", "--json", "--today", "2026-08-11")
+            doctor = _json_output(_run_cli(
+                data_dir, "doctor", "--json", expected_returncode=1,
+            ))
+            self.assertIn("尚未回放", next(
+                check["message"] for check in doctor["checks"]
+                if check["name"] == "state"
+            ))
+            self.assertEqual(pending_snapshot, _snapshot_files(data_dir))
+            # A write command still catches the pending event up exactly once.
+            _run_cli(data_dir, *arguments)
+            self.assertEqual(
+                1,
+                len(json.loads((data_dir / "state.json").read_text())["applied_attempt_ids"]),
+            )
             events = [
                 json.loads(line)
                 for line in (data_dir / "attempts.jsonl")
@@ -3705,6 +3822,221 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertEqual(attempts_before, (data_dir / "attempts.jsonl").read_bytes())
             self.assertTrue(list(data_dir.glob("state.json.pre-recompute.*")))
             _run_cli(data_dir, "doctor")
+
+    def test_normalize_public_links_migrates_only_affected_private_projection(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir, limit=1)
+            for name in ("mda", "documentation"):
+                _run_cli(
+                    data_dir, "record", "--topic", "K15.STRUCTURED_ANALYSIS_DFD",
+                    "--skill", "recognition", "--score", "0", "--max-score", "1",
+                    "--attempt-id", f"legacy-{name}",
+                    "--item-id", f"legacy-placeholder:{name}",
+                    "--at", "2026-09-20T09:00:00+08:00",
+                )
+            _run_cli(
+                data_dir, "record", "--topic", "K01.OS_MEMORY_KERNEL",
+                "--skill", "recognition", "--score", "1", "--max-score", "1",
+                "--attempt-id", "unrelated-evidence", "--item-id", "unrelated-item",
+                "--at", "2026-09-20T09:10:00+08:00",
+            )
+            targets = {
+                "legacy-mda": "past-papers/comprehensive-by-year/2022.md#26",
+                "legacy-documentation": "past-papers/comprehensive-by-year/2018下.md#23",
+            }
+            attempts_path = data_dir / "attempts.jsonl"
+            events = [json.loads(line) for line in attempts_path.read_text().splitlines()]
+            for event in events:
+                if event["attempt_id"] in targets:
+                    event["item_id"] = targets[event["attempt_id"]]
+                    event["concept_id"] = "K15.STRUCTURED_ANALYSIS_DFD"
+                    event["question_family_id"] = "K15.STRUCTURED_ANALYSIS_DFD"
+            attempts_path.write_text(
+                "".join(json.dumps(event, ensure_ascii=False) + "\n" for event in events),
+                encoding="utf-8",
+            )
+            state_path = data_dir / "state.json"
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            state.pop("question_link_version")
+            for path in (state_path, data_dir / "state.json.bak"):
+                path.write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
+            unrelated = state["topics"]["K01.OS_MEMORY_KERNEL"]
+            subject_state = state["subjects"]
+            strategy = state["strategy"]
+            manifest_path = data_dir / "quiz-sessions" / f"{prepared['quiz_id']}.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            question = manifest["questions"][0]
+            question.update({
+                "item_id": targets["legacy-mda"],
+                "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
+                "concept_id": "K15.STRUCTURED_ANALYSIS_DFD",
+                "question_family_id": "K15.STRUCTURED_ANALYSIS_DFD",
+            })
+            manifest["status"] = "graded"
+            manifest["response_key"] = {"answers": ["A"], "confidences": ["sure"]}
+            manifest["result"] = {
+                "results": [{"number": 1, "topic_id": question["topic_id"],
+                             "concept_id": question["concept_id"]}]
+            }
+            manifest_path.write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
+
+            before = _snapshot_files(data_dir)
+            blocked = _run_cli(data_dir, "progress", "--json", expected_returncode=2)
+            self.assertIn("repair --normalize-question-links", blocked.stderr)
+            status_blocked = _run_cli(data_dir, "status", "--json", expected_returncode=2)
+            self.assertIn("repair --normalize-question-links", status_blocked.stderr)
+            self.assertEqual(before, _snapshot_files(data_dir))
+            doctor_before = _json_output(_run_cli(
+                data_dir, "doctor", "--json", expected_returncode=1,
+            ))
+            self.assertIn("需迁移", next(
+                check["message"] for check in doctor_before["checks"]
+                if check["name"] == "state"
+            ))
+            logged_before = attempts_path.read_bytes()
+            migrated = _run_cli(data_dir, "repair", "--normalize-question-links")
+            self.assertIn("已迁移 2 条", migrated.stdout)
+            self.assertEqual(logged_before, attempts_path.read_bytes())
+            after = json.loads(state_path.read_text(encoding="utf-8"))
+            self.assertEqual(1, after["question_link_version"])
+            self.assertEqual(subject_state, after["subjects"])
+            self.assertEqual(strategy, after["strategy"])
+            self.assertEqual(state["applied_attempt_ids"], after["applied_attempt_ids"])
+            self.assertEqual(unrelated, after["topics"]["K01.OS_MEMORY_KERNEL"])
+            self.assertEqual(1, after["topics"]["K03.SOFTWARE_DESIGN_UML"]["mastery"]["recognition"]["attempt_count"])
+            self.assertEqual(1, after["topics"]["K06.DESIGN_DATA_VIEWS"]["mastery"]["recognition"]["attempt_count"])
+            self.assertNotIn("K15.STRUCTURED_ANALYSIS_DFD", after["topics"])
+            weakpoints = _json_output(_run_cli(
+                data_dir, "weakpoints", "--json", "--subject", "comprehensive",
+                "--today", "2026-09-24", "--limit", "100",
+            ))
+            recent = {row["topic_id"]: row for row in weakpoints["recent"]}
+            self.assertEqual(1, recent["K03.SOFTWARE_DESIGN_UML"]["recent_attempts"])
+            self.assertEqual(1, recent["K06.DESIGN_DATA_VIEWS"]["recent_attempts"])
+            self.assertNotIn("K15.STRUCTURED_ANALYSIS_DFD", recent)
+            corrected_manifest = self._quiz_manifest(data_dir, prepared["quiz_id"])
+            self.assertEqual("K03.SOFTWARE_DESIGN_UML", corrected_manifest["questions"][0]["topic_id"])
+            self.assertEqual("K03.SOFTWARE_DESIGN_UML", corrected_manifest["result"]["results"][0]["topic_id"])
+            replay = _json_output(_run_cli(
+                data_dir, "quiz-grade", "--quiz-id", prepared["quiz_id"], "--answers", "A",
+            ))
+            self.assertTrue(replay["idempotent"])
+            self.assertEqual("K03.SOFTWARE_DESIGN_UML", replay["results"][0]["topic_id"])
+            backups = list((data_dir / "migration-backups").glob("question-links-*"))
+            self.assertEqual(1, len(backups))
+            self.assertEqual(logged_before, (backups[0] / "attempts.jsonl").read_bytes())
+            after_first = _snapshot_files(data_dir)
+            second = _run_cli(data_dir, "repair", "--normalize-question-links")
+            self.assertIn("无需迁移", second.stdout)
+            self.assertEqual(after_first, _snapshot_files(data_dir))
+            _run_cli(data_dir, "doctor")
+            _run_cli(data_dir, "progress", "--json", "--today", "2026-09-24")
+
+    def test_legacy_mock_diagnosis_uses_corrected_topic_and_concept(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _append_mock_gap_session(
+                data_dir, "legacy-mda-mock",
+                at="2026-09-20T10:00:00+08:00",
+                wrong_items=[(
+                    "K15.STRUCTURED_ANALYSIS_DFD",
+                    "past-papers/comprehensive-by-year/2022.md#26", None,
+                )],
+            )
+            diagnosis = _json_output(_run_cli(
+                data_dir, "diagnose", "--json", "--subject", "comprehensive",
+                "--today", "2026-09-24",
+            ))
+            issue = next(item for item in diagnosis["issues"]
+                         if item["concept_id"] == "K03.mda_cim_pim")
+            self.assertEqual("K03.SOFTWARE_DESIGN_UML", issue["topic_id"])
+            progress = _json_output(_run_cli(
+                data_dir, "progress", "--json", "--today", "2026-09-24"
+            ))
+            self.assertNotEqual("K15.STRUCTURED_ANALYSIS_DFD", progress["next_action"]["topic_id"])
+
+    def test_question_link_migration_restores_originals_on_write_failure(self) -> None:
+        scripts_path = str(REPO_ROOT / "scripts")
+        if scripts_path not in sys.path:
+            sys.path.insert(0, scripts_path)
+        import tutor as module
+
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(
+                data_dir, "record", "--topic", "K15.STRUCTURED_ANALYSIS_DFD",
+                "--skill", "recognition", "--score", "0", "--max-score", "1",
+                "--attempt-id", "legacy-failure", "--item-id", "old-placeholder",
+                "--at", "2026-09-20T09:00:00+08:00",
+            )
+            attempts_path = data_dir / "attempts.jsonl"
+            event = json.loads(attempts_path.read_text(encoding="utf-8"))
+            event.update({
+                "item_id": "past-papers/comprehensive-by-year/2022.md#26",
+                "concept_id": "K15.STRUCTURED_ANALYSIS_DFD",
+                "question_family_id": "K15.STRUCTURED_ANALYSIS_DFD",
+            })
+            attempts_path.write_text(json.dumps(event, ensure_ascii=False) + "\n", encoding="utf-8")
+            state = json.loads((data_dir / "state.json").read_text(encoding="utf-8"))
+            state.pop("question_link_version")
+            for name in ("state.json", "state.json.bak"):
+                (data_dir / name).write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
+            original_paths = [data_dir / name for name in (
+                "attempts.jsonl", "state.json", "state.json.bak", "dashboard.md",
+            )]
+            originals = {path: path.read_bytes() for path in original_paths}
+            original_save = module.save_state_bundle
+
+            def fail_after_save(*args: Any, **kwargs: Any) -> None:
+                original_save(*args, **kwargs)
+                raise OSError("synthetic interruption after state replacement")
+
+            with patch.object(module, "save_state_bundle", side_effect=fail_after_save):
+                with self.assertRaisesRegex(module.TutorError, "已从.*恢复"):
+                    module.normalize_question_links(data_dir)
+            self.assertEqual(originals, {path: path.read_bytes() for path in original_paths})
+            self.assertEqual(1, len(list((data_dir / "migration-backups").glob("question-links-*"))))
+
+    def test_legacy_pending_quiz_grades_under_corrected_public_topic(self) -> None:
+        scripts_path = str(REPO_ROOT / "scripts")
+        if scripts_path not in sys.path:
+            sys.path.insert(0, scripts_path)
+        import tutor as module
+
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir, limit=1)
+            path = data_dir / "quiz-sessions" / f"{prepared['quiz_id']}.json"
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            curriculum = module.load_curriculum()
+            raw = next(item for item in module.load_quiz_question_pool(curriculum)
+                       if item["id"] == "past-papers/comprehensive-by-year/2022.md#26")
+            question = module.quiz_question_for_topic(
+                raw, module.topic_map(curriculum)["K03.SOFTWARE_DESIGN_UML"], {}
+            )
+            assert question is not None
+            question.update({
+                "number": 1, "mode": "practice",
+                "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
+                "concept_id": "K15.STRUCTURED_ANALYSIS_DFD",
+                "question_family_id": "K15.STRUCTURED_ANALYSIS_DFD",
+            })
+            manifest["questions"] = [question]
+            path.write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
+            graded = _json_output(_run_cli(
+                data_dir, "quiz-grade", "--quiz-id", prepared["quiz_id"],
+                "--answers", "".join(question["correct"]),
+            ))
+            self.assertEqual("K03.SOFTWARE_DESIGN_UML", graded["results"][0]["topic_id"])
+            event = next(json.loads(line) for line in (data_dir / "attempts.jsonl").read_text().splitlines()
+                         if json.loads(line).get("item_id") == question["item_id"])
+            self.assertEqual("K03.SOFTWARE_DESIGN_UML", event["topic_id"])
+            self.assertEqual("K03.mda_cim_pim", event["concept_id"])
 
     def test_concurrent_records_are_serialized_without_lost_progress(self) -> None:
         topic_id = self._recognition_topic()["id"]

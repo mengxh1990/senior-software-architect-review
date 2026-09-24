@@ -1463,6 +1463,19 @@ class PastPaperParsingTests(unittest.TestCase):
             )["concept_id"],
             "K06.user_document_classification",
         )
+        historical = question_registry.resolve_metadata(
+            {
+                "item_id": "past-papers/comprehensive-by-year/2018下.md#23",
+                "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
+                "concept_id": "K15.STRUCTURED_ANALYSIS_DFD",
+                "question_family_id": "K15.STRUCTURED_ANALYSIS_DFD",
+                "facet": None,
+            },
+            {},
+        )
+        self.assertEqual("K06.DESIGN_DATA_VIEWS", historical["topic_id"])
+        self.assertEqual("documentation", historical["facet"])
+        self.assertEqual("K06.user_document_classification", historical["concept_id"])
 
     def test_cross_year_ip_variants_share_a_family_for_quiz_deduplication(self) -> None:
         ids = (

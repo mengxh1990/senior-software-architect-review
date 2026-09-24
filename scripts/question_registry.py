@@ -66,6 +66,30 @@ ITEM_TOPIC_OVERRIDES = {
     "past-papers/comprehensive-by-year/2025上.md#23": "K01.OS_MEMORY_KERNEL",
 }
 
+# These public items were once recorded under K15.  Unlike a label heuristic,
+# their source IDs unambiguously identify the topic and fine concept; replay
+# may correct their derived metadata without changing the original attempt.
+PUBLIC_ITEM_CORRECTIONS = {
+    "past-papers/comprehensive-by-year/2022.md#26": {
+        "topic_id": "K03.SOFTWARE_DESIGN_UML",
+        "facet": None,
+        "concept_id": "K03.mda_cim_pim",
+        "question_family_id": "K03.mda_cim_pim",
+    },
+    "past-papers/comprehensive-by-year/2018下.md#23": {
+        "topic_id": "K06.DESIGN_DATA_VIEWS",
+        "facet": "documentation",
+        "concept_id": "K06.user_document_classification",
+        "question_family_id": "K06.user_document_classification",
+    },
+    "past-papers/comprehensive-by-year/2009下.md#21-21": {
+        "topic_id": "K06.DESIGN_DATA_VIEWS",
+        "facet": "documentation",
+        "concept_id": "K06.user_document_classification",
+        "question_family_id": "K06.user_document_classification",
+    },
+}
+
 CONCEPT_LABELS = {
     "K03.uml_diagram_count": "UML 2.x 图分类与数量",
     "K03.uml_relationships": "UML 泛化、实现与依赖关系",
@@ -82,7 +106,19 @@ CONCEPT_LABELS = {
 def topic_override(item_id: str) -> str | None:
     """Return a hand-curated tutor topic for a mislabeled or broad source item."""
 
-    return ITEM_TOPIC_OVERRIDES.get(item_id)
+    corrected = PUBLIC_ITEM_CORRECTIONS.get(item_id)
+    return corrected["topic_id"] if corrected else ITEM_TOPIC_OVERRIDES.get(item_id)
+
+
+def canonicalize_public_event(event: dict[str, Any]) -> dict[str, Any]:
+    """Project only verified public-item links onto an event, leaving its log intact."""
+
+    corrected = PUBLIC_ITEM_CORRECTIONS.get(str(event.get("item_id") or ""))
+    if corrected is None or event.get("subject") not in (None, "comprehensive"):
+        return event
+    if event.get("skill") not in (None, "recognition"):
+        return event
+    return {**event, **corrected}
 
 
 @lru_cache(maxsize=1)
@@ -117,6 +153,10 @@ def content_fingerprint(stem: str, options: Iterable[str]) -> str:
 
 
 def default_metadata(item_id: str, topic_id: str, facet: str | None = None) -> dict[str, str]:
+    corrected = PUBLIC_ITEM_CORRECTIONS.get(item_id)
+    if corrected:
+        topic_id = corrected["topic_id"]
+        facet = corrected["facet"]
     override = CONCEPT_OVERRIDES.get(item_id)
     if override:
         concept_id, family_id = override
@@ -225,9 +265,12 @@ def serialize_registry(entries: Iterable[dict[str, Any]]) -> str:
 def resolve_metadata(
     event: dict[str, Any], private_registry: dict[str, dict[str, Any]]
 ) -> dict[str, Any]:
+    event = canonicalize_public_event(event)
     item_id = str(event.get("item_id") or "")
     topic_id = str(event.get("topic_id") or "")
     registered = private_registry.get(item_id, {})
+    if registered.get("topic_id") != topic_id:
+        registered = {}
     fallback = (
         default_metadata(item_id, topic_id, event.get("facet"))
         if item_id and topic_id
@@ -244,6 +287,7 @@ def resolve_metadata(
     return {
         "item_id": item_id,
         "topic_id": topic_id,
+        "facet": event.get("facet"),
         "concept_id": concept_id,
         "question_family_id": event.get("question_family_id")
         or registered.get("question_family_id")

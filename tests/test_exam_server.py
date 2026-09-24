@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
+import sys
 import tempfile
 import threading
 import unittest
@@ -75,6 +77,128 @@ class ExamServerTest(unittest.TestCase):
             str(item["number"]): item["question"]["answer"]
             for item in exam_server.private_items()
         }
+
+    def install_legacy_mda_evidence(self) -> None:
+        command = [
+            sys.executable, str(REPO_ROOT / "scripts" / "tutor.py"),
+            "--data-dir", str(self.data_dir), "record",
+            "--topic", "K15.STRUCTURED_ANALYSIS_DFD", "--skill", "recognition",
+            "--score", "0", "--max-score", "1", "--attempt-id", "legacy-mda",
+            "--item-id", "legacy-placeholder", "--at", "2026-09-20T09:00:00+08:00",
+        ]
+        subprocess.run(command, cwd=REPO_ROOT, check=True, capture_output=True)
+        paths = exam_server.tutor.state_paths(self.data_dir)
+        event = json.loads(paths["attempts"].read_text(encoding="utf-8"))
+        event["item_id"] = "past-papers/comprehensive-by-year/2022.md#26"
+        exam_server.tutor.atomic_write_text(
+            paths["attempts"], json.dumps(event, ensure_ascii=False) + "\n"
+        )
+        state = json.loads(paths["state"].read_text(encoding="utf-8"))
+        state.pop("question_link_version")
+        for path in (paths["state"], paths["state"].with_name("state.json.bak")):
+            exam_server.tutor.atomic_write_json(path, state)
+
+    def test_legacy_links_block_web_mock_until_explicit_migration(self) -> None:
+        self.install_legacy_mda_evidence()
+        paths = exam_server.tutor.state_paths(self.data_dir)
+        before = {name: path.read_bytes() for name, path in paths.items() if path.is_file()}
+        submission = {
+            "session_id": f"web-{exam_server.PAPER_ID}-legacyguard1",
+            "answers": self.correct_answers(),
+            "duration_seconds": 1800,
+        }
+        for path, payload in (
+            ("/api/status", None),
+            ("/api/mock-paper", None),
+            ("/api/mock-submit", submission),
+            ("/api/mock-record", submission),
+        ):
+            with self.subTest(path=path), self.assertRaises(urllib.error.HTTPError) as denied:
+                self.request(path, payload=payload)
+            self.assertEqual(409, denied.exception.code)
+            body = json.loads(denied.exception.read())
+            self.assertIn("repair --normalize-question-links", body["error"])
+            self.assertNotIn("correct_answer", json.dumps(body))
+            if path == "/api/status":
+                self.assertTrue(body["needs_repair"])
+                self.assertFalse(body["needs_init"])
+        self.assertEqual(before, {name: path.read_bytes() for name, path in paths.items() if path.is_file()})
+        exam_server.tutor.normalize_question_links(self.data_dir)
+        status, payload = self.request("/api/mock-paper")
+        self.assertEqual(200, status)
+        self.assertEqual(75, payload["data"]["question_count"])
+
+    def test_web_status_projects_pending_evidence_without_writing(self) -> None:
+        paths = exam_server.tutor.state_paths(self.data_dir)
+        original = {path: path.read_bytes() for path in (
+            paths["state"], paths["state"].with_name("state.json.bak"),
+            paths["dashboard"],
+        )}
+        command = [
+            sys.executable, str(REPO_ROOT / "scripts" / "tutor.py"),
+            "--data-dir", str(self.data_dir), "record",
+            "--topic", "K03.SOFTWARE_DESIGN_UML", "--skill", "recognition",
+            "--score", "1", "--max-score", "1", "--attempt-id", "pending-web",
+            "--item-id", "synthetic-pending-web", "--at", exam_server.tutor.now_iso(),
+        ]
+        subprocess.run(command, cwd=REPO_ROOT, check=True, capture_output=True)
+        for path, content in original.items():
+            exam_server.tutor.atomic_write_bytes(path, content)
+        status, payload = self.request("/api/status")
+        self.assertEqual(200, status)
+        self.assertEqual(1, payload["data"]["subjects"]["comprehensive"]["evidence_count"])
+        self.request("/api/learning-plan?subject=comprehensive&limit=5")
+        self.assertEqual(original, {path: path.read_bytes() for path in original})
+        self.request("/api/mock-record", payload={
+            "session_id": f"web-{exam_server.PAPER_ID}-recoverweb1",
+            "answers": self.correct_answers(), "duration_seconds": 1800,
+        })
+        persisted = json.loads(paths["state"].read_text(encoding="utf-8"))
+        self.assertEqual(77, len(persisted["applied_attempt_ids"]))
+
+    def test_learning_plan_previews_unserviceable_fine_concept_without_session(self) -> None:
+        curriculum = exam_server.tutor.load_curriculum()
+        profile, state = exam_server.tutor.load_profile_and_state(self.data_dir)
+        at = exam_server.tutor.now_iso()
+        mock = {
+            "attempt_id": "web-preview-mock", "event_type": "mock",
+            "topic_id": None, "item_id": "paper-web-preview-mock", "facet": None,
+            "at": at, "subject": "comprehensive", "skill": "recognition",
+            "mode": "full_mock", "score": 40, "max_score": 75,
+            "duration_seconds": 5400, "word_count": None, "complete": True,
+            "confidence": "sure", "wrong_reasons": [], "source_type": "simulation",
+            "source": "paper-web-preview-mock", "feedback_seen": True,
+        }
+        wrong = {
+            "attempt_id": "web-preview-mock-q-01", "event_type": "practice",
+            "topic_id": "K03.SOFTWARE_DESIGN_UML",
+            "item_id": "past-papers/comprehensive-by-year/2022.md#26",
+            "facet": None, "at": at, "subject": "comprehensive",
+            "skill": "recognition", "mode": "mock", "score": 0,
+            "max_score": 1, "duration_seconds": 60, "word_count": None,
+            "complete": False, "confidence": "sure", "wrong_reasons": ["knowledge_gap"],
+            "source_type": "recalled_real", "source": "past-papers/comprehensive-by-year/2022.md",
+            "feedback_seen": True,
+        }
+        for event in (mock, wrong):
+            exam_server.tutor.apply_event_to_state(state, event, curriculum)
+        paths = exam_server.tutor.state_paths(self.data_dir)
+        exam_server.tutor.write_attempts(paths["attempts"], (mock, wrong))
+        exam_server.tutor.save_state_bundle(self.data_dir, profile, state, backup=True)
+        before = {name: path.read_bytes() for name, path in paths.items() if path.is_file()}
+        status, response = self.request("/api/learning-plan?subject=comprehensive&limit=5")
+        self.assertEqual(200, status)
+        plan = response["data"]
+        self.assertEqual("K03.mda_cim_pim", plan["recommendations"][0]["concept_id"])
+        self.assertTrue(plan["practice_preview"]["available"])
+        self.assertEqual(
+            "K03.mda_cim_pim",
+            plan["practice_preview"]["substitution"]["requested_concept_id"],
+        )
+        self.assertEqual("K03.SOFTWARE_DESIGN_UML", plan["practice_preview"]["topic_id"])
+        self.assertNotIn("correct_answer", json.dumps(plan))
+        self.assertEqual(before, {name: path.read_bytes() for name, path in paths.items() if path.is_file()})
+        self.assertFalse((self.data_dir / "quiz-sessions").exists())
 
     def test_public_paper_withholds_answers_and_places_english_last(self) -> None:
         status, payload = self.request("/api/mock-paper")

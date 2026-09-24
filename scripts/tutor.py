@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import math
 import os
@@ -30,6 +31,7 @@ import sanitize_bank
 
 
 SCHEMA_VERSION = 1
+QUESTION_LINK_VERSION = 1
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CURRICULUM_PATH = REPO_ROOT / "tutor" / "curriculum.json"
 FREQUENCY_SNAPSHOT_PATH = REPO_ROOT / "tutor" / "frequency-snapshot.json"
@@ -72,6 +74,10 @@ CASE_RESOURCE_RE = re.compile(r"^past-papers/case-types/(\d{2})-")
 
 class TutorError(RuntimeError):
     """A user-actionable state or input error."""
+
+
+class QuestionLinkMigrationRequired(TutorError):
+    """Historical evidence needs the explicit, backed-up link migration."""
 
 
 def now_iso() -> str:
@@ -281,6 +287,7 @@ def new_state(curriculum: dict[str, Any], created_at: str) -> dict[str, Any]:
     strategy = curriculum.get("strategy", {})
     return {
         "schema_version": SCHEMA_VERSION,
+        "question_link_version": QUESTION_LINK_VERSION,
         "strategy": {
             "pass_line": float(strategy.get("pass_line", 45)),
             "safe_target": float(strategy.get("safe_target", 52)),
@@ -316,6 +323,9 @@ def validate_state(state: Any) -> dict[str, Any]:
         raise TutorError(
             f"state.json schema_version={state.get('schema_version')!r} 不受支持"
         )
+    link_version = state.get("question_link_version", 0)
+    if not isinstance(link_version, int) or not 0 <= link_version <= QUESTION_LINK_VERSION:
+        raise TutorError("state.json question_link_version 不受支持")
     subjects = state.get("subjects")
     if not isinstance(subjects, dict) or any(
         not isinstance(subjects.get(subject), dict) for subject in SUBJECTS
@@ -497,7 +507,9 @@ def validate_state(state: Any) -> dict[str, Any]:
     return state
 
 
-def load_profile_and_state(data_dir: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+def load_profile_and_state(
+    data_dir: Path, *, persist_pending: bool = True
+) -> tuple[dict[str, Any], dict[str, Any]]:
     paths = state_paths(data_dir)
     profile = load_json(paths["profile"], "私人档案")
     state = validate_state(load_json(paths["state"], "学习状态"))
@@ -518,8 +530,23 @@ def load_profile_and_state(data_dir: Path) -> tuple[dict[str, Any], dict[str, An
         curriculum = load_curriculum()
         for event in pending:
             apply_event_to_state(state, event, curriculum)
-        save_state_bundle(data_dir, profile, state, backup=True)
+        if persist_pending:
+            save_state_bundle(data_dir, profile, state, backup=True)
     return profile, state
+
+
+def ensure_question_links_current(
+    state: dict[str, Any], attempts: list[dict[str, Any]]
+) -> None:
+    """Do not offer a training route based on old, misclassified evidence."""
+
+    if state.get("question_link_version", 0) >= QUESTION_LINK_VERSION:
+        return
+    if any(question_registry.canonicalize_public_event(event) != event for event in attempts):
+        raise QuestionLinkMigrationRequired(
+            "历史题目关联仍使用旧映射；请先运行 "
+            "python3 scripts/tutor.py repair --normalize-question-links"
+        )
 
 
 def load_attempts(path: Path) -> list[dict[str, Any]]:
@@ -942,7 +969,10 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    profile, state = load_profile_and_state(args.data_dir)
+    profile, state = load_profile_and_state(args.data_dir, persist_pending=False)
+    ensure_question_links_current(
+        state, load_attempts(state_paths(args.data_dir)["attempts"])
+    )
     payload = status_payload(profile, state)
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
@@ -1086,6 +1116,7 @@ def validate_record_event(event: dict[str, Any], curriculum: dict[str, Any]) -> 
 def apply_record_event(
     state: dict[str, Any], event: dict[str, Any], curriculum: dict[str, Any]
 ) -> dict[str, Any]:
+    event = question_registry.canonicalize_public_event(event)
     validate_record_event(event, curriculum)
     attempt_id = event["attempt_id"]
     if attempt_id in set(state.get("applied_attempt_ids", [])):
@@ -1278,6 +1309,8 @@ DERIVED_EVENT_KEYS = (
 
 
 def events_conflict(existing: dict[str, Any], candidate: dict[str, Any], *, compare_at: bool) -> bool:
+    existing = question_registry.canonicalize_public_event(existing)
+    candidate = question_registry.canonicalize_public_event(candidate)
     keys = (
         "event_type",
         "topic_id",
@@ -1378,6 +1411,13 @@ def cmd_record(args: argparse.Namespace) -> int:
         "question_fingerprint": fingerprint,
         "variant_of": variant_of,
     }
+    corrected = question_registry.canonicalize_public_event(event)
+    if corrected["topic_id"] != event["topic_id"]:
+        raise TutorError(
+            f"题目 {event['item_id']} 已规范映射到 {corrected['topic_id']}，"
+            "不能按旧考点记录"
+        )
+    event = corrected
     validate_record_event(event, curriculum)
     profile, state = load_profile_and_state(args.data_dir)
     paths = state_paths(args.data_dir)
@@ -1643,7 +1683,7 @@ def topic_mastery(state: dict[str, Any], topic_id: str, skill: str) -> float:
 
 
 def case_application_review_due(state: dict[str, Any], today: date) -> bool:
-    """A due case application review outranks the ordinary subject split."""
+    """Only urgent, non-pass-ready case reviews override the subject split."""
 
     strategy = state.get("strategy", {})
     configured = set(strategy.get("case_tracks", []))
@@ -1669,6 +1709,8 @@ def case_application_review_due(state: dict[str, Any], today: date) -> bool:
             continue
         application = (topic.get("mastery") or {}).get("application")
         if not isinstance(application, dict):
+            continue
+        if application.get("status") == "pass_ready":
             continue
         review_at = application.get("next_review_at")
         if review_at and parse_date(
@@ -1825,7 +1867,7 @@ def learning_diagnosis(
     # Callers that already hold the validated state pass it in; reloading it
     # here would repeat four file reads on every learning-plan request.
     if state is None:
-        _, state = load_profile_and_state(data_dir)
+        _, state = load_profile_and_state(data_dir, persist_pending=False)
     attempts = load_attempts(state_paths(data_dir)["attempts"])
     mock_events = sorted(
         (
@@ -1875,7 +1917,7 @@ def learning_diagnosis(
                     "concept_id": concept_id,
                     "concept_label": metadata.get("concept_label") or concept_id,
                     "question_family_id": metadata.get("question_family_id"),
-                    "topic_id": event.get("topic_id"),
+                    "topic_id": metadata.get("topic_id"),
                     "subject": subject,
                     "skill": event.get("skill"),
                     "source_mock_id": mock_id,
@@ -2068,8 +2110,9 @@ def weakpoints_payload(
         raise TutorError("days 必须大于 0")
     curriculum = load_curriculum()
     topics = topic_map(curriculum)
-    _, state = load_profile_and_state(data_dir)
+    _, state = load_profile_and_state(data_dir, persist_pending=False)
     attempts = load_attempts(state_paths(data_dir)["attempts"])
+    ensure_question_links_current(state, attempts)
     minimum_interval = int(
         state.get("strategy", {}).get("min_review_interval_days", 0) or 0
     )
@@ -2079,6 +2122,7 @@ def weakpoints_payload(
     for event in attempts:
         if event.get("event_type") != "practice" or event.get("subject") != subject:
             continue
+        event = question_registry.canonicalize_public_event(event)
         topic_id = event.get("topic_id")
         skill = event.get("skill")
         if not topic_id or not skill or not event.get("at"):
@@ -2293,7 +2337,7 @@ def cmd_weakpoints(args: argparse.Namespace) -> int:
 def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
     """Build one compact, read-only coaching overview."""
 
-    profile, state = load_profile_and_state(args.data_dir)
+    profile, state = load_profile_and_state(args.data_dir, persist_pending=False)
     today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
     status = status_payload(profile, state)
     raw_allocations, allocations = effective_subject_allocations(state, today)
@@ -2302,7 +2346,7 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
     recommendation_args = argparse.Namespace(
         data_dir=args.data_dir,
         subject=next_action["subject"],
-        limit=max(args.limit, 5),
+        limit=max(args.limit, len(load_curriculum()["topics"])),
         today=today.isoformat(),
     )
     plan = build_recommendation_payload(recommendation_args)
@@ -2346,20 +2390,42 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
 
     recommendations = plan.get("recommendations") or []
     if recommendations:
-        first = recommendations[0]
-        topic_id = first["topic_id"]
+        substitution = None
+        if next_action["mode"] == "quiz_prepare":
+            curriculum = load_curriculum()
+            selected, selected_recommendations, substitution = select_quiz_group(
+                args.data_dir,
+                today,
+                5,
+                recommendations,
+                curriculum,
+                topic_map(curriculum),
+            )
+            first = selected_recommendations[0]
+            topic_id = selected[0]["topic_id"]
+        else:
+            first = recommendations[0]
+            topic_id = first["topic_id"]
         command = next_action["command"]
         if next_action["mode"] in {"quiz_prepare", "case_prepare"}:
             command = f"{command} --topic {topic_id}"
+        reason = first.get("reason")
+        if substitution:
+            reason = (
+                f"{substitution['requested_concept_label']} 暂无可用同细考点题；"
+                "改为同考点替代练习，并非该细考点复测"
+            )
         next_action = {
             **next_action,
             "topic_id": topic_id,
             "topic_name": first.get("name"),
             "skill": first.get("skill"),
-            "reason": first.get("reason"),
+            "reason": reason,
             "estimated_minutes": first.get("estimated_minutes"),
             "command": command,
         }
+        if substitution:
+            next_action["substitution"] = substitution
     exam_date = profile.get("exam_date")
     return {
         "today": today.isoformat(),
@@ -2588,7 +2654,10 @@ def cmd_configure(args: argparse.Namespace) -> int:
 def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
     curriculum = load_curriculum()
     topics = topic_map(curriculum)
-    profile, state = load_profile_and_state(args.data_dir)
+    profile, state = load_profile_and_state(args.data_dir, persist_pending=False)
+    ensure_question_links_current(
+        state, load_attempts(state_paths(args.data_dir)["attempts"])
+    )
     today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
     exam_date = parse_date(profile["exam_date"]) if profile.get("exam_date") else None
     days_to_exam = (exam_date - today).days if exam_date else None
@@ -3073,7 +3142,7 @@ def cmd_case_prepare(args: argparse.Namespace) -> int:
                     "skill": "application",
                     "priority_score": None,
                     "mastery": topic_mastery(
-                        load_profile_and_state(args.data_dir)[1],
+                        load_profile_and_state(args.data_dir, persist_pending=False)[1],
                         requested_topic,
                         "application",
                     ),
@@ -3261,10 +3330,32 @@ def quiz_questions_served_on(data_dir: Path, day: date) -> tuple[set[str], set[s
             ):
                 raise TutorError(f"客观题会话损坏：{path}")
             items.add(question["item_id"])
-            concept_id = question.get("concept_id")
+            concept_id = question_registry.canonicalize_public_event(question).get(
+                "concept_id"
+            )
             if isinstance(concept_id, str) and concept_id:
                 concepts.add(concept_id)
     return items, concepts
+
+
+def substituted_quiz_concepts(data_dir: Path) -> set[str]:
+    """Do not repeatedly auto-route an unserviceable fine concept."""
+
+    concepts: set[str] = set()
+    directory = quiz_sessions_dir(data_dir)
+    if not directory.is_dir():
+        return concepts
+    for path in sorted(directory.glob("*.json")):
+        try:
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise TutorError(f"客观题会话损坏：{path}") from error
+        substitution = manifest.get("substitution")
+        if isinstance(substitution, dict) and isinstance(
+            substitution.get("requested_concept_id"), str
+        ):
+            concepts.add(substitution["requested_concept_id"])
+    return concepts
 
 
 def recently_served_variant_item_ids(
@@ -3518,44 +3609,22 @@ def _quiz_candidate_sort_key(
     return (source_rank, answer_counts.get(signature, 0), -year, item["item_id"])
 
 
-def cmd_quiz_prepare(args: argparse.Namespace) -> int:
-    if args.subject != "comprehensive":
-        raise TutorError("quiz-prepare 当前只支持综合知识客观题")
-    curriculum = load_curriculum()
-    topics = topic_map(curriculum)
-    if args.topic:
-        requested_topic = topics.get(args.topic)
-        if requested_topic is None:
-            raise TutorError(f"未知稳定考点 ID：{args.topic}")
-        if (
-            not args.topic.startswith("K")
-            or "comprehensive" not in requested_topic.get("subjects", [])
-            or "recognition" not in requested_topic.get("skills", [])
-        ):
-            raise TutorError(f"考点 {args.topic} 不支持综合知识识记训练")
-    profile, state = load_profile_and_state(args.data_dir)
-    attempts = load_attempts(state_paths(args.data_dir)["attempts"])
-    today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
-    recommendation_args = argparse.Namespace(
-        data_dir=args.data_dir,
-        subject=args.subject,
-        limit=max(args.limit * 4, 20),
-        today=today.isoformat(),
-    )
-    recommendations = build_recommendation_payload(recommendation_args)[
-        "recommendations"
-    ]
-    if args.topic:
-        recommendations = [
-            recommendation
-            for recommendation in recommendations
-            if recommendation["topic_id"] == args.topic
-        ]
-        if not recommendations:
-            raise TutorError(f"考点 {args.topic} 不在当前综合知识推荐路线中")
+def select_quiz_group(
+    data_dir: Path,
+    today: date,
+    limit: int,
+    recommendations: list[dict[str, Any]],
+    curriculum: dict[str, Any],
+    topics: dict[str, dict[str, Any]],
+    *,
+    requested_topic: str | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, str] | None]:
+    """Preview or select one complete, same-topic group without writing a session."""
+
+    attempts = load_attempts(state_paths(data_dir)["attempts"])
     route_topics = list(dict.fromkeys(item["topic_id"] for item in recommendations))
     pool = load_quiz_question_pool(curriculum)
-    private_registry = load_private_question_registry(args.data_dir)
+    private_registry = load_private_question_registry(data_dir)
     attempted_items = {event.get("item_id") for event in attempts}
     served_today_items = {
         event.get("item_id")
@@ -3563,7 +3632,7 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         if event.get("at") and parse_datetime(event["at"]).date() == today
     }
     session_items, cooled_today_concepts = quiz_questions_served_on(
-        args.data_dir, today
+        data_dir, today
     )
     served_today_items |= session_items
     for event in attempts:
@@ -3580,11 +3649,26 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
     used_concepts: set[str] = set()
     answer_counts: dict[str, int] = {}
     chosen_recommendations: list[dict[str, Any]] = []
+    selected_route_first: dict[str, Any] | None = None
     # Items the learner has already banked or already read are the last thing
     # to hand back; the fine concept stays in rotation through fresh items.
     protected_items = recently_mastered_item_ids(attempts, today) | (
-        recently_served_variant_item_ids(args.data_dir, today)
+        recently_served_variant_item_ids(data_dir, today)
     )
+    prior_substitutions = (
+        substituted_quiz_concepts(data_dir) if requested_topic is None else set()
+    )
+
+    def has_usable_fine_item(recommendation: dict[str, Any]) -> bool:
+        topic = topics[recommendation["topic_id"]]
+        return any(
+            (candidate := quiz_question_for_topic(raw, topic, private_registry))
+            is not None
+            and candidate["concept_id"] == recommendation["concept_id"]
+            and candidate["item_id"] not in served_today_items
+            and candidate["item_id"] not in recommendation.get("avoid_item_ids", [])
+            for raw in pool
+        )
 
     def choose_for(
         recommendation: dict[str, Any],
@@ -3680,7 +3764,13 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
                         item
                         for item in recommendations
                         if item["topic_id"] == route_topic_id
+                        and not (
+                            item.get("concept_id") in prior_substitutions
+                            and not has_usable_fine_item(item)
+                        )
                     ]
+                    if not route_recommendations:
+                        continue
                     if route_recommendations[0].get("concept_id"):
                         route_recommendations.append(
                             {
@@ -3688,34 +3778,99 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
                                 "name": topics[route_topic_id]["name"],
                                 "concept_id": None,
                                 "diagnostic_status": None,
+                                "review_due": False,
+                                "urgent_review_due": False,
                                 "wrong_reasons": [],
                                 "reason": "同考点巩固",
                             }
                         )
                     for recommendation in route_recommendations:
-                        if len(selected) >= args.limit:
+                        if len(selected) >= limit:
                             break
                         if recommendation.get("concept_id"):
                             choose_for(
                                 recommendation, allow_repeated, allow_cooled, allow_protected
                             )
                         else:
-                            while len(selected) < args.limit and choose_for(
+                            while len(selected) < limit and choose_for(
                                 recommendation, allow_repeated, allow_cooled, allow_protected
                             ):
                                 pass
-                    if len(selected) >= args.limit:
+                    if len(selected) >= limit:
+                        selected_route_first = route_recommendations[0]
                         break
-                if len(selected) >= args.limit:
+                if len(selected) >= limit:
                     break
-            if len(selected) >= args.limit:
+            if len(selected) >= limit:
                 break
-        if len(selected) >= args.limit:
+        if len(selected) >= limit:
             break
-    if len(selected) < args.limit:
+    if len(selected) < limit:
         raise TutorError(
-            f"只能找到 {len(selected)} 道符合去重和元数据要求的客观题，无法组成 {args.limit} 题"
+            f"只能找到 {len(selected)} 道符合去重和元数据要求的客观题，无法组成 {limit} 题"
         )
+
+    first = selected_route_first
+    substitution = None
+    if (
+        first is not None
+        and first.get("concept_id")
+        and not any(item["concept_id"] == first["concept_id"] for item in selected)
+        and not chosen_recommendations[0].get("concept_id")
+    ):
+        substitution = {
+            "requested_concept_id": first["concept_id"],
+            "requested_concept_label": first["name"],
+            "actual_topic_id": selected[0]["topic_id"],
+            "reason": "same_concept_unavailable",
+        }
+    return selected, chosen_recommendations, substitution
+
+
+def cmd_quiz_prepare(args: argparse.Namespace) -> int:
+    if args.subject != "comprehensive":
+        raise TutorError("quiz-prepare 当前只支持综合知识客观题")
+    curriculum = load_curriculum()
+    topics = topic_map(curriculum)
+    if args.topic:
+        requested_topic = topics.get(args.topic)
+        if requested_topic is None:
+            raise TutorError(f"未知稳定考点 ID：{args.topic}")
+        if (
+            not args.topic.startswith("K")
+            or "comprehensive" not in requested_topic.get("subjects", [])
+            or "recognition" not in requested_topic.get("skills", [])
+        ):
+            raise TutorError(f"考点 {args.topic} 不支持综合知识识记训练")
+    profile, state = load_profile_and_state(args.data_dir)
+    today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
+    recommendation_args = argparse.Namespace(
+        data_dir=args.data_dir,
+        subject=args.subject,
+        limit=max(args.limit * 4, len(topics)),
+        today=today.isoformat(),
+    )
+    recommendations = build_recommendation_payload(recommendation_args)[
+        "recommendations"
+    ]
+    if args.topic:
+        recommendations = [
+            item for item in recommendations if item["topic_id"] == args.topic
+        ]
+        if not recommendations:
+            topic = topics[args.topic]
+            recommendations = [{
+                "topic_id": args.topic,
+                "name": topic["name"],
+                "subject": "comprehensive",
+                "skill": "recognition",
+                "review_due": False,
+                "reason": "考生显式指定该综合知识考点",
+            }]
+    selected, chosen_recommendations, substitution = select_quiz_group(
+        args.data_dir, today, args.limit, recommendations, curriculum, topics,
+        requested_topic=args.topic,
+    )
 
     created_at = now_iso()
     quiz_id = "quiz-" + parse_datetime(created_at).strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:8]
@@ -3727,6 +3882,8 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         "created_at": created_at,
         "questions": selected,
     }
+    if substitution:
+        manifest["substitution"] = substitution
     path = quiz_session_path(args.data_dir, quiz_id)
     atomic_write_json(path, manifest)
     public_questions = [
@@ -3807,6 +3964,11 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         objective = f"{verb}{primary['name']}（{primary['reason']}）"
         if len(covered_topics) > 1:
             objective += f"，同批覆盖 {len(covered_topics) - 1} 个考点"
+    if substitution:
+        objective += (
+            f"；{substitution['requested_concept_label']} 暂无可用同细考点题，"
+            "本组是同考点替代练习，并非该细考点复测"
+        )
     payload = {
         "quiz_id": quiz_id,
         "subject": args.subject,
@@ -3820,6 +3982,8 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         "objective": objective,
         "evidence_summary": evidence_summary,
     }
+    if substitution:
+        payload["substitution"] = substitution
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
@@ -4079,7 +4243,52 @@ def load_quiz_manifest(data_dir: Path, quiz_id: str) -> tuple[Path, dict[str, An
         or not manifest["questions"]
     ):
         raise TutorError(f"客观题会话损坏：{path}")
-    return path, manifest
+    return path, normalized_quiz_manifest(manifest, topic_map(load_curriculum()))
+
+
+def normalized_quiz_manifest(
+    manifest: dict[str, Any], topics: dict[str, dict[str, Any]]
+) -> dict[str, Any]:
+    """Correct only derived public-item links, including cached feedback."""
+
+    normalized = copy.deepcopy(manifest)
+    questions = normalized.get("questions", [])
+    if not isinstance(questions, list):
+        raise TutorError("客观题会话 questions 无效")
+    for question in questions:
+        if not isinstance(question, dict):
+            raise TutorError("客观题会话题目无效")
+        corrected = question_registry.canonicalize_public_event(question)
+        if corrected is not question:
+            question.update(corrected)
+            question["topic_name"] = topics[question["topic_id"]]["name"]
+    for key in ("result", "variant_result"):
+        payload = normalized.get(key)
+        if not isinstance(payload, dict):
+            continue
+        for entry in payload.get("results") or []:
+            if not isinstance(entry, dict):
+                continue
+            if key == "result":
+                number = entry.get("number")
+                if isinstance(number, int) and 1 <= number <= len(questions):
+                    source = questions[number - 1]
+                    if source.get("item_id") in question_registry.PUBLIC_ITEM_CORRECTIONS:
+                        entry["topic_id"] = source["topic_id"]
+                        entry["concept_id"] = source["concept_id"]
+            else:
+                corrected = question_registry.canonicalize_public_event(entry)
+                if corrected is not entry:
+                    entry.update({
+                        key: corrected[key]
+                        for key in ("topic_id", "concept_id")
+                    })
+            variant = entry.get("variant_question")
+            if isinstance(variant, dict):
+                corrected = question_registry.canonicalize_public_event(variant)
+                if corrected is not variant:
+                    variant["topic_id"] = corrected["topic_id"]
+    return normalized
 
 
 def cmd_quiz_grade(args: argparse.Namespace) -> int:
@@ -4121,6 +4330,10 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
             for number, reason in sorted(declared_wrong_reasons.items())
         }
     if manifest.get("status") == "graded":
+        _, current_state = load_profile_and_state(args.data_dir)
+        ensure_question_links_current(
+            current_state, load_attempts(state_paths(args.data_dir)["attempts"])
+        )
         if manifest.get("response_key") != response_key:
             raise TutorError(f"quiz-id {args.quiz_id} 已使用不同答案完成")
         replay = {
@@ -4219,6 +4432,7 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
             "question_fingerprint": None,
             "variant_of": None,
         }
+        event = question_registry.canonicalize_public_event(event)
         validate_record_event(event, curriculum)
         existing = existing_by_id.get(event["attempt_id"])
         if existing is not None and events_conflict(
@@ -4405,6 +4619,10 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
             for number, reason in sorted(declared_wrong_reasons.items())
         }
     if manifest.get("variant_result") is not None:
+        _, current_state = load_profile_and_state(args.data_dir)
+        ensure_question_links_current(
+            current_state, load_attempts(state_paths(args.data_dir)["attempts"])
+        )
         if manifest.get("variant_key") != variant_key:
             raise TutorError(f"quiz-id {args.quiz_id} 的变式题已使用不同答案完成")
         replay = {
@@ -4500,6 +4718,7 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
             "question_fingerprint": None,
             "variant_of": source.get("item_id"),
         }
+        event = question_registry.canonicalize_public_event(event)
         validate_record_event(event, curriculum)
         existing = existing_by_id.get(event["attempt_id"])
         if existing is not None and events_conflict(
@@ -4664,7 +4883,8 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
         healthy = healthy and ok
     else:
         try:
-            _, state = load_profile_and_state(data_dir)
+            stored_state = validate_state(load_json(state_path, "学习状态"))
+            _, state = load_profile_and_state(data_dir, persist_pending=False)
             attempts = load_attempts(paths["attempts"])
             load_private_question_registry(data_dir)
             backup_path = state_path.with_name("state.json.bak")
@@ -4673,16 +4893,39 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
             applied_ids = set(state["applied_attempt_ids"])
             if logged_ids != applied_ids:
                 raise TutorError("状态与事件日志集合不一致，请运行 repair")
+            ensure_question_links_current(state, attempts)
+            pending_count = len(logged_ids - set(stored_state["applied_attempt_ids"]))
+            if pending_count:
+                checks.append(
+                    {
+                        "name": "state",
+                        "healthy": False,
+                        "message": (
+                            f"事件日志有 {pending_count} 条尚未回放到状态；"
+                            "只读查询已在内存投影，下次有效状态写入会持久化"
+                        ),
+                    }
+                )
+                healthy = False
+            else:
+                checks.append(
+                    {
+                        "name": "state",
+                        "healthy": True,
+                        "message": "私人状态、事件日志与备份一致",
+                    }
+                )
+        except TutorError as error:
             checks.append(
                 {
                     "name": "state",
-                    "healthy": True,
-                    "message": "私人状态、事件日志与备份一致",
+                    "healthy": False,
+                    "message": (
+                        f"需迁移：{error}"
+                        if isinstance(error, QuestionLinkMigrationRequired)
+                        else f"invalid/corrupt: {error}"
+                    ),
                 }
-            )
-        except TutorError as error:
-            checks.append(
-                {"name": "state", "healthy": False, "message": f"invalid/corrupt: {error}"}
             )
             healthy = False
 
@@ -4796,7 +5039,117 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 0 if healthy else 1
 
 
+def normalize_question_links(data_dir: Path) -> int:
+    """Migrate verified question links without rewriting answer evidence."""
+
+    paths = state_paths(data_dir)
+    profile = load_json(paths["profile"], "私人档案")
+    if not isinstance(profile, dict) or profile.get("schema_version") != SCHEMA_VERSION:
+        raise TutorError("profile.json schema_version 不受支持")
+    current = validate_state(load_json(paths["state"], "学习状态"))
+    attempts = load_attempts(paths["attempts"])
+    if set(current["applied_attempt_ids"]) != {event["attempt_id"] for event in attempts}:
+        raise TutorError("状态与事件日志集合不一致，请先修复状态")
+    validate_state(load_json(paths["state"].with_name("state.json.bak"), "状态备份"))
+
+    corrections = [
+        (event, question_registry.canonicalize_public_event(event))
+        for event in attempts
+        if question_registry.canonicalize_public_event(event) != event
+    ]
+    impacted_topics = {
+        topic_id
+        for old, new in corrections
+        for topic_id in (old.get("topic_id"), new.get("topic_id"))
+        if isinstance(topic_id, str)
+    }
+    curriculum = load_curriculum()
+    topics = topic_map(curriculum)
+    rebuilt = copy.deepcopy(current)
+    if impacted_topics:
+        scratch = new_state(curriculum, str(profile.get("created_at") or now_iso()))
+        scratch["strategy"] = copy.deepcopy(current["strategy"])
+        for event in attempts:
+            if event.get("event_type") == "mock" or event.get("mode") == "full_mock":
+                continue
+            corrected = question_registry.canonicalize_public_event(event)
+            if event.get("topic_id") in impacted_topics or corrected.get("topic_id") in impacted_topics:
+                apply_record_event(scratch, corrected, curriculum)
+        for topic_id in impacted_topics:
+            rebuilt["topics"].pop(topic_id, None)
+            if topic_id in scratch["topics"]:
+                rebuilt["topics"][topic_id] = scratch["topics"][topic_id]
+    rebuilt["question_link_version"] = QUESTION_LINK_VERSION
+    validate_state(rebuilt)
+    if (
+        rebuilt["subjects"] != current["subjects"]
+        or rebuilt["strategy"] != current["strategy"]
+        or rebuilt["applied_attempt_ids"] != current["applied_attempt_ids"]
+    ):
+        raise TutorError("迁移预检发现非题目关联字段变化，已取消")
+
+    changed_manifests: dict[Path, dict[str, Any]] = {}
+    directory = quiz_sessions_dir(data_dir)
+    if directory.is_dir():
+        for path in sorted(directory.glob("*.json")):
+            manifest = load_json(path, "客观题会话")
+            if (
+                not isinstance(manifest, dict)
+                or manifest.get("schema_version") != QUIZ_SCHEMA_VERSION
+                or not isinstance(manifest.get("questions"), list)
+            ):
+                raise TutorError(f"客观题会话损坏：{path}")
+            normalized = normalized_quiz_manifest(manifest, topics)
+            if normalized != manifest:
+                changed_manifests[path] = normalized
+    if rebuilt == current and not changed_manifests:
+        print("题目关联已是最新版本，无需迁移。")
+        return 0
+
+    source_paths = [
+        paths["state"],
+        paths["state"].with_name("state.json.bak"),
+        paths["dashboard"],
+        paths["attempts"],
+        *changed_manifests,
+    ]
+    originals = {path: path.read_bytes() for path in source_paths}
+    log_hash = hashlib.sha256(originals[paths["attempts"]]).digest()
+    stamp = datetime.now().astimezone().strftime("%Y%m%dT%H%M%S.%f%z")
+    backup_dir = data_dir / "migration-backups" / f"question-links-{stamp}"
+    for path, content in originals.items():
+        atomic_write_bytes(backup_dir / path.relative_to(data_dir), content)
+    try:
+        save_state_bundle(data_dir, profile, rebuilt, backup=True)
+        for path, manifest in changed_manifests.items():
+            atomic_write_json(path, manifest)
+        if hashlib.sha256(paths["attempts"].read_bytes()).digest() != log_hash:
+            raise TutorError("迁移期间作答日志发生变化")
+    except Exception as error:
+        restoration_errors = []
+        for path, content in originals.items():
+            if path == paths["attempts"]:
+                continue  # The migration never writes the evidence ledger.
+            try:
+                atomic_write_bytes(path, content)
+            except OSError as restore_error:
+                restoration_errors.append(str(restore_error))
+        if restoration_errors:
+            raise TutorError(
+                f"迁移失败且自动恢复不完整；原文件备份位于 {backup_dir}："
+                + "; ".join(restoration_errors)
+            ) from error
+        raise TutorError(f"迁移失败，已从 {backup_dir} 恢复：{error}") from error
+    print(
+        f"已迁移 {len(corrections)} 条历史题目关联、{len(changed_manifests)} 份客观题会话；"
+        f"原作答日志未改动；备份：{backup_dir}"
+    )
+    return 0
+
+
 def cmd_repair(args: argparse.Namespace) -> int:
+    if args.normalize_question_links:
+        return normalize_question_links(args.data_dir)
     paths = state_paths(args.data_dir)
     state_path = paths["state"]
     backup_path = state_path.with_name(state_path.name + ".bak")
@@ -5065,10 +5418,16 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_parser.set_defaults(func=cmd_doctor)
 
     repair_parser = subparsers.add_parser("repair", help="从最近有效备份恢复损坏状态")
-    repair_parser.add_argument(
+    repair_modes = repair_parser.add_mutually_exclusive_group()
+    repair_modes.add_argument(
         "--recompute-derived",
         action="store_true",
         help="即使当前状态有效，也按事件日志重算复习日期和派生统计",
+    )
+    repair_modes.add_argument(
+        "--normalize-question-links",
+        action="store_true",
+        help="只重建已核实的错标考点并纠正会话元数据，保留原作答日志和私人备份",
     )
     repair_parser.set_defaults(func=cmd_repair)
     return parser

@@ -251,8 +251,23 @@
   document.addEventListener('visibilitychange', () => { if (session?.phase !== 'taking') return; if (document.hidden) { commitQuestionTime(); saveSession(); } else { session.questionEnteredAt = Date.now(); saveSession(); } });
   window.addEventListener('pagehide', () => { if (session?.phase === 'taking') { commitQuestionTime(); saveSession(); } });
   async function boot() {
-    try { const [paperResponse, statusResponse] = await Promise.all([fetch('/api/mock-paper'), fetch('/api/status')]); const paperPayload = await paperResponse.json(), statusPayload = await statusResponse.json(); if (!paperResponse.ok || !paperPayload.ok) throw new Error(paperPayload.error || '本地试卷加载失败'); paper = paperPayload.data; profileReady = Boolean(statusPayload.ok); if (statusPayload.ok) profile = statusPayload.data.profile; if (session && session.paperId && session.paperId !== paper.paper_id) { session = null; saveSession(); } if (session) { session.paperId ||= paper.paper_id; session.marked ||= {}; session.confidences ||= {}; session.durations ||= {}; session.wrongReasons ||= {}; if (session.phase === 'taking') session.questionEnteredAt = Date.now(); } render(); startTimer(); }
-    catch (error) { app.className = ''; app.innerHTML = `<section class="error-box"><h1>本地考试服务未就绪</h1><p>${escapeHtml(error.message)}</p><p>请由当前 Agent 启动 <code>python3 scripts/serve.py</code>，再刷新此页面。</p></section>`; }
+    let needsRepair = false;
+    try {
+      const [paperResponse, statusResponse] = await Promise.all([fetch('/api/mock-paper'), fetch('/api/status')]);
+      const paperPayload = await paperResponse.json(), statusPayload = await statusResponse.json();
+      needsRepair = Boolean(statusPayload.needs_repair);
+      if (needsRepair) throw new Error(statusPayload.error || '历史题目关联需要迁移');
+      if (!paperResponse.ok || !paperPayload.ok) throw new Error(paperPayload.error || '本地试卷加载失败');
+      paper = paperPayload.data;
+      profileReady = Boolean(statusPayload.ok);
+      if (statusPayload.ok) profile = statusPayload.data.profile;
+      if (session && session.paperId && session.paperId !== paper.paper_id) { session = null; saveSession(); }
+      if (session) { session.paperId ||= paper.paper_id; session.marked ||= {}; session.confidences ||= {}; session.durations ||= {}; session.wrongReasons ||= {}; if (session.phase === 'taking') session.questionEnteredAt = Date.now(); }
+      render(); startTimer();
+    } catch (error) {
+      app.className = '';
+      app.innerHTML = `<section class="error-box"><h1>${needsRepair ? '请先修复历史题目关联' : '本地考试服务未就绪'}</h1><p>${escapeHtml(error.message)}</p><p>${needsRepair ? '请由当前 Agent 执行 <code>python3 scripts/tutor.py repair --normalize-question-links</code>，核对后刷新页面。' : '请由当前 Agent 启动 <code>python3 scripts/serve.py</code>，再刷新此页面。'}</p></section>`;
+    }
   }
   if (window.location.protocol === 'file:') {
     window.location.replace('http://localhost:8420/');

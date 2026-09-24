@@ -198,6 +198,9 @@
     .stage-summary-bar span { display: block; height: 100%; background: var(--stage); border-radius: inherit; }
     .focus-panel { padding-bottom: 17px; }
     .focus-list { padding: 3px 24px 0; }
+    .practice-preview { margin: 12px 24px 8px; padding: 13px 16px; border: 1px solid var(--line-strong); border-radius: 12px; background: #edf5ed; font-size: 12px; }
+    .practice-preview strong { display: block; margin-bottom: 3px; font-size: 13px; }
+    .practice-preview p { margin: 0; color: var(--ink-soft); }
     .focus-item { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 12px 0; border-bottom: 1px dashed var(--line); }
     .focus-item:last-child { border-bottom: 0; }
     .focus-dot { width: 9px; height: 9px; background: var(--stage); border-radius: 50%; box-shadow: 0 0 0 4px color-mix(in srgb, var(--stage) 15%, transparent); }
@@ -505,14 +508,19 @@
     return `<section class="panel"><div class="panel-heading"><div><div class="eyebrow">Five-stage signal</div><h2>掌握程度分布</h2></div><p>${relevant.length} 个知识节点</p></div><div class="stage-summary">${LEVELS.map((level, index) => `<div class="stage-summary-item" style="--stage:${level.color}"><span class="stage-summary-count">${counts[index]}</span><span class="stage-summary-label">${level.label}</span><div class="stage-summary-bar"><span style="width:${Math.round(counts[index] / total * 100)}%"></span></div></div>`).join('')}</div></section>`;
   }
   function renderFocus() {
-    const heading = `<section class="panel focus-panel"><div class="panel-heading"><div><div class="eyebrow">Next useful moves</div><h2>当前优先补齐</h2></div><p>${activeSubject === 'all' ? '三科过线优先' : SUBJECT_LABELS[activeSubject]}</p></div>`;
+    const heading = `<section class="panel focus-panel"><div class="panel-heading"><div><div class="eyebrow">Next useful moves</div><h2>薄弱点与计划项</h2></div><p>${activeSubject === 'all' ? '三科过线优先' : SUBJECT_LABELS[activeSubject]}</p></div>`;
     let body;
     if (learningPlanError) {
       body = `<div class="empty-state">学习计划暂时无法加载：${escapeHtml(learningPlanError)}</div>`;
     } else {
       const items = learningPlan?.recommendations || [];
+      const preview = learningPlan?.practice_preview;
+      const previewCard = preview ? (preview.available
+        ? `<div class="practice-preview"><strong>下一组可执行练习：${escapeHtml(preview.topic_name)}</strong><p>${preview.substitution ? `${escapeHtml(preview.substitution.requested_concept_label)} 暂无可用同细考点题；本组是同考点替代练习，并非该细考点复测，原缺口仍待纠偏。` : `按当前题目质量与去重门禁，可练 ${escapeHtml(preview.name)}。`}</p></div>`
+        : `<div class="practice-preview"><strong>当前无法组成完整客观题组</strong><p>${escapeHtml(preview.reason)}</p></div>`) : '';
       const note = learningPlan?.diagnosis_error ? `<div class="empty-state">逐题诊断暂不可用，已回退到通用排序：${escapeHtml(learningPlan.diagnosis_error)}</div>` : '';
       body = note + (items.length ? items.map(item => { const level = item.diagnostic_status ? LEVELS[item.diagnostic_status === 'awaiting_review' ? 1 : 3] : LEVELS[2]; return `<div class="focus-item" style="--stage:${level.color}"><span class="focus-dot"></span><div><div class="focus-name">${escapeHtml(item.name)}</div><div class="focus-meta">${escapeHtml(item.reason)}</div></div><span class="focus-level">${item.diagnostic_status === 'due_review' ? '到期复测' : item.diagnostic_status === 'pending_remediation' ? '模考缺口' : '计划项'}</span></div>`; }).join('') : (learningPlan ? '<div class="empty-state">当前没有可执行的推荐任务。</div>' : '<div class="empty-state">正在加载当前优先任务…</div>'));
+      return `${heading}${previewCard}<div class="focus-list">${body}</div></section>`;
     }
     return `${heading}<div class="focus-list">${body}</div></section>`;
   }
@@ -561,17 +569,19 @@
     render();
   }
   async function boot() {
+    let needsRepair = false;
     try {
       const [statusResponse, curriculumResponse] = await Promise.all([fetch('/api/status'), fetch('/api/curriculum')]);
       const statusPayload = await statusResponse.json();
       const curriculumPayload = await curriculumResponse.json();
+      needsRepair = Boolean(statusPayload.needs_repair);
       if (!statusResponse.ok || !statusPayload.ok) throw new Error(statusPayload.error || '学习状态尚未初始化');
       if (!curriculumResponse.ok || !curriculumPayload.ok) throw new Error(curriculumPayload.error || '课程目录加载失败');
       status = statusPayload.data;
       curriculum = curriculumPayload.data.topics || [];
     } catch (error) {
       app.className = '';
-      app.innerHTML = `<section class="error-box"><h1>学习航图暂时无法打开</h1><p>${escapeHtml(error.message)}</p><p>请先确认本地考试服务已启动，再刷新 <code>/dashboard.html</code>。</p></section>`;
+      app.innerHTML = `<section class="error-box"><h1>${needsRepair ? '请先修复历史题目关联' : '学习航图暂时无法打开'}</h1><p>${escapeHtml(error.message)}</p><p>${needsRepair ? '请由当前 Agent 执行 <code>python3 scripts/tutor.py repair --normalize-question-links</code>，核对后刷新页面。' : '请先确认本地考试服务已启动，再刷新 <code>/dashboard.html</code>。'}</p></section>`;
       return;
     }
     await loadLearningPlan();
