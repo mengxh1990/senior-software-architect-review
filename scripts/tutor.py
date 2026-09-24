@@ -31,7 +31,7 @@ import sanitize_bank
 
 
 SCHEMA_VERSION = 1
-QUESTION_LINK_VERSION = 1
+QUESTION_LINK_VERSION = 2
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CURRICULUM_PATH = REPO_ROOT / "tutor" / "curriculum.json"
 FREQUENCY_SNAPSHOT_PATH = REPO_ROOT / "tutor" / "frequency-snapshot.json"
@@ -2412,7 +2412,8 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
         reason = first.get("reason")
         if substitution:
             reason = (
-                f"{substitution['requested_concept_label']} 暂无可用同细考点题；"
+                f"{substitution['requested_concept_label']}："
+                f"{substitution['availability_message']}；"
                 "改为同考点替代练习，并非该细考点复测"
             )
         next_action = {
@@ -3452,28 +3453,28 @@ def infer_quiz_facet(topic: dict[str, Any], item: dict[str, Any]) -> str | None:
     rules = {
         "K05.TEST_CMMI_PATTERNS": (
             ("cmmi", ("cmmi", "能力成熟度")),
-            ("design_patterns", ("设计模式", "模式")),
-            ("testing", ("测试", "白盒", "黑盒", "覆盖")),
+            ("design_patterns", ("设计模式", "design-patterns", "gof", "模式")),
+            ("testing", ("测试", "白盒", "黑盒", "覆盖", "质量保证", "质量管理", "静态分析", "净室", "性能评测")),
         ),
         "K06.DESIGN_DATA_VIEWS": (
             ("documentation", ("用户文档", "系统文档", "软件文档", "文档分类")),
             ("uml_views", ("uml", "视图", "建模")),
             ("data_design", ("数据设计", "数据库", "数据模型")),
-            ("high_level_design", ("概要设计", "总体设计", "模块")),
+            ("high_level_design", ("概要设计", "总体设计", "模块", "输入设计", "界面设计", "用户界面", "系统设计", "系统建议", "处理流程")),
         ),
         "K12.PATTERNS_SOA_MICROSERVICES": (
-            ("microservices", ("微服务", "断路器", "熔断", "服务网格", "api 网关")),
+            ("microservices", ("微服务", "microservice", "ddd", "cqrs", "云原生", "断路器", "熔断", "服务网格", "api 网关")),
             ("soa", ("soa", "esb", "soap", "wsdl", "面向服务")),
-            ("design_patterns", ("设计模式", "singleton", "工厂", "观察者")),
+            ("design_patterns", ("设计模式", "design-patterns", "gof", "工厂", "桥接模式", "结构型模式", "命令模式", "装饰器模式", "singleton", "观察者")),
         ),
         "K13.VIEWS_SOA_LAYERING": (
-            ("four_plus_one", ("4+1", "逻辑视图", "进程视图", "物理视图")),
+            ("four_plus_one", ("4+1", "逻辑视图", "进程视图", "物理视图", "架构视图", "架构描述", "网络架构数据流图", "视图")),
             ("soa", ("soa", "esb", "面向服务")),
-            ("layering", ("分层", "层次")),
+            ("layering", ("分层", "层次", "逻辑层", "客户机", "c/s", "负载均衡")),
         ),
         "K23.PROJECT_MANAGEMENT_METRICS": (
-            ("software_metrics", ("度量", "功能点", "mccabe", "halstead", "loc")),
-            ("project_management", ("项目", "进度", "成本", "挣值", "wbs")),
+            ("software_metrics", ("度量", "software-metrics", "功能点", "mccabe", "halstead", "loc", "psp", "tsp")),
+            ("project_management", ("项目", "project-management", "进度", "成本", "挣值", "wbs", "配置", "版本控制")),
         ),
     }
     for facet, keywords in rules.get(topic["id"], ()):
@@ -3497,7 +3498,13 @@ def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
                 continue
             normalized = dict(item)
             normalized["source"] = paper.relative_to(REPO_ROOT).as_posix()
-            normalized["source_type"] = paper_source_type(item.get("year"))
+            is_reconstruction = (
+                "非原题" in str(item.get("tag_label") or "")
+                or "非原题" in str(item.get("stem") or "")
+            )
+            normalized["source_type"] = (
+                "self_authored" if is_reconstruction else paper_source_type(item.get("year"))
+            )
             normalized["teaching_status"] = (
                 "not_applicable"
                 if normalized.get("quality_status") != "ready"
@@ -3507,10 +3514,8 @@ def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
                     else "missing_explanation"
                 )
             )
-            topics = set(item.get("candidate_topics", []))
             override = question_registry.topic_override(item["id"])
-            if override:
-                topics.add(override)
+            topics = {override} if override else set(item.get("candidate_topics", []))
             normalized["candidate_topics"] = sorted(topics)
             merged[item["id"]] = normalized
 
@@ -3528,7 +3533,12 @@ def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
                 continue
             item_id = parsed["id"]
             existing = merged.get(item_id, {})
-            candidate_ids = set(existing.get("candidate_topics", [])) | topic_ids
+            override = question_registry.topic_override(item_id)
+            candidate_ids = (
+                {override}
+                if override
+                else set(existing.get("candidate_topics", [])) | topic_ids
+            )
             normalized = {
                 **parsed,
                 "year": None,
@@ -3561,6 +3571,9 @@ def quiz_question_for_topic(
     # or a legal answer key never reaches a quiz, and the coach never repairs
     # it live.
     if raw.get("quality_status") != "ready" or raw.get("teaching_status") != "ready":
+        return None
+    override = question_registry.topic_override(raw["id"])
+    if override and override != topic_id:
         return None
     if topic_id not in raw.get("candidate_topics", []):
         return None
@@ -3818,11 +3831,23 @@ def select_quiz_group(
         and not any(item["concept_id"] == first["concept_id"] for item in selected)
         and not chosen_recommendations[0].get("concept_id")
     ):
+        topic = topics[first["topic_id"]]
+        mapped_fine_item_exists = any(
+            (candidate := quiz_question_for_topic(raw, topic, private_registry))
+            is not None
+            and candidate["concept_id"] == first["concept_id"]
+            for raw in pool
+        )
         substitution = {
             "requested_concept_id": first["concept_id"],
             "requested_concept_label": first["name"],
             "actual_topic_id": selected[0]["topic_id"],
             "reason": "same_concept_unavailable",
+            "availability_message": (
+                "已收录同细考点题，但当前没有符合去重要求的独立复测题"
+                if mapped_fine_item_exists
+                else "题库中没有已映射且通过质量门禁的同细考点题"
+            ),
         }
     return selected, chosen_recommendations, substitution
 
@@ -3966,7 +3991,8 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
             objective += f"，同批覆盖 {len(covered_topics) - 1} 个考点"
     if substitution:
         objective += (
-            f"；{substitution['requested_concept_label']} 暂无可用同细考点题，"
+            f"；{substitution['requested_concept_label']}："
+            f"{substitution['availability_message']}，"
             "本组是同考点替代练习，并非该细考点复测"
         )
     payload = {
@@ -4940,13 +4966,24 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
     healthy = healthy and ignored
 
     try:
-        pool = load_quiz_question_pool(load_curriculum())
+        curriculum = load_curriculum()
+        topics = topic_map(curriculum)
+        pool = load_quiz_question_pool(curriculum)
         ready = [
             item
             for item in pool
             if item.get("quality_status") == "ready"
             and item.get("teaching_status") == "ready"
         ]
+        routable = [
+            item for item in ready
+            if any(
+                topic_id in topics
+                and quiz_question_for_topic(item, topics[topic_id], {}) is not None
+                for topic_id in item.get("candidate_topics", [])
+            )
+        ]
+        unmapped = len(ready) - len(routable)
         blocked = [item for item in pool if item not in ready]
         reason_counts: dict[str, int] = {}
         for item in blocked:
@@ -4974,14 +5011,15 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
             if audit_path.exists()
             else 0
         )
-        ok = bool(ready)
+        ok = bool(routable) and not unmapped
         checks.append(
             {
                 "name": "question-bank",
                 "healthy": ok,
                 "message": (
-                    f"可出题 {len(ready)} 道，质量门禁拦下 {len(blocked)} 道"
+                    f"可出题 {len(routable)} 道，质量门禁拦下 {len(blocked)} 道"
                     + (f"（{top_reasons}）" if top_reasons else "")
+                    + f"，考点映射未入池 {unmapped} 道"
                     + f"，待维护核对 {open_audits} 条"
                 ),
             }

@@ -12,7 +12,7 @@ mindmap
       组件图 Component
       部署图 Deployment
       组合结构图 Composite
-      制品图 Artifact
+      Profile 图 Profile
     行为图 7
       用例图 Use Case
         参与者 用例 系统边界

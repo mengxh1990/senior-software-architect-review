@@ -20,13 +20,32 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # and remediation structurally impossible.
 CONCEPT_OVERRIDES = {
     "exam-bank/05-uml.md#1": ("K03.uml_diagram_count", "K03.uml_diagram_count"),
+    "exam-bank/05-uml.md#2": ("K03.uml_diagram_count", "K03.uml_diagram_count"),
+    "exam-bank/05-uml.md#3": ("K03.uml_diagram_count", "K03.uml_diagram_count"),
+    "exam-bank/05-uml.md#16": ("K03.uml_diagram_count", "K03.uml_diagram_count"),
+    "exam-bank/05-uml.md#17": ("K03.uml_diagram_count", "K03.uml_diagram_count"),
+    "exam-bank/05-uml.md#18": ("K03.uml_diagram_count", "K03.uml_diagram_count"),
     "exam-bank/05-uml.md#4": ("K03.uml_relationships", "K03.uml_relationships"),
     "exam-bank/05-uml.md#5": ("K03.uml_relationships", "K03.uml_relationships"),
     "exam-bank/02-os-concepts.md#3": ("K01.deadlock_avoidance", "K01.deadlock_avoidance"),
     "exam-bank/01-computer-systems.md#1": ("K18.mips_cpi", "K18.mips_cpi"),
     "exam-bank/21-security.md#1": ("K20.cia_triad", "K20.cia_triad"),
+    "exam-bank/21-security.md#21": ("K20.cia_triad", "K20.cia_triad"),
     "exam-bank/23-english-reading.md#3": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
+    "exam-bank/23-english-reading.md#26": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
+    "exam-bank/23-english-reading.md#27": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
+    "exam-bank/23-english-reading.md#28": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
+    "exam-bank/23-english-reading.md#29": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
+    "exam-bank/23-english-reading.md#30": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
     "exam-bank/15-microservice-cloud-native.md#1": (
+        "K12.soa_microservices_governance",
+        "K12.soa_microservices_governance",
+    ),
+    "exam-bank/15-microservice-cloud-native.md#15": (
+        "K12.soa_microservices_governance",
+        "K12.soa_microservices_governance",
+    ),
+    "exam-bank/26-soa-evolution.md#12": (
         "K12.soa_microservices_governance",
         "K12.soa_microservices_governance",
     ),
@@ -35,7 +54,6 @@ CONCEPT_OVERRIDES = {
         "K12.soa_microservices_governance",
         "K12.soa_microservices_governance",
     ),
-    "past-papers/comprehensive-by-year/2024下.md#1": ("K20.cia_triad", "K20.cia_triad"),
     "past-papers/comprehensive-by-year/2024下.md#38": (
         "K03.uml_relationships",
         "K03.uml_relationships",
@@ -59,17 +77,53 @@ CONCEPT_OVERRIDES = {
 }
 
 ITEM_TOPIC_OVERRIDES = {
+    "exam-bank/02-os-concepts.md#3": "K01.OS_MEMORY_KERNEL",
+    "exam-bank/09-software-metrics.md#6": "K03.SOFTWARE_DESIGN_UML",
+    "exam-bank/09-software-metrics.md#7": "K03.SOFTWARE_DESIGN_UML",
+    "exam-bank/26-soa-evolution.md#9": "K12.PATTERNS_SOA_MICROSERVICES",
+    "exam-bank/26-soa-evolution.md#10": "K12.PATTERNS_SOA_MICROSERVICES",
+    "exam-bank/26-soa-evolution.md#11": "K12.PATTERNS_SOA_MICROSERVICES",
+    "exam-bank/26-soa-evolution.md#12": "K12.PATTERNS_SOA_MICROSERVICES",
     "past-papers/comprehensive-by-year/2012下.md#17-17": "K18.COMPUTER_ARCH_STORAGE",
     "past-papers/comprehensive-by-year/2022.md#32": "K12.PATTERNS_SOA_MICROSERVICES",
-    "past-papers/comprehensive-by-year/2024下.md#1": "K20.SECURITY_FOUNDATIONS",
     "past-papers/comprehensive-by-year/2024下.md#38": "K03.SOFTWARE_DESIGN_UML",
     "past-papers/comprehensive-by-year/2025上.md#23": "K01.OS_MEMORY_KERNEL",
 }
 
-# These public items were once recorded under K15.  Unlike a label heuristic,
-# their source IDs unambiguously identify the topic and fine concept; replay
-# may correct their derived metadata without changing the original attempt.
+# These public items have historical attempts with outdated topic or concept
+# links. Their source IDs identify the corrected metadata without rewriting
+# the original answer events.
 PUBLIC_ITEM_CORRECTIONS = {
+    "exam-bank/02-os-concepts.md#3": {
+        "topic_id": "K01.OS_MEMORY_KERNEL",
+        "facet": None,
+        "concept_id": "K01.deadlock_avoidance",
+        "question_family_id": "K01.deadlock_avoidance",
+    },
+    "exam-bank/05-uml.md#2": {
+        "topic_id": "K03.SOFTWARE_DESIGN_UML",
+        "facet": None,
+        "concept_id": "K03.uml_diagram_count",
+        "question_family_id": "K03.uml_diagram_count",
+    },
+    "exam-bank/05-uml.md#3": {
+        "topic_id": "K03.SOFTWARE_DESIGN_UML",
+        "facet": None,
+        "concept_id": "K03.uml_diagram_count",
+        "question_family_id": "K03.uml_diagram_count",
+    },
+    "exam-bank/26-soa-evolution.md#10": {
+        "topic_id": "K12.PATTERNS_SOA_MICROSERVICES",
+        "facet": "microservices",
+        "concept_id": "K12.PATTERNS_SOA_MICROSERVICES:microservices",
+        "question_family_id": "K12.PATTERNS_SOA_MICROSERVICES:microservices",
+    },
+    "exam-bank/26-soa-evolution.md#12": {
+        "topic_id": "K12.PATTERNS_SOA_MICROSERVICES",
+        "facet": "microservices",
+        "concept_id": "K12.soa_microservices_governance",
+        "question_family_id": "K12.soa_microservices_governance",
+    },
     "past-papers/comprehensive-by-year/2022.md#26": {
         "topic_id": "K03.SOFTWARE_DESIGN_UML",
         "facet": None,

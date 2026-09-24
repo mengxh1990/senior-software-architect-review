@@ -42,7 +42,7 @@
 | 03 | 数据库（函数依赖 / 范式 / 事务） | 25 | [03-database.md](./03-database.md) |
 | 13 | 设计模式 GoF 23 | 25 | [13-design-patterns.md](./13-design-patterns.md) |
 | 10 | 架构风格 5 大类 | 20 | [10-architecture-styles.md](./10-architecture-styles.md) |
-| 21 | 安全（STRIDE / CIA / 国密） | 20 | [21-security.md](./21-security.md) |
+| 21 | 安全（STRIDE / CIA / 国密） | 21 | [21-security.md](./21-security.md) |
 | 12 | ATAM 四类点 | 15 | [12-atam-evaluation.md](./12-atam-evaluation.md) |
 
 ### ⭐ 必刷重点（合计 219+ 题）
@@ -52,7 +52,7 @@
 | 01 | 计算机系统基础 | 15 | [01-computer-systems.md](./01-computer-systems.md) |
 | 02 | 操作系统 | 15 | [02-os-concepts.md](./02-os-concepts.md) |
 | 04 | 计算机网络（OSI / 协议 / 端口） | 15 | [04-networking.md](./04-networking.md) |
-| 05 | UML 建模 | 15 | [05-uml.md](./05-uml.md) |
+| 05 | UML 建模 | 18 | [05-uml.md](./05-uml.md) |
 | 06 | 知识产权 + 标准化 | 25 | [06-ip-and-standards.md](./06-ip-and-standards.md) |
 | 07 | 软件工程（生命周期 / CMMI / 需求 / 测试 / 维护） | 18 | [07-software-engineering.md](./07-software-engineering.md) |
 | 08 | 项目管理（CPM / PERT / EVM / 风险） | 18 | [08-project-management.md](./08-project-management.md) |
@@ -63,7 +63,7 @@
 | 16 | **中间件（MQ / RPC / ESB / JMS / AMQP）** | **12** | **[16-middleware.md](./16-middleware.md)** |
 | 17 | **分布式事务（2PC / TCC / Saga / CAP / BASE）** | **15** | **[17-distributed-transactions.md](./17-distributed-transactions.md)** |
 | 18 | **缓存（穿透 / 击穿 / 雪崩 / Redis）** | **12** | **[18-cache.md](./18-cache.md)** |
-| 23 | 英语阅读（固定 5 题、占 7%） | 25（5 套） | [23-english-reading.md](./23-english-reading.md) |
+| 23 | 英语阅读（固定 5 题、占 7%） | 30（6 套） | [23-english-reading.md](./23-english-reading.md) |
 
 ### 🌟 已扩展专题
 

@@ -3900,7 +3900,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertIn("已迁移 2 条", migrated.stdout)
             self.assertEqual(logged_before, attempts_path.read_bytes())
             after = json.loads(state_path.read_text(encoding="utf-8"))
-            self.assertEqual(1, after["question_link_version"])
+            self.assertEqual(2, after["question_link_version"])
             self.assertEqual(subject_state, after["subjects"])
             self.assertEqual(strategy, after["strategy"])
             self.assertEqual(state["applied_attempt_ids"], after["applied_attempt_ids"])

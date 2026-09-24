@@ -1,4 +1,4 @@
-# 英语阅读（综合知识固定最后 5 题） · 25 题（5 套）
+# 英语阅读（综合知识固定最后 5 题） · 30 题（6 套）
 
 > **高频考点**（每年**固定 5 题、占 7%、是最稳的送分区**）· 一篇 IT 英语短文（200-300 词）+ 5 个**选词填空**（4 选 1）· 主题集中在：云计算 / 微服务 / 容器 / AI 与大数据 / DevOps / 软件架构 / 信息安全 / 敏捷与项目管理
 > **答题套路**：①先看选项词性（名/动/形/副）排错；②精读空格上下句（80% 单句可解）；③主题/逻辑一致原则；④拿不准时选"教材式"高频词。
@@ -439,6 +439,91 @@ D. spatial
 
 **答案**：C
 **解析**："bias, fairness, transparency, and accountability"是 **ethical AI（AI 伦理）** 的四大议题，已成为软考新趋势考点。financial（财务）/technical（技术）/spatial（空间）都不能涵盖偏见、公平、问责这类社会维度。
+
+---
+
+## Passage 6 — Cloud Cost Management
+
+Cloud pricing changes how teams plan their budgets. When a retailer operates its own data center, it must buy enough servers for a busy holiday season even if demand is low during the rest of the year. Buying those servers requires a large **__(26)__** expenditure before the system is used. The company then pays for maintenance and power while some machines sit idle.
+
+Moving the application to the cloud changes the timing of those payments; it does not make computing free. With usage-based billing, the hardware purchase is replaced largely by **__(27)__** expenses that vary from month to month. The operations team can scale down after a sale, but it must still track compute hours, storage capacity, and network traffic. Sending data out of a cloud provider's network can generate **__(28)__** fees, so storage prices alone do not show the entire bill.
+
+For steady daily traffic, a long-term capacity commitment can offer a **__(29)__** rate. The retailer can reserve a baseline of resources and use on-demand instances for short bursts, but excessive commitments would waste money if its traffic falls. Finally, the finance and engineering teams review a shared cost dashboard. To avoid a surprise bill, they set a spending **__(30)__** and receive an alert when forecast charges exceed it. This gives them time to investigate unexpected usage before the monthly invoice arrives.
+
+---
+
+### 26. (26)
+
+A. recurring
+
+✅ **B. capital**
+
+C. marginal
+
+D. variable
+
+**答案**：B
+**解析**：购买服务器需要预先投入的 **capital expenditure（资本性支出，CapEx）**；与后文按月付费形成对比。
+
+---
+
+### 27. (27)
+
+✅ **A. operating**
+
+B. fixed
+
+C. capital
+
+D. sunk
+
+**答案**：A
+**解析**：按量计费形成随使用量变化的 **operating expenses（运营支出，OpEx）**，与一次性硬件采购支出相对。
+
+---
+
+### 28. (28)
+
+A. ingress
+
+✅ **B. egress**
+
+C. license
+
+D. provision
+
+**答案**：B
+**解析**：数据离开云服务商网络是 **egress（出站流量）**，可能产生数据传输费用；ingress 是入站流量。
+
+---
+
+### 29. (29)
+
+✅ **A. discounted**
+
+B. unlimited
+
+C. punitive
+
+D. random
+
+**答案**：A
+**解析**：长期容量承诺通常换取 **discounted rate（折扣费率）**，适用于可预测的基础负载。
+
+---
+
+### 30. (30)
+
+A. tenancy
+
+✅ **B. threshold**
+
+C. region
+
+D. instance
+
+**答案**：B
+**解析**：**spending threshold（支出阈值）** 是触发预算告警的预设金额；其余选项不能表示告警界限。
 
 ---
 

@@ -12,7 +12,7 @@
 | **部署图** Deployment | 运行时硬件分布 | 节点、构件 |
 | **包图** Package | 包的组织 | 包、依赖 |
 | **组合结构图** Composite Structure | 类内部结构 | 部件、端口 |
-| **制品图** Artifact | 物理制品 | 文件、库 |
+| **Profile 图** Profile | 扩展 UML 建模语言 | 构造型、标记值、约束 |
 
 ### 动态行为图（7）
 

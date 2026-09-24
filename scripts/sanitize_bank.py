@@ -286,9 +286,8 @@ ITEM_TOPIC_OVERRIDES = {
     "past-papers/comprehensive-by-year/2016下.md#7-8": "K14.OS_SCHEDULING_FILES",
     "past-papers/comprehensive-by-year/2012下.md#17-17": "K18.COMPUTER_ARCH_STORAGE",
     "past-papers/comprehensive-by-year/2022.md#32": "K12.PATTERNS_SOA_MICROSERVICES",
-    "past-papers/comprehensive-by-year/2024下.md#1": "K20.SECURITY_FOUNDATIONS",
     "past-papers/comprehensive-by-year/2024下.md#38": "K03.SOFTWARE_DESIGN_UML",
-    "past-papers/comprehensive-by-year/2024下.md#65": "K12.PATTERNS_SOA_MICROSERVICES",
+    "past-papers/comprehensive-by-year/2024下.md#65": "K24.INFORMATION_SYSTEMS",
     "past-papers/comprehensive-by-year/2024下.md#66": "K05.TEST_CMMI_PATTERNS",
     "past-papers/comprehensive-by-year/2024下.md#67": "K19.ATAM_TACTICS",
     "past-papers/comprehensive-by-year/2024下.md#68": "K20.SECURITY_FOUNDATIONS",
@@ -296,6 +295,23 @@ ITEM_TOPIC_OVERRIDES = {
     "past-papers/comprehensive-by-year/2025上.md#23": "K01.OS_MEMORY_KERNEL",
     "past-papers/comprehensive-by-year/2025上.md#19-20": "K13.VIEWS_SOA_LAYERING",
     "past-papers/comprehensive-by-year/2025上.md#27-28": "K10.DATABASE_MODELING",
+    # Source labels in these individual questions resolve more precisely than
+    # their original broad or mismatched § tags.
+    "past-papers/comprehensive-by-year/2014下.md#62-62": "K19.ATAM_TACTICS",
+    "past-papers/comprehensive-by-year/2014下.md#63-63": "K19.ATAM_TACTICS",
+    "past-papers/comprehensive-by-year/2016下.md#38-38": "K11.COMPONENTS_4PLUS1",
+    "past-papers/comprehensive-by-year/2017下.md#36-36": "K11.COMPONENTS_4PLUS1",
+    "past-papers/comprehensive-by-year/2017下.md#38-38": "K11.COMPONENTS_4PLUS1",
+    "past-papers/comprehensive-by-year/2022.md#40": "K05.TEST_CMMI_PATTERNS",
+    "past-papers/comprehensive-by-year/2022.md#48": "K04.ARCH_STYLES_ABSD",
+    "past-papers/comprehensive-by-year/2022.md#49": "K04.ARCH_STYLES_ABSD",
+    "past-papers/comprehensive-by-year/2024上.md#24": "K08.SOFTWARE_PROCESS_MODELS",
+    "past-papers/comprehensive-by-year/2024下.md#35": "K08.SOFTWARE_PROCESS_MODELS",
+    "past-papers/comprehensive-by-year/2024下.md#44": "K08.SOFTWARE_PROCESS_MODELS",
+    "past-papers/comprehensive-by-year/2024下.md#70": "K08.SOFTWARE_PROCESS_MODELS",
+    "past-papers/comprehensive-by-year/2025上.md#59": "K04.ARCH_STYLES_ABSD",
+    "past-papers/comprehensive-by-year/2025下.md#28": "K04.ARCH_STYLES_ABSD",
+    "past-papers/comprehensive-by-year/2026上.md#23": "K04.ARCH_STYLES_ABSD",
 }
 CURATED_SOURCE_FIGURE_STATUS_OVERRIDES = {
     "past-papers/comprehensive-by-year/2011下.md#24-24": "figure_not_renderable",
@@ -326,6 +342,21 @@ def candidate_topics(
 ) -> List[str]:
     """Tutor topics for a paper item, preferring precise item/label evidence."""
     override = ITEM_TOPIC_OVERRIDES.get(item_id)
+    if override is None:
+        # Legacy transcripts split an overridden ``#28-29`` block into
+        # ``#28-28`` and ``#29-29``. Both children retain the parent's topic.
+        child = re.fullmatch(r"(.+\.md)#(\d+)-\2", item_id)
+        if child:
+            source, number = child.group(1), int(child.group(2))
+            for parent_id, parent_topic in ITEM_TOPIC_OVERRIDES.items():
+                parent = re.fullmatch(r"(.+\.md)#(\d+)-(\d+)", parent_id)
+                if (
+                    parent
+                    and parent.group(1) == source
+                    and int(parent.group(2)) <= number <= int(parent.group(3))
+                ):
+                    override = parent_topic
+                    break
     if override:
         return [override]
     if not tag:
