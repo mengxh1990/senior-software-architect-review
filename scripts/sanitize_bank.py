@@ -243,10 +243,10 @@ DOMAIN_LABEL_TOPIC_RULES = {
     ),
     "§5": (("K10.DATABASE_MODELING", ("数据库", "关系", "范式", "sql", "事务", "索引")),),
     "§6": (
-        ("K12.PATTERNS_SOA_MICROSERVICES", ("微服务", "soa", "esb", "web服务", "soap", "wsdl", "设计模式", "接口标准化", "接口描述")),
+        ("K12.PATTERNS_SOA_MICROSERVICES", ("微服务", "soa", "esb", "web服务", "soap", "wsdl", "设计模式", "接口标准化")),
         ("K21.MESSAGING_CACHE", ("消息", "缓存", "中间件")),
         ("K26.ARCH_EVOLUTION", ("演化", "迁移", "维护")),
-        ("K11.COMPONENTS_4PLUS1", ("构件", "4+1", "com", "j2ee", "javaee", "corba")),
+        ("K11.COMPONENTS_4PLUS1", ("构件", "4+1", "com", "j2ee", "javaee", "corba", "idl", "接口描述")),
         ("K13.VIEWS_SOA_LAYERING", ("分层", "层次", "架构视图", "c/s", "客户机", "逻辑层", "负载均衡", "网络架构")),
         ("K04.ARCH_STYLES_ABSD", ("架构风格", "absd", "dssa", "架构需求", "架构设计", "架构复审", "架构定义", "架构作用", "架构描述", "架构与生命周期", "架构重要性", "架构文档", "需求模型转")),
     ),

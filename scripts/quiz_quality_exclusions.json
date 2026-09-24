@@ -18,29 +18,14 @@
       "note": "同一解析先称图中④应为 C4，后又依据答案 D 称图中④应为 C2；该题组本身也已被多题组门禁拦截。"
     },
     {
-      "item_id": "past-papers/comprehensive-by-year/2015下.md#20-20",
-      "reason": "answer_explanation_conflict",
-      "note": "答案键为 C，但解析又把 Government To Employee 列为电子政务四种主要模式之一；同时选项 B 的 Customer 与解析中的 Citizen 表述不一致，题目没有稳定的唯一答案。"
-    },
-    {
       "item_id": "past-papers/comprehensive-by-year/2016下.md#52-52",
       "reason": "ambiguous_answer_key",
       "note": "解析明确指出 A（规则系统）与 D（解释器）均属于虚拟机风格，但答案键只给 D，无法唯一判分。"
     },
     {
-      "item_id": "past-papers/comprehensive-by-year/2022.md#4",
-      "reason": "explanation_conflict",
-      "note": "解析声称同柱面按扇区号排序，但答案 D 在 16 号柱面的顺序为 ②(3)、③(6)、⑧(4)，与该判定规则不一致，需核对原卷规则后再开放。"
-    },
-    {
       "item_id": "past-papers/comprehensive-by-year/2026上.md#57",
       "reason": "ambiguous_answer_key",
       "note": "解析承认 B 项表述不严谨，同时以 C 项错误更直接为由维持单选答案；至少存在两个可争议选项，不适合盲练。"
-    },
-    {
-      "item_id": "past-papers/comprehensive-by-year/2025下.md#1",
-      "reason": "conflicting_source_evidence",
-      "note": "题干与 2012下第70题为同一约束问题，但 2012下随卷解析推导 A22=6，而 2025下回忆版答案为 A22=4；跨源答案冲突，不能作为唯一答案题进入训练。"
     },
     {
       "item_id": "past-papers/comprehensive-by-year/2026上.md#69",
@@ -56,16 +41,6 @@
       "item_id": "past-papers/comprehensive-by-year/2023下.md#1-2",
       "reason": "conflicting_source_evidence",
       "note": "希赛回忆清单把「V(g)=m-n+1」「最大范围<10」并列为两个错误项（清单编号 1-2 指向两道单选），rkpass 重建稿则只保留一道单选且答案为 B、并把「McCabe数应小于10」列为正确项；两来源对题量与答案集合不一致，现有块又把两个错误项压成一个组合答案，选项 B 还带「（错误公式）」泄题标注。第二题的题干与选项在现有来源中无法恢复，故维持排除。"
-    },
-    {
-      "item_id": "past-papers/comprehensive-by-year/2016下.md#19-19",
-      "reason": "conflicting_source_evidence",
-      "note": "答案键为 B（政府对居民），但教材把「国家和地方基础信息的采集、处理和利用，如人口信息」明确归入政府与政府（G2G）领域，2020 年同考点真题的官方答案键同样判为 G2G，2016 下真题解析给出的 (19)=A 也写明「属于政府对政府的电子政务活动」；随卷答案详解该行只印答案字母、解析为空，跨源答案冲突且知识层面指向 A，无法唯一判分，故排除出题库。"
-    },
-    {
-      "item_id": "past-papers/comprehensive-by-year/2017下.md#37-37",
-      "reason": "conflicting_source_evidence",
-      "note": "答案键为 D（值类型），但同源官方解析明确写「接口描述是 IDL 文件中最核心的内容」，对应选项 C，多个题库与 2017 下真题解析均判 C；随卷答案详解该行只印答案字母、解析为空，跨源答案冲突，无法唯一判分，故排除出题库。"
     }
   ]
 }

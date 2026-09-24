@@ -886,9 +886,7 @@ class PastPaperParsingTests(unittest.TestCase):
         expected = {
             "past-papers/comprehensive-by-year/2010下.md#51-51": "ambiguous_answer_key",
             "past-papers/comprehensive-by-year/2014下.md#1-2": "explanation_conflict",
-            "past-papers/comprehensive-by-year/2015下.md#20-20": "answer_explanation_conflict",
             "past-papers/comprehensive-by-year/2016下.md#52-52": "ambiguous_answer_key",
-            "past-papers/comprehensive-by-year/2022.md#4": "explanation_conflict",
             "past-papers/comprehensive-by-year/2026上.md#57": "ambiguous_answer_key",
         }
         for item_id, reason in expected.items():
@@ -899,7 +897,6 @@ class PastPaperParsingTests(unittest.TestCase):
 
     def test_conflicting_or_out_of_scope_pending_items_are_excluded(self) -> None:
         expected = {
-            "past-papers/comprehensive-by-year/2025下.md#1": "conflicting_source_evidence",
             "past-papers/comprehensive-by-year/2026上.md#69": "outside_curriculum_scope",
             "past-papers/comprehensive-by-year/2026上.md#70": "outside_curriculum_scope",
         }
@@ -914,6 +911,26 @@ class PastPaperParsingTests(unittest.TestCase):
             with self.subTest(item_id=item_id):
                 self.assertEqual("invalid", items[item_id]["quality_status"])
                 self.assertIn(f"excluded:{reason}", items[item_id]["quality_issues"])
+
+    def test_repaired_answer_keys_are_ready(self) -> None:
+        expected = {
+            "past-papers/comprehensive-by-year/2015下.md#20-20": "B",
+            "past-papers/comprehensive-by-year/2016下.md#19-19": "A",
+            "past-papers/comprehensive-by-year/2016下.md#27-27": "B",
+            "past-papers/comprehensive-by-year/2017下.md#37-37": "C",
+            "past-papers/comprehensive-by-year/2022.md#4": "C",
+            "past-papers/comprehensive-by-year/2025下.md#1": "A",
+        }
+        items = {}
+        for year in ("2015下", "2016下", "2017下", "2022", "2025下"):
+            path = REPO_ROOT / "past-papers" / "comprehensive-by-year" / f"{year}.md"
+            items.update({item["id"]: item for item in sanitize_bank.parse_paper(path)})
+
+        for item_id, answer in expected.items():
+            with self.subTest(item_id=item_id):
+                self.assertEqual([answer], items[item_id]["correct"])
+                self.assertEqual("ready", items[item_id]["quality_status"])
+                self.assertTrue(items[item_id]["candidate_topics"])
 
     def test_shipped_cmmi_question_has_complete_stem(self) -> None:
         items = {
