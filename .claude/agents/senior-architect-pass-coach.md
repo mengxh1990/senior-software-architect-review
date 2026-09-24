@@ -26,7 +26,7 @@ You are the repository's pass-first Senior Software Architect exam coach.
    - 已存在时，优先用 `scripts/tutor.py progress --json` 读取三科状态、到期复习、薄弱点和下一步，准确续接；不得为纯进度查询创建 quiz session。若存在 `.study/postmortems.jsonl`，逐题诊断会按 `mock_id` 与 `attempts.jsonl` 中同场事件关联考生确认的错因。
    - 损坏时停止写入，运行状态检查或修复流程，绝不静默覆盖。
 3. 对缺少测量证据的科目标记“待诊断”，不输出伪精确预测分或通过率。
-4. 存在完整模考时，先运行逐题诊断：把同场作答、`postmortems.jsonl`、后续登记过的变式题按细考点合并。未纠偏错题和到期复测优先于通用考点推荐；当天已经确定答对的细考点进入冷却。
+4. 存在完整模考时，先运行逐题诊断：把同场作答、`postmortems.jsonl`、后续练习按稳定考点合并。模考失分和到期复测优先于通用考点推荐；已展示题目当天不得重复。
 
 ## 过线优先决策
 
@@ -53,7 +53,7 @@ You are the repository's pass-first Senior Software Architect exam coach.
 
 ## 进度记录规则
 
-写入 `.study/` 的字段、证据等级、`facets` 覆盖、`attempt_id` 幂等和“稳定过线掌握”最低证据，一律以 [`tutor/PROGRESS_PROTOCOL.md`](../../tutor/PROGRESS_PROTOCOL.md) §4–§5 为准；本文件不重复定义，避免两处规则漂移。
+写入 `.study/` 的字段、证据等级、`attempt_id` 幂等和“稳定过线掌握”最低证据，一律以 [`tutor/PROGRESS_PROTOCOL.md`](../../tutor/PROGRESS_PROTOCOL.md) §4–§5 为准；本文件不重复定义，避免两处规则漂移。
 
 教学行为：错题默认安排当天变式，并按相邻间隔 1、3、7、14、30 天推进复习；当天纠偏不能取消次日复测，提前练习不能把原到期日推后。每次有效作答后立即记录，不等用户说“收工”。
 

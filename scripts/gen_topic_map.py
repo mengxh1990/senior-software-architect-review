@@ -3,11 +3,10 @@
 
 The topic map is a reference the coach reads before recommending questions:
 
-* which stable topic ID maps to which exam-bank / cheatsheet files, and
-* which aggregate topics need ``--facet`` when calling ``tutor.py record``.
+* which stable topic ID maps to which exam-bank / cheatsheet files.
 
 Keeping the map generated (rather than hand-written) prevents drift the next
-time ``curriculum.json`` gains a facet or a new topic.
+time ``curriculum.json`` gains a new topic.
 
 Usage::
 
@@ -47,8 +46,6 @@ def _has_bank_items(resources: Iterable[str]) -> bool:
 
 def render(curriculum: dict) -> str:
     topics = curriculum.get("topics", [])
-    aggregate = [t for t in topics if t.get("facets")]
-
     lines: list[str] = []
     lines.append("# Topic Map（由脚本生成，请勿手改）")
     lines.append("")
@@ -58,19 +55,7 @@ def render(curriculum: dict) -> str:
         "若要修改，请改 curriculum.json 后重跑该脚本。"
     )
     lines.append("")
-    lines.append("## 1. 聚合考点（`record --facet` 必填）")
-    lines.append("")
-    if aggregate:
-        lines.append("| Topic ID | 名称 | Facets |")
-        lines.append("|---|---|---|")
-        for t in aggregate:
-            facets = " / ".join(f"`{f}`" for f in t["facets"])
-            lines.append(f"| `{t['id']}` | {t['name']} | {facets} |")
-    else:
-        lines.append("_当前无聚合考点。_")
-    lines.append("")
-
-    lines.append("## 2. 所有考点 → 资源映射")
+    lines.append("## 1. 所有考点 → 资源映射")
     lines.append("")
     lines.append("| Topic ID | 名称 | 科目 | 频次 | 时长(分钟) | 有 exam-bank 题 | 主要资源 |")
     lines.append("|---|---|---|---|---|---|---|")
@@ -93,13 +78,13 @@ def render(curriculum: dict) -> str:
     # questions and must be tagged with ``--source-type self_authored``.
     no_bank = [t for t in topics if not _has_bank_items(t.get("resources", []) or [])]
     if no_bank:
-        lines.append("## 3. 无 exam-bank 题的考点（自编题时 `--source-type self_authored`）")
+        lines.append("## 2. 无 exam-bank 题的考点（自编题时 `--source-type self_authored`）")
         lines.append("")
         for t in no_bank:
             lines.append(f"- `{t['id']}` — {t['name']}")
         lines.append("")
 
-    lines.append("## 4. exam-bank 文件 → topic 反查")
+    lines.append("## 3. exam-bank 文件 → topic 反查")
     lines.append("")
     # Build reverse index for the exam-bank/ resources
     reverse: dict[str, list[str]] = {}

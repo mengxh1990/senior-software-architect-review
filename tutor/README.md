@@ -29,7 +29,7 @@ python3 scripts/serve.py
 ```
 
 然后打开 <http://localhost:8420>。考试页提供 75 题答题卡、150 分钟倒计时、标记与拿不准状态、刷新恢复、两次确认交卷和考后错因反馈。原始答卷与错因只写入本机 `.study/`，当前 Agent 可直接读取并据此安排下一轮训练。
-如果页面提示历史题目关联需迁移，先由 Agent 运行 `python3 scripts/tutor.py repair --normalize-question-links`；迁移前页面不会开放试卷或接受交卷。学习航图的“下一组可执行练习”按实际质量与去重门禁预览，缺少同细考点题时会明确标注替代练习；预览不创建答题会话。
+如果页面提示历史题目关联需迁移，先由 Agent 运行 `python3 scripts/tutor.py repair --normalize-question-links`；迁移前页面不会开放试卷或接受交卷。学习航图的“下一组可执行练习”按实际质量与去重门禁预览，不创建答题会话。
 
 ## 它会记住什么
 
@@ -47,7 +47,7 @@ python3 scripts/serve.py
 ├── state.json          # 三科状态与考点掌握度
 ├── attempts.jsonl      # 只追加的作答证据
 ├── postmortems.jsonl   # 只追加的考后错因补充（按需创建）
-├── question-registry.json # 私有自编题、细考点、题型族与内容指纹
+├── question-registry.json # 私有自编题与内容指纹
 ├── quiz-sessions/      # 客观题题面、答案键与幂等判分状态
 ├── dashboard.md        # 人类可读进度面板
 └── paper-project.md    # 论文匿名项目素材（按需创建）
@@ -60,7 +60,7 @@ python3 scripts/serve.py
 - [`.claude/agents/senior-architect-pass-coach.md`](../.claude/agents/senior-architect-pass-coach.md) — 教师人格与决策规则（诊断 / 案例 / 论文全流程）
 - [`PROGRESS_PROTOCOL.md`](./PROGRESS_PROTOCOL.md) — 记档规则、证据分级、隐私边界
 - [`quiz-loop-sop.md`](./quiz-loop-sop.md) — 客观题一轮"出题→作答→判分→记档"的运行时管道
-- [`topic-map.md`](./topic-map.md) — 考点↔资源↔facet 映射表（脚本自动生成，请勿手改）
+- [`topic-map.md`](./topic-map.md) — 考点↔资源映射表（脚本自动生成，请勿手改）
 - [`../scripts/tutor.py`](../scripts/tutor.py) — 私人进度 CLI（含 `quiz-prepare` / `quiz-grade` 一体化客观题循环，以及只读的 `weakpoints` 薄弱点排名）
 - [`../scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) — exam-bank 答案脱敏器与题目质量门禁（题库维护、抽查与人工修复用，不在答题循环内调用）
 - [`frequency-snapshot.json`](./frequency-snapshot.json) — 双层考频审计快照；覆盖率达标前只报告、不替换运行时权重
@@ -143,7 +143,7 @@ python3 scripts/tutor.py --data-dir .study diagnose --subject comprehensive
 python3 scripts/tutor.py --data-dir .study weakpoints \
   --subject comprehensive --days 21 --limit 10
 
-# 自编题先登记细考点、题型族和内容指纹
+# 自编题先登记题干、选项和内容指纹
 python3 scripts/tutor.py --data-dir .study register-question \
   --file .study/new-question.json
 
@@ -195,7 +195,7 @@ python3 scripts/build_frequency_snapshot.py --check
 - 自动训练优先使用通过质量与讲解门禁的历年真题，自编题作为补充。
 - 案例与论文分数只能称为“AI 估分”，并必须展示评分依据。案例完成作答后还必须提供逐问“标准答案（参考）”；主观题答案以核心采分点为准，不宣称存在唯一官方文字答案。
 - 没有完整限时证据时，只显示“待诊断/低置信度”，不制造精确通过率。
-- 第一版使用必填的稳定 `item_id` 追踪独立题目；公共题库的全量题目级映射仍会继续细化。当前对容易混淆的聚合考点已用必填 `facet` 强制覆盖子主题，其他题目由私教按资源定位并保留来源。
+- 使用必填的稳定 `item_id` 追踪独立题目；每题只映射到稳定大考点，保留题目来源和内容指纹。
 
 ## 维护者入口
 

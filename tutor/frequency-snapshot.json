@@ -6,11 +6,11 @@
   "as_of": "2026-09-22",
   "coverage": {
     "recent": {
-      "mapped_questions": 363,
+      "mapped_questions": 361,
       "papers": 6,
-      "ratio": 1.0,
+      "ratio": 0.9945,
       "ready_questions": 363,
-      "unmapped_questions": 0
+      "unmapped_questions": 2
     },
     "stable": {
       "mapped_questions": 890,
@@ -150,11 +150,11 @@
     },
     {
       "cohort": "recent",
-      "coverage": 1.0,
-      "mapped_questions": 20,
+      "coverage": 0.9,
+      "mapped_questions": 18,
       "ready_questions": 20,
       "source_type": "recalled_real",
-      "unmapped_questions": 0,
+      "unmapped_questions": 2,
       "year": "2023下"
     },
     {
@@ -204,7 +204,7 @@
     }
   ],
   "schema_version": 1,
-  "source_digest": "ec5f82d9a6e7234beaaed353f72eec8f39faf9d143232c0e813d9f15cff3e5b2",
+  "source_digest": "69824ead748fab796669e6e957f03f1222252b7a49d1c2c42107821a4e9d288f",
   "topics": [
     {
       "recent_questions_per_paper": 3.4915,
@@ -219,10 +219,10 @@
       "weighted_questions_per_paper": 2.9033
     },
     {
-      "recent_questions_per_paper": 3.421,
+      "recent_questions_per_paper": 2.171,
       "stable_questions_per_paper": 3.2043,
       "topic_id": "K03.SOFTWARE_DESIGN_UML",
-      "weighted_questions_per_paper": 3.2476
+      "weighted_questions_per_paper": 2.9976
     },
     {
       "recent_questions_per_paper": 7.7078,

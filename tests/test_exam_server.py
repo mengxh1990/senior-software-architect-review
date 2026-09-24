@@ -156,49 +156,6 @@ class ExamServerTest(unittest.TestCase):
         persisted = json.loads(paths["state"].read_text(encoding="utf-8"))
         self.assertEqual(77, len(persisted["applied_attempt_ids"]))
 
-    def test_learning_plan_previews_unserviceable_fine_concept_without_session(self) -> None:
-        curriculum = exam_server.tutor.load_curriculum()
-        profile, state = exam_server.tutor.load_profile_and_state(self.data_dir)
-        at = exam_server.tutor.now_iso()
-        mock = {
-            "attempt_id": "web-preview-mock", "event_type": "mock",
-            "topic_id": None, "item_id": "paper-web-preview-mock", "facet": None,
-            "at": at, "subject": "comprehensive", "skill": "recognition",
-            "mode": "full_mock", "score": 40, "max_score": 75,
-            "duration_seconds": 5400, "word_count": None, "complete": True,
-            "confidence": "sure", "wrong_reasons": [], "source_type": "simulation",
-            "source": "paper-web-preview-mock", "feedback_seen": True,
-        }
-        wrong = {
-            "attempt_id": "web-preview-mock-q-01", "event_type": "practice",
-            "topic_id": "K03.SOFTWARE_DESIGN_UML",
-            "item_id": "past-papers/comprehensive-by-year/2022.md#26",
-            "facet": None, "at": at, "subject": "comprehensive",
-            "skill": "recognition", "mode": "mock", "score": 0,
-            "max_score": 1, "duration_seconds": 60, "word_count": None,
-            "complete": False, "confidence": "sure", "wrong_reasons": ["knowledge_gap"],
-            "source_type": "recalled_real", "source": "past-papers/comprehensive-by-year/2022.md",
-            "feedback_seen": True,
-        }
-        for event in (mock, wrong):
-            exam_server.tutor.apply_event_to_state(state, event, curriculum)
-        paths = exam_server.tutor.state_paths(self.data_dir)
-        exam_server.tutor.write_attempts(paths["attempts"], (mock, wrong))
-        exam_server.tutor.save_state_bundle(self.data_dir, profile, state, backup=True)
-        before = {name: path.read_bytes() for name, path in paths.items() if path.is_file()}
-        status, response = self.request("/api/learning-plan?subject=comprehensive&limit=5")
-        self.assertEqual(200, status)
-        plan = response["data"]
-        self.assertEqual("K03.mda_cim_pim", plan["recommendations"][0]["concept_id"])
-        self.assertTrue(plan["practice_preview"]["available"])
-        self.assertEqual(
-            "K03.mda_cim_pim",
-            plan["practice_preview"]["substitution"]["requested_concept_id"],
-        )
-        self.assertEqual("K03.SOFTWARE_DESIGN_UML", plan["practice_preview"]["topic_id"])
-        self.assertNotIn("correct_answer", json.dumps(plan))
-        self.assertEqual(before, {name: path.read_bytes() for name, path in paths.items() if path.is_file()})
-        self.assertFalse((self.data_dir / "quiz-sessions").exists())
 
     def test_public_paper_withholds_answers_and_places_english_last(self) -> None:
         status, payload = self.request("/api/mock-paper")
@@ -363,14 +320,11 @@ class ExamServerTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertFalse(first["data"]["already_recorded"])
 
-        # Simulate a session recorded before the concept-enrichment keys
-        # existed (the real .study has hundreds of such events), then retry
-        # the submission: it must stay idempotent, not turn into a 409.
+        # A session recorded without optional derived item metadata must
+        # replay idempotently rather than becoming a conflict.
         attempts_path = exam_server.tutor.state_paths(self.data_dir)["attempts"]
         attempts = exam_server.tutor.load_attempts(attempts_path)
         legacy_keys = {
-            "concept_id",
-            "question_family_id",
             "question_fingerprint",
             "variant_of",
         }
@@ -385,213 +339,12 @@ class ExamServerTest(unittest.TestCase):
         self.assertTrue(replay["data"]["already_recorded"])
         self.assertFalse(replay["data"]["retest"])
 
-    def test_learning_plan_prioritizes_exact_mock_gaps(self) -> None:
-        answers = self.correct_answers()
-        answers["32"] = "A"  # 银行家算法：死锁避免
-        answers["73"] = "A"  # upfront：前期投入
-        session_id = f"web-{exam_server.PAPER_ID}-diagnostic1"
-        common = {
-            "session_id": session_id,
-            "answers": answers,
-            "confidences": {},
-            "durations": {},
-            "duration_seconds": 1800,
-        }
-        self.request("/api/mock-record", payload=common)
-        self.request(
-            "/api/mock-feedback",
-            payload={
-                "session_id": session_id,
-                "answers": answers,
-                "wrong_reasons": {
-                    "32": ["knowledge_gap"],
-                    "73": ["concept_confusion"],
-                },
-            },
-        )
 
-        status, response = self.request(
-            "/api/learning-plan?subject=comprehensive&limit=5"
-        )
-        self.assertEqual(status, 200)
-        recommendations = response["data"]["recommendations"]
-        concepts = [item.get("concept_id") for item in recommendations]
-        self.assertEqual(
-            concepts[:2],
-            ["K01.deadlock_avoidance", "K22.cloud_cost_vocabulary"],
-        )
-        self.assertTrue(
-            all(item["diagnostic_status"] == "pending_remediation" for item in recommendations[:2])
-        )
-
-        curriculum = exam_server.tutor.load_curriculum()
-        profile, state = exam_server.tutor.load_profile_and_state(self.data_dir)
-        attempts_path = exam_server.tutor.state_paths(self.data_dir)["attempts"]
-        attempts = exam_server.tutor.load_attempts(attempts_path)
-        later_mock = {
-            "attempt_id": "later-comprehensive-mock",
-            "event_type": "mock",
-            "topic_id": None,
-            "item_id": "different-paper-without-this-gap",
-            "at": "2098-01-01T10:00:00+08:00",
-            "subject": "comprehensive",
-            "skill": "recognition",
-            "mode": "full_mock",
-            "score": 60,
-            "max_score": 75,
-            "duration_seconds": 3600,
-            "word_count": None,
-            "complete": True,
-            "confidence": "sure",
-            "wrong_reasons": [],
-            "source_type": "simulation",
-            "source": "different-paper-without-this-gap",
-            "feedback_seen": True,
-        }
-        attempts.append(later_mock)
-        exam_server.tutor.apply_event_to_state(state, later_mock, curriculum)
-        exam_server.tutor.write_attempts(attempts_path, attempts)
-        exam_server.tutor.save_state_bundle(self.data_dir, profile, state, backup=True)
-        _, retained = self.request(
-            "/api/learning-plan?subject=comprehensive&limit=5"
-        )
-        retained_concepts = [
-            item.get("concept_id") for item in retained["data"]["recommendations"]
-        ]
-        self.assertEqual(
-            retained_concepts[:2],
-            ["K01.deadlock_avoidance", "K22.cloud_cost_vocabulary"],
-        )
-
-        registry_entries = [
-            exam_server.tutor.question_registry.validate_entry(
-                {
-                    "item_id": "self-authored/K01/banker-safe-sequence-variant-001",
-                    "topic_id": "K01.OS_MEMORY_KERNEL",
-                    "concept_id": "K01.deadlock_avoidance",
-                    "question_family_id": "K01.deadlock_avoidance.variant",
-                    "variant_of": "exam-bank/02-os-concepts.md#3",
-                    "stem": "系统仅在资源分配后仍存在安全序列时才批准请求，使用了哪种策略？",
-                    "options": ["死锁预防", "死锁避免", "死锁检测", "死锁忽略"],
-                }
-            ),
-            exam_server.tutor.question_registry.validate_entry(
-                {
-                    "item_id": "self-authored/K22/availability-definition-unrelated-001",
-                    "topic_id": "K22.ENGLISH_READING",
-                    "concept_id": "K22.availability",
-                    "question_family_id": "K22.availability",
-                    "stem": "availability 最接近哪项含义？",
-                    "options": ["可用性", "完整性", "机密性", "吞吐量"],
-                }
-            ),
-            exam_server.tutor.question_registry.validate_entry(
-                {
-                    "item_id": "self-authored/K01/banker-safe-state-variant-002",
-                    "topic_id": "K01.OS_MEMORY_KERNEL",
-                    "concept_id": "K01.deadlock_avoidance",
-                    "question_family_id": "K01.deadlock_avoidance.safe-state",
-                    "variant_of": "exam-bank/02-os-concepts.md#3",
-                    "stem": "分配资源前先验证系统仍处于安全状态，属于哪类死锁策略？",
-                    "options": ["死锁预防", "死锁避免", "死锁检测", "死锁恢复"],
-                }
-            ),
-        ]
-        exam_server.tutor.atomic_write_text(
-            exam_server.tutor.question_registry.registry_path(self.data_dir),
-            exam_server.tutor.question_registry.serialize_registry(registry_entries),
-        )
-        profile, state = exam_server.tutor.load_profile_and_state(self.data_dir)
-        attempts = exam_server.tutor.load_attempts(attempts_path)
-        for index, (item_id, topic_id) in enumerate(
-            (
-                ("self-authored/K01/banker-safe-sequence-variant-001", "K01.OS_MEMORY_KERNEL"),
-                ("self-authored/K22/availability-definition-unrelated-001", "K22.ENGLISH_READING"),
-            ),
-            1,
-        ):
-            event = {
-                "attempt_id": f"diagnostic-remedy-{index}",
-                "event_type": "practice",
-                "topic_id": topic_id,
-                "item_id": item_id,
-                "facet": None,
-                "at": "2099-01-01T18:00:00+08:00",
-                "subject": "comprehensive",
-                "skill": "recognition",
-                "mode": "review",
-                "score": 1,
-                "max_score": 1,
-                "duration_seconds": None,
-                "word_count": None,
-                "complete": False,
-                "confidence": "sure",
-                "wrong_reasons": [],
-                "source_type": "self_authored",
-                "source": None,
-                "feedback_seen": True,
-            }
-            attempts.append(event)
-            exam_server.tutor.apply_event_to_state(state, event, curriculum)
-        exam_server.tutor.write_attempts(attempts_path, attempts)
-        exam_server.tutor.save_state_bundle(self.data_dir, profile, state, backup=True)
-
-        _, updated = self.request(
-            "/api/learning-plan?subject=comprehensive&limit=5"
-        )
-        issues = {
-            item["concept_id"]: item
-            for item in updated["data"]["diagnosis"]["issues"]
-        }
-        self.assertEqual(issues["K01.deadlock_avoidance"]["status"], "awaiting_review")
-        self.assertEqual(issues["K22.cloud_cost_vocabulary"]["status"], "pending_remediation")
-        active_concepts = [
-            item.get("concept_id") for item in updated["data"]["recommendations"]
-        ]
-        self.assertNotIn("K01.deadlock_avoidance", active_concepts)
-        self.assertIn("K22.cloud_cost_vocabulary", active_concepts)
-
-        second_event = {
-            "attempt_id": "diagnostic-remedy-3",
-            "event_type": "practice",
-            "topic_id": "K01.OS_MEMORY_KERNEL",
-            "item_id": "self-authored/K01/banker-safe-state-variant-002",
-            "facet": None,
-            "at": "2099-01-09T18:00:00+08:00",
-            "subject": "comprehensive",
-            "skill": "recognition",
-            "mode": "review",
-            "score": 1,
-            "max_score": 1,
-            "duration_seconds": None,
-            "word_count": None,
-            "complete": False,
-            "confidence": "sure",
-            "wrong_reasons": [],
-            "source_type": "self_authored",
-            "source": None,
-            "feedback_seen": True,
-        }
-        profile, state = exam_server.tutor.load_profile_and_state(self.data_dir)
-        attempts = exam_server.tutor.load_attempts(attempts_path)
-        attempts.append(second_event)
-        exam_server.tutor.apply_event_to_state(state, second_event, curriculum)
-        exam_server.tutor.write_attempts(attempts_path, attempts)
-        exam_server.tutor.save_state_bundle(self.data_dir, profile, state, backup=True)
-        _, verified = self.request(
-            "/api/learning-plan?subject=comprehensive&limit=5"
-        )
-        verified_issues = {
-            item["concept_id"]: item
-            for item in verified["data"]["diagnosis"]["issues"]
-        }
-        self.assertEqual(verified_issues["K01.deadlock_avoidance"]["status"], "verified")
-
-    def test_mock_private_items_have_stable_concept_and_fingerprint(self) -> None:
+    def test_mock_private_items_have_stable_topic_and_fingerprint(self) -> None:
         items = exam_server.private_items()
         self.assertEqual(len(items), 75)
-        self.assertTrue(all(item.get("concept_id") for item in items))
-        self.assertTrue(all(item.get("question_family_id") for item in items))
+        self.assertTrue(all(item.get("topic_id") for item in items))
+        self.assertTrue(all(item.get("item_id") for item in items))
         self.assertTrue(all(len(item.get("question_fingerprint", "")) == 64 for item in items))
         public = exam_server.public_payload()
         serialized = json.dumps(public, ensure_ascii=False)

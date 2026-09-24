@@ -1,85 +1,43 @@
-"""Stable question metadata used by mock diagnosis and quiz deduplication."""
+"""Stable item identities, topic corrections, and private question deduplication."""
 
 from __future__ import annotations
 
 import hashlib
 import json
 import re
-from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable
 
 
 SCHEMA_VERSION = 1
-REPO_ROOT = Path(__file__).resolve().parents[1]
 
-# Hand-curated fine-grained concepts for mock questions where the whole topic
-# is too coarse a merge unit. Every item without an override falls back to its
-# stable topic (+facet) so mock gaps always merge with later same-topic
-# variants; per-item composite ids would make each question its own concept
-# and remediation structurally impossible.
-CONCEPT_OVERRIDES = {
-    "exam-bank/05-uml.md#1": ("K03.uml_diagram_count", "K03.uml_diagram_count"),
-    "exam-bank/05-uml.md#2": ("K03.uml_diagram_count", "K03.uml_diagram_count"),
-    "exam-bank/05-uml.md#3": ("K03.uml_diagram_count", "K03.uml_diagram_count"),
-    "exam-bank/05-uml.md#16": ("K03.uml_diagram_count", "K03.uml_diagram_count"),
-    "exam-bank/05-uml.md#17": ("K03.uml_diagram_count", "K03.uml_diagram_count"),
-    "exam-bank/05-uml.md#18": ("K03.uml_diagram_count", "K03.uml_diagram_count"),
-    "exam-bank/05-uml.md#4": ("K03.uml_relationships", "K03.uml_relationships"),
-    "exam-bank/05-uml.md#5": ("K03.uml_relationships", "K03.uml_relationships"),
-    "exam-bank/02-os-concepts.md#3": ("K01.deadlock_avoidance", "K01.deadlock_avoidance"),
-    "exam-bank/01-computer-systems.md#1": ("K18.mips_cpi", "K18.mips_cpi"),
-    "exam-bank/21-security.md#1": ("K20.cia_triad", "K20.cia_triad"),
-    "exam-bank/21-security.md#21": ("K20.cia_triad", "K20.cia_triad"),
-    "exam-bank/23-english-reading.md#3": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
-    "exam-bank/23-english-reading.md#26": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
-    "exam-bank/23-english-reading.md#27": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
-    "exam-bank/23-english-reading.md#28": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
-    "exam-bank/23-english-reading.md#29": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
-    "exam-bank/23-english-reading.md#30": ("K22.cloud_cost_vocabulary", "K22.cloud_cost_vocabulary"),
-    "exam-bank/15-microservice-cloud-native.md#1": (
-        "K12.soa_microservices_governance",
-        "K12.soa_microservices_governance",
-    ),
-    "exam-bank/15-microservice-cloud-native.md#15": (
-        "K12.soa_microservices_governance",
-        "K12.soa_microservices_governance",
-    ),
-    "exam-bank/26-soa-evolution.md#12": (
-        "K12.soa_microservices_governance",
-        "K12.soa_microservices_governance",
-    ),
-    "past-papers/comprehensive-by-year/2012下.md#17-17": ("K18.mips_cpi", "K18.mips_cpi"),
-    "past-papers/comprehensive-by-year/2022.md#32": (
-        "K12.soa_microservices_governance",
-        "K12.soa_microservices_governance",
-    ),
-    "past-papers/comprehensive-by-year/2024下.md#38": (
-        "K03.uml_relationships",
-        "K03.uml_relationships",
-    ),
-    "past-papers/comprehensive-by-year/2022.md#26": (
-        "K03.mda_cim_pim",
-        "K03.mda_cim_pim",
-    ),
-    "past-papers/comprehensive-by-year/2018下.md#23": (
-        "K06.user_document_classification",
-        "K06.user_document_classification",
-    ),
-    "past-papers/comprehensive-by-year/2009下.md#21-21": (
-        "K06.user_document_classification",
-        "K06.user_document_classification",
-    ),
-    "past-papers/comprehensive-by-year/2025上.md#23": (
-        "K01.deadlock_avoidance",
-        "K01.deadlock_avoidance",
-    ),
-}
-
+# A source item may have a broad or incorrect heading. Only these verified
+# exceptions override its public topic mapping.
 ITEM_TOPIC_OVERRIDES = {
     "exam-bank/02-os-concepts.md#3": "K01.OS_MEMORY_KERNEL",
     "exam-bank/09-software-metrics.md#6": "K03.SOFTWARE_DESIGN_UML",
     "exam-bank/09-software-metrics.md#7": "K03.SOFTWARE_DESIGN_UML",
+    "exam-bank/24-devops-serverless.md#13": "K27.EMERGING_TECH",
+    "exam-bank/24-devops-serverless.md#14": "K27.EMERGING_TECH",
+    "exam-bank/24-devops-serverless.md#15": "K27.EMERGING_TECH",
+    "exam-bank/24-devops-serverless.md#16": "K27.EMERGING_TECH",
+    "exam-bank/24-devops-serverless.md#17": "K27.EMERGING_TECH",
+    "exam-bank/24-devops-serverless.md#18": "K27.EMERGING_TECH",
+    "exam-bank/24-devops-serverless.md#19": "K23.PROJECT_MANAGEMENT_METRICS",
+    "exam-bank/25-enterprise-integration.md#4": "K12.PATTERNS_SOA_MICROSERVICES",
+    "exam-bank/25-enterprise-integration.md#5": "K12.PATTERNS_SOA_MICROSERVICES",
+    "exam-bank/25-enterprise-integration.md#6": "K12.PATTERNS_SOA_MICROSERVICES",
+    "exam-bank/25-enterprise-integration.md#7": "K12.PATTERNS_SOA_MICROSERVICES",
+    "exam-bank/25-enterprise-integration.md#8": "K21.MESSAGING_CACHE",
+    "exam-bank/25-enterprise-integration.md#9": "K21.MESSAGING_CACHE",
+    "exam-bank/25-enterprise-integration.md#10": "K21.MESSAGING_CACHE",
+    "exam-bank/25-enterprise-integration.md#11": "K12.PATTERNS_SOA_MICROSERVICES",
+    "exam-bank/25-enterprise-integration.md#12": "K12.PATTERNS_SOA_MICROSERVICES",
+    "exam-bank/25-enterprise-integration.md#13": "K21.MESSAGING_CACHE",
+    "exam-bank/25-enterprise-integration.md#14": "K21.MESSAGING_CACHE",
+    "exam-bank/25-enterprise-integration.md#15": "K21.MESSAGING_CACHE",
+    "exam-bank/25-enterprise-integration.md#16": "K21.MESSAGING_CACHE",
+    "exam-bank/25-enterprise-integration.md#17": "K26.ARCH_EVOLUTION",
     "exam-bank/26-soa-evolution.md#9": "K12.PATTERNS_SOA_MICROSERVICES",
     "exam-bank/26-soa-evolution.md#10": "K12.PATTERNS_SOA_MICROSERVICES",
     "exam-bank/26-soa-evolution.md#11": "K12.PATTERNS_SOA_MICROSERVICES",
@@ -90,106 +48,35 @@ ITEM_TOPIC_OVERRIDES = {
     "past-papers/comprehensive-by-year/2025上.md#23": "K01.OS_MEMORY_KERNEL",
 }
 
-# These public items have historical attempts with outdated topic or concept
-# links. Their source IDs identify the corrected metadata without rewriting
-# the original answer events.
+# Correct historical events in memory without changing the original answer log.
 PUBLIC_ITEM_CORRECTIONS = {
-    "exam-bank/02-os-concepts.md#3": {
-        "topic_id": "K01.OS_MEMORY_KERNEL",
-        "facet": None,
-        "concept_id": "K01.deadlock_avoidance",
-        "question_family_id": "K01.deadlock_avoidance",
-    },
-    "exam-bank/05-uml.md#2": {
-        "topic_id": "K03.SOFTWARE_DESIGN_UML",
-        "facet": None,
-        "concept_id": "K03.uml_diagram_count",
-        "question_family_id": "K03.uml_diagram_count",
-    },
-    "exam-bank/05-uml.md#3": {
-        "topic_id": "K03.SOFTWARE_DESIGN_UML",
-        "facet": None,
-        "concept_id": "K03.uml_diagram_count",
-        "question_family_id": "K03.uml_diagram_count",
-    },
-    "exam-bank/26-soa-evolution.md#10": {
-        "topic_id": "K12.PATTERNS_SOA_MICROSERVICES",
-        "facet": "microservices",
-        "concept_id": "K12.PATTERNS_SOA_MICROSERVICES:microservices",
-        "question_family_id": "K12.PATTERNS_SOA_MICROSERVICES:microservices",
-    },
-    "exam-bank/26-soa-evolution.md#12": {
-        "topic_id": "K12.PATTERNS_SOA_MICROSERVICES",
-        "facet": "microservices",
-        "concept_id": "K12.soa_microservices_governance",
-        "question_family_id": "K12.soa_microservices_governance",
-    },
-    "past-papers/comprehensive-by-year/2022.md#26": {
-        "topic_id": "K03.SOFTWARE_DESIGN_UML",
-        "facet": None,
-        "concept_id": "K03.mda_cim_pim",
-        "question_family_id": "K03.mda_cim_pim",
-    },
-    "past-papers/comprehensive-by-year/2018下.md#23": {
-        "topic_id": "K06.DESIGN_DATA_VIEWS",
-        "facet": "documentation",
-        "concept_id": "K06.user_document_classification",
-        "question_family_id": "K06.user_document_classification",
-    },
-    "past-papers/comprehensive-by-year/2009下.md#21-21": {
-        "topic_id": "K06.DESIGN_DATA_VIEWS",
-        "facet": "documentation",
-        "concept_id": "K06.user_document_classification",
-        "question_family_id": "K06.user_document_classification",
-    },
-}
-
-CONCEPT_LABELS = {
-    "K03.uml_diagram_count": "UML 2.x 图分类与数量",
-    "K03.uml_relationships": "UML 泛化、实现与依赖关系",
-    "K03.mda_cim_pim": "MDA 的 CIM 与 PIM",
-    "K06.user_document_classification": "用户文档与系统文档分类",
-    "K01.deadlock_avoidance": "银行家算法与死锁避免",
-    "K18.mips_cpi": "主频、CPI 与 MIPS 计算",
-    "K20.cia_triad": "信息安全 CIA 三要素",
-    "K12.soa_microservices_governance": "SOA 与微服务治理方式",
-    "K22.cloud_cost_vocabulary": "云计算成本语境词汇",
+    "exam-bank/02-os-concepts.md#3": "K01.OS_MEMORY_KERNEL",
+    "exam-bank/26-soa-evolution.md#10": "K12.PATTERNS_SOA_MICROSERVICES",
+    "exam-bank/26-soa-evolution.md#12": "K12.PATTERNS_SOA_MICROSERVICES",
+    "past-papers/comprehensive-by-year/2022.md#26": "K03.SOFTWARE_DESIGN_UML",
+    "past-papers/comprehensive-by-year/2018下.md#23": "K06.DESIGN_DATA_VIEWS",
+    "past-papers/comprehensive-by-year/2009下.md#21-21": "K06.DESIGN_DATA_VIEWS",
 }
 
 
 def topic_override(item_id: str) -> str | None:
-    """Return a hand-curated tutor topic for a mislabeled or broad source item."""
+    """Return the verified topic for a mislabeled public item, if any."""
 
-    corrected = PUBLIC_ITEM_CORRECTIONS.get(item_id)
-    return corrected["topic_id"] if corrected else ITEM_TOPIC_OVERRIDES.get(item_id)
+    return PUBLIC_ITEM_CORRECTIONS.get(item_id) or ITEM_TOPIC_OVERRIDES.get(item_id)
 
 
 def canonicalize_public_event(event: dict[str, Any]) -> dict[str, Any]:
-    """Project only verified public-item links onto an event, leaving its log intact."""
+    """Project verified topic corrections without rewriting answer evidence."""
 
-    corrected = PUBLIC_ITEM_CORRECTIONS.get(str(event.get("item_id") or ""))
-    if corrected is None or event.get("subject") not in (None, "comprehensive"):
+    topic_id = topic_override(str(event.get("item_id") or ""))
+    if (
+        not topic_id
+        or event.get("topic_id") == topic_id
+        or event.get("subject") not in (None, "comprehensive")
+        or event.get("skill") not in (None, "recognition")
+    ):
         return event
-    if event.get("skill") not in (None, "recognition"):
-        return event
-    return {**event, **corrected}
-
-
-@lru_cache(maxsize=1)
-def _topic_names() -> dict[str, str]:
-    """Stable topic id → readable name, used as the concept label fallback."""
-
-    try:
-        curriculum = json.loads(
-            (REPO_ROOT / "tutor" / "curriculum.json").read_text(encoding="utf-8")
-        )
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return {
-        topic["id"]: topic["name"]
-        for topic in curriculum.get("topics", [])
-        if isinstance(topic, dict) and topic.get("id") and topic.get("name")
-    }
+    return {**event, "topic_id": topic_id}
 
 
 def normalize_text(value: str) -> str:
@@ -206,49 +93,6 @@ def content_fingerprint(stem: str, options: Iterable[str]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def default_metadata(item_id: str, topic_id: str, facet: str | None = None) -> dict[str, str]:
-    corrected = PUBLIC_ITEM_CORRECTIONS.get(item_id)
-    if corrected:
-        topic_id = corrected["topic_id"]
-        facet = corrected["facet"]
-    override = CONCEPT_OVERRIDES.get(item_id)
-    if override:
-        concept_id, family_id = override
-    else:
-        # Stable merge unit for every un-curated item: the curriculum topic,
-        # split by facet when the topic declares one, so all same-topic mock
-        # questions and later variants resolve to one concept id.
-        concept_id = f"{topic_id}:{facet}" if facet else topic_id
-        family_id = concept_id
-    return {
-        "item_id": item_id,
-        "topic_id": topic_id,
-        "concept_id": concept_id,
-        "question_family_id": family_id,
-        "concept_label": (
-            CONCEPT_LABELS.get(concept_id)
-            or _topic_names().get(topic_id)
-            or exam_question_stem(item_id)
-            or concept_id
-        ),
-    }
-
-
-@lru_cache(maxsize=256)
-def exam_question_stem(item_id: str) -> str | None:
-    match = re.fullmatch(r"(exam-bank/.+\.md)#(\d+)", item_id)
-    if not match:
-        return None
-    path = REPO_ROOT / match.group(1)
-    if not path.is_file():
-        return None
-    number = match.group(2)
-    header = re.search(rf"(?m)^###\s+{re.escape(number)}\.\s*(.+)$", path.read_text(encoding="utf-8"))
-    if not header:
-        return None
-    return re.sub(r"\*\*|✅", "", header.group(1)).strip()
-
-
 def registry_path(data_dir: Path) -> Path:
     return data_dir / "question-registry.json"
 
@@ -256,10 +100,7 @@ def registry_path(data_dir: Path) -> Path:
 def validate_entry(entry: Any) -> dict[str, Any]:
     if not isinstance(entry, dict):
         raise ValueError("题目登记项必须是对象")
-    required = ("item_id", "topic_id", "concept_id", "question_family_id", "stem", "options")
-    for key in required:
-        if key == "options":
-            continue
+    for key in ("item_id", "topic_id", "stem"):
         if not isinstance(entry.get(key), str) or not entry[key].strip():
             raise ValueError(f"题目登记项缺少 {key}")
     options = entry.get("options")
@@ -267,16 +108,16 @@ def validate_entry(entry: Any) -> dict[str, Any]:
         not isinstance(option, str) or not option.strip() for option in options
     ):
         raise ValueError("题目登记项 options 至少包含两个非空字符串")
-    normalized = dict(entry)
+    normalized = {
+        key: entry[key]
+        for key in ("item_id", "topic_id", "stem", "options", "variant_of", "memory_hook")
+        if key in entry
+    }
     normalized["question_fingerprint"] = content_fingerprint(entry["stem"], options)
-    variant_of = normalized.get("variant_of")
-    if variant_of is not None and (not isinstance(variant_of, str) or not variant_of.strip()):
-        raise ValueError("variant_of 必须是非空字符串")
-    memory_hook = normalized.get("memory_hook")
-    if memory_hook is not None and (
-        not isinstance(memory_hook, str) or not memory_hook.strip()
-    ):
-        raise ValueError("memory_hook 必须是非空字符串")
+    for key in ("variant_of", "memory_hook"):
+        value = normalized.get(key)
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            raise ValueError(f"{key} 必须是非空字符串")
     return normalized
 
 
@@ -314,46 +155,3 @@ def serialize_registry(entries: Iterable[dict[str, Any]]) -> str:
         "questions": sorted(entries, key=lambda item: item["item_id"]),
     }
     return json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-
-
-def resolve_metadata(
-    event: dict[str, Any], private_registry: dict[str, dict[str, Any]]
-) -> dict[str, Any]:
-    event = canonicalize_public_event(event)
-    item_id = str(event.get("item_id") or "")
-    topic_id = str(event.get("topic_id") or "")
-    registered = private_registry.get(item_id, {})
-    if registered.get("topic_id") != topic_id:
-        registered = {}
-    fallback = (
-        default_metadata(item_id, topic_id, event.get("facet"))
-        if item_id and topic_id
-        else {}
-    )
-    concept_id = (
-        event.get("concept_id")
-        or registered.get("concept_id")
-        or fallback.get("concept_id")
-    )
-    registered_stem = registered.get("stem")
-    if registered_stem and len(registered_stem) > 40:
-        registered_stem = registered_stem[:39] + "…"
-    return {
-        "item_id": item_id,
-        "topic_id": topic_id,
-        "facet": event.get("facet"),
-        "concept_id": concept_id,
-        "question_family_id": event.get("question_family_id")
-        or registered.get("question_family_id")
-        or fallback.get("question_family_id"),
-        "question_fingerprint": event.get("question_fingerprint")
-        or registered.get("question_fingerprint"),
-        "variant_of": event.get("variant_of") or registered.get("variant_of"),
-        "stem": registered.get("stem"),
-        "concept_label": (
-            registered_stem
-            or CONCEPT_LABELS.get(concept_id)
-            or fallback.get("concept_label")
-            or concept_id
-        ),
-    }

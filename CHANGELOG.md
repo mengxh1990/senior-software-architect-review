@@ -6,15 +6,17 @@
 
 - 新增只读 `tutor.py progress` 聚合入口，一次返回三科状态、有效时间分配、薄弱 Top、到期复习和下一步；`manual_trigger` 科目从自动分配中剔除并单独提示，不再为“看看进度”创建答题会话。
 - 新增双层考频审计快照与生成器：正式卷/人工复核稳定层占 80%，近年回忆版趋势层占 20%；当前覆盖率未达门槛时保持 `report_only`，`doctor` 与 CI 检查快照是否同步。
-- 当天排课去重补漏：`quiz-prepare` 把当天已生成但未判分的 `quiz-sessions/*.json` 也算作“已经考过”，同一天不再重复出同一道题；同一细考点当天考过即进入冷却，有可用新题时让位给其他考点、确实无题可出时才按序放宽，细考点缺口不再用同一大考点的题顶替，`objective` 只播报真正出了题的推荐，不再出现“复测某细考点”却一题未出的假象。`quiz-loop-sop.md` 自检清单补充：向考生说明作答格式只能用占位符（如 `1_ 2_ 3_ 4_ 5_`），不得用真实字母组合举例。
+- 当天排课去重补漏：`quiz-prepare` 把当天已生成但未判分的 `quiz-sessions/*.json` 也算作“已经考过”，同一天不再重复出同一道题；诊断、排课与变式训练统一使用稳定大考点和独立题目 ID，`objective` 只播报真正出了题的推荐。`quiz-loop-sop.md` 自检清单补充：向考生说明作答格式只能用占位符（如 `1_ 2_ 3_ 4_ 5_`），不得用真实字母组合举例。
 
 ### Fixed
 
+- 补齐分布式事务、大数据、DevOps／Serverless、企业应用集成四章共 72 道自编题的大考点路由；跨主题题按题目本身归属修正，`doctor` 同时检查未接入的题库文件，避免新增章节被漏计。
+- 统一训练粒度为课程表中的稳定考点：诊断、抽题、复习和掌握判定不再依赖额外题目分类；旧私人作答保持原样，题目 ID 与内容指纹继续防止重复证据。
 - 案例自动路由改为只在 C 级个人赛道中选择，并由路线显式声明覆盖的 K 级支撑考点；配置路线后不再被未选中的架构风格、可靠性等 K 级案例题绕过，显式 `case-prepare --topic` 仍可覆盖自动策略。
 - 普通错题不再默认写成 `concept_confusion`；`quiz-grade` / `quiz-variant-grade` 只记录考生通过 `--wrong-reason` 明确提供的错因，“不会”和“猜对”继续作为可确认信号。复习日期按 1/3/7/14/30 天阶梯推进，当天变式不会取消次日复测，并新增 `repair --recompute-derived` 安全重算派生状态。
 - 自适应客观题要求同时通过题面质量与讲解门禁，缺少解析的题不会进入训练；`memory_hook` 保持可选，微课以已清洗解析为事实素材。
 - 本地模拟考不再提供可脱离交卷的 `/api/mock-grade` 答案查询；页面改用 `/api/mock-submit`，服务端先原子写入原始答卷与模考事件，再回传得分、答案和解析。`repair` 现保留 `subject_policies`，不会在恢复时丢失“仅主动练某科”的个人策略；`serve.py --data-dir` 与写入路径统一复用私人目录的 Git 忽略校验。
-- 封闭教学运行时（端到端性能优化 V2 的 P0）：`quiz-grade` 支持 `X` 表示"明确不会"（`response_state=conceded`，0 分、`knowledge_gap`、`confidence=null`，计入复习队列，不再需要伪造选项或让考生补答），支持 `--invalidate 题号=原因` 把坏题排除出本组（不写 attempt、不计掌握度）与 `--audit 题号=说明` 把题库疑点写入 `.study/quiz-audit-queue.jsonl`；判分返回值直接给出完整教学包（`explanation`、`wrong_reasons`、`memory_hook`、同细考点 `variant_question`、`next_review_at`），讲解阶段不再读 manifest、题库或知识库。
+- 封闭教学运行时（端到端性能优化 V2 的 P0）：`quiz-grade` 支持 `X` 表示"明确不会"（`response_state=conceded`，0 分、`knowledge_gap`、`confidence=null`，计入复习队列，不再需要伪造选项或让考生补答），支持 `--invalidate 题号=原因` 把坏题排除出本组（不写 attempt、不计掌握度）与 `--audit 题号=说明` 把题库疑点写入 `.study/quiz-audit-queue.jsonl`；判分返回值直接给出完整教学包（`explanation`、`wrong_reasons`、`memory_hook`、同大考点后续题 `variant_question`、`next_review_at`），讲解阶段不再读 manifest、题库或知识库。
 - 题目质量门禁：`sanitize_bank` 新增解析清洗（剥离下一题标题、答案残片与资源路径）与 `assess_quality`（题干完整、选项完整、答案合法、盲练安全、图表可用、解析隔离），候选题带 `quality_status` / `quality_issues` / `requires_figure` / `requires_table`；`quiz-prepare` 只选 `ready` 的题，尚不能通过公开输出可靠呈现的本地图片题也会被拦下，人工确认的坏题写入 `scripts/quiz_quality_exclusions.json` 永久排除，`doctor` 新增 `question-bank` 检查报告可出题数与拦截原因。全量真题 1055 道可用题中 996 道通过门禁，59 道被拦下（含 2021 页式地址变换这类缺表题）。
 - 题库质量修复与过滤：旧版真题的单行/全角空格选项、跨行紧凑选项和字面 `*` 选项现在可正确解析；`2014下#53`、`2025上#30` 等题恢复完整 A–D 选项。英语阅读填空通过 `contexts` 以共享短文方式呈现，不再给考生裸 `(N)` 编号；数据库与嵌入式题中可恢复的前题依赖已改为独立题干。门禁新增完整 A–D、上下文、跨多独立小题题组和源图/表资源检查：尚无逐小题记档模型的旧版多题组、缺图/缺表、无可信上下文题一律跳过，不再错误压成一题作答。
 - 排课与策略结构化：`quiz-prepare` 直接返回 `objective` / `evidence_summary` / `days_left` / `daily_minutes`，"看薄弱点并出题"只需一次命令；`configure --subject-policy 科目=manual_trigger|active` 把"论文先不主动练"这类长期策略写进 `state.json`，推荐器、维护科目选择与薄弱点排名机械尊重该策略（显式 `--subject` 仍可训练）。

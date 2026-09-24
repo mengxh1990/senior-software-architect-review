@@ -55,8 +55,8 @@ python3 scripts/tutor.py progress --json
 python3 scripts/tutor.py quiz-prepare --subject comprehensive --topic <next_action.topic_id> --limit 5
 ```
 
-该命令在一个进程内完成逐题诊断、推荐、真题优先抽取、当天去重、细考点与
-facet 解析，并把私有答案保存到 `.study/quiz-sessions/`。标准输出只包含可直接
+该命令在一个进程内完成大考点诊断、推荐、真题优先抽取和当天题目去重，
+并把私有答案保存到 `.study/quiz-sessions/`。标准输出只包含可直接
 展示的题干、选项和来源类型，不包含答案或解析。
 
 同一份输出还带排课结论，直接展示、不要另外分析：
@@ -66,7 +66,6 @@ facet 解析，并把私有答案保存到 `.study/quiz-sessions/`。标准输�
 | `objective` | 一句话说明本组训练目标与依据，开场直接引用 |
 | `evidence_summary` | 3–5 条证据（近期正确率、是否到期、本组覆盖哪些考点） |
 | `days_left` / `daily_minutes` | 距离考试天数与每日可投入分钟数，用于控制任务体量 |
-| `substitution`（可选） | 原细考点无可用同概念题时，本组只是同稳定考点替代练习；照实说明，不宣称完成原细考点复测 |
 
 需要更细的薄弱点排名时才用一次只读 `weakpoints`；不要为了排课再手工统计。
 
@@ -200,7 +199,7 @@ python3 scripts/paper_practice.py --list
 ## Step 3 · 批量出题
 
 默认一次展示 5 题，学员统一作答后再统一判分和记档；冲刺时可按学员要求改为
-10 题。每组尽量覆盖不同细考点，不为了凑题重复当天已纠偏的题型。
+10 题。每组在同一稳定大考点内优先选择未做题，不重复当天已展示的题目。
 
 如果运行环境支持点选工具：
 
@@ -274,28 +273,21 @@ python3 scripts/tutor.py quiz-grade --quiz-id <id> --answers 'C,B,A,X,B' \
 | `wrong_reasons` / `wrong_reason_status` | 只保存考生明确说明的错因；未说明的普通答错为 `unclassified`，`conceded` 固定为 `knowledge_gap` |
 | `explanation` | 已清洗的解析，是微课的事实素材；答对且确定时可能为 `null` |
 | `memory_hook` | 登记过的记忆钩子；为 `null` 时用一句话概括即可，不得检索 |
-| `variant_question` | 已验证的同细考点变式题（含 `stem` / `options` / `answer`）；没有精确匹配时返回 `null`，不得用同一大考点下的无关题兜底 |
+| `variant_question` | 同一稳定大考点下通过质量门禁的后续练习题（含 `stem` / `options` / `answer`）；不将它表述为原题知识点的精确变式 |
 | `next_review_at` | 该考点的下次复习日 |
 
 顶层另有 `score` / `max_score` / `conceded_count` / `invalidated_count`，用于一句话汇报本组结果。
 
 单题 `record` 保留给主观题、旧流程兼容和人工修复，不用于正常客观题循环。
 
-自编题必须先登记，登记文件包含稳定 `item_id`、`topic_id`、`concept_id`、
-`question_family_id`、题干和选项：
+自编题必须先登记，登记文件包含稳定 `item_id`、`topic_id`、题干和选项：
 
 ```bash
 python3 scripts/tutor.py register-question --file .study/new-question.json
 ```
 
 登记会计算内容指纹；内容完全相同却更换 `item_id` 会被拒绝。变式题使用
-`variant_of` 指向来源题，并共享细考点或题型族，便于推荐器做冷却和去重。
-
-### 聚合考点必须传 `--facet`
-
-聚合考点及其合法 facet 只以自动生成的
-[`tutor/topic-map.md`](./topic-map.md#1-聚合考点record---facet-必填) 为准；
-本文不再复制清单，避免与 `curriculum.json` 漂移。
+`variant_of` 指向来源题，题目 ID 和内容指纹用于去重。
 
 ### 证据分级（详见 PROGRESS_PROTOCOL §4）
 
@@ -380,7 +372,6 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 
 | 症状 | 原因 | 处理 |
 |---|---|---|
-| `record` 报 `--facet is required` | 聚合考点漏 facet | 查 [`topic-map.md`](./topic-map.md) 补 facet |
 | topic-map 与 curriculum 不一致 | 有人改了 curriculum 没重跑生成脚本 | `python3 scripts/gen_topic_map.py` |
 | 学员答案里选项字母对不上 | label 用了字母以外内容 | 回 Step 3 校验 label 只放 A/B/C/D |
 | status 仍显示 `unmeasured` | 单题小测不能升 measured | 完整 75 分制整卷模考才升级 |
@@ -392,10 +383,9 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 答完一组、准备下一组前，快速过一遍：
 
 - [ ] 每题都 `record` 了，`status` 里 attempt 数增加
-- [ ] 聚合考点每条都带了 `--facet`
 - [ ] 蒙对/不确定的题 `--confidence` 标了 `unsure` / `guess`
-- [ ] 自编题已登记细考点、题型族和内容指纹
-- [ ] 未重复原题、同题型或当天已经纠偏的细考点
+- [ ] 自编题已登记稳定大考点、题目 ID 和内容指纹
+- [ ] 未重复当天已展示的题目
 - [ ] 错题给了知识缺口 + 记忆钩子 + 变式题；未获考生明确说明时没有伪造错因
 - [ ] 变式题的作答已用 `quiz-variant-grade` 记录，没有只停留在对话里
 - [ ] 没把 `✅` / `**答案**` / `**解析**` 泄给学员

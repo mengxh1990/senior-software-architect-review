@@ -65,7 +65,7 @@ def _paper_rows(
         paper["ready"] += 1
         matches = []
         for topic in topics:
-            candidate = tutor.quiz_question_for_topic(raw, topic, {})
+            candidate = tutor.quiz_question_for_topic(raw, topic)
             if candidate is not None:
                 matches.append(topic["id"])
         if len(matches) != 1:

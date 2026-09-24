@@ -76,7 +76,6 @@
       "name": "软件测试、CMMI 与常见设计模式",
       "subjects": ["comprehensive", "essay"],
       "skills": ["recognition", "production"],
-      "facets": ["testing", "cmmi", "design_patterns"],
       "frequency_count": 14,
       "frequency_confidence": "medium",
       "priority_weight": 0.96,
@@ -91,7 +90,6 @@
       "name": "概要设计、数据设计、文档与 UML 视图",
       "subjects": ["comprehensive", "case", "essay"],
       "skills": ["recognition", "application", "production"],
-      "facets": ["high_level_design", "data_design", "uml_views", "documentation"],
       "frequency_count": 12,
       "frequency_confidence": "medium",
       "priority_weight": 0.92,
@@ -127,7 +125,7 @@
       "cross_subject_value": 0.25,
       "estimated_minutes": 60,
       "raw_tags": ["§4.1"],
-      "resources": ["exam-bank/07-software-engineering.md", "notes/04-software-engineering/README.md", "cheatsheets/software-engineering-cmmi.md"]
+      "resources": ["exam-bank/07-software-engineering.md", "exam-bank/24-devops-serverless.md", "notes/04-software-engineering/README.md", "cheatsheets/software-engineering-cmmi.md"]
     },
     {
       "id": "K09.QUALITY_SCENARIOS",
@@ -176,7 +174,6 @@
       "name": "设计模式、SOA 与微服务核心概念",
       "subjects": ["comprehensive", "case", "essay"],
       "skills": ["recognition", "application", "production"],
-      "facets": ["design_patterns", "soa", "microservices"],
       "frequency_count": 9,
       "frequency_confidence": "medium",
       "priority_weight": 0.94,
@@ -191,7 +188,6 @@
       "name": "4+1 视图、SOA 与分层架构",
       "subjects": ["comprehensive", "case", "essay"],
       "skills": ["recognition", "application", "production"],
-      "facets": ["four_plus_one", "soa", "layering"],
       "frequency_count": 8,
       "frequency_confidence": "medium",
       "priority_weight": 0.84,
@@ -311,7 +307,7 @@
       "cross_subject_value": 0.95,
       "estimated_minutes": 120,
       "raw_tags": ["§1.7", "§6.6", "中间件/缓存"],
-      "resources": ["exam-bank/16-middleware.md", "exam-bank/18-cache.md", "knowledge-index/16-middleware.md", "knowledge-index/18-cache.md", "past-papers/case-types/06-messaging-caching.md"]
+      "resources": ["exam-bank/16-middleware.md", "exam-bank/17-distributed-transactions.md", "exam-bank/18-cache.md", "knowledge-index/16-middleware.md", "knowledge-index/18-cache.md", "past-papers/case-types/06-messaging-caching.md"]
     },
     {
       "id": "K22.ENGLISH_READING",
@@ -332,7 +328,6 @@
       "name": "项目管理、配置管理与软件度量",
       "subjects": ["comprehensive"],
       "skills": ["recognition"],
-      "facets": ["project_management", "software_metrics"],
       "frequency_count": 8,
       "frequency_confidence": "medium",
       "priority_weight": 0.82,
@@ -354,7 +349,7 @@
       "cross_subject_value": 0.55,
       "estimated_minutes": 75,
       "raw_tags": ["§2", "§2.1", "§2.2", "§2.3", "§2.5"],
-      "resources": ["exam-bank/27-information-systems.md", "notes/02-information-systems/README.md", "past-papers/SURVIVAL_CARD.md", "past-papers/comprehensive-by-year/2025上.md"]
+      "resources": ["exam-bank/25-enterprise-integration.md", "exam-bank/27-information-systems.md", "notes/02-information-systems/README.md", "past-papers/SURVIVAL_CARD.md", "past-papers/comprehensive-by-year/2025上.md"]
     },
     {
       "id": "K25.RELIABILITY_ENGINEERING",
@@ -396,7 +391,7 @@
       "cross_subject_value": 0.65,
       "estimated_minutes": 90,
       "raw_tags": ["§10", "§10.1", "§10.2", "§10.3", "§10.4", "§10.5", "§10.6"],
-      "resources": ["exam-bank/28-emerging-tech.md", "notes/10-emerging-tech/README.md", "notes/23-frontier-tech/README.md", "past-papers/2026上-recall-signals.md", "past-papers/HIGH_FREQ.md", "past-papers/SURVIVAL_CARD.md"]
+      "resources": ["exam-bank/19-big-data.md", "exam-bank/28-emerging-tech.md", "notes/10-emerging-tech/README.md", "notes/23-frontier-tech/README.md", "past-papers/2026上-recall-signals.md", "past-papers/HIGH_FREQ.md", "past-papers/SURVIVAL_CARD.md"]
     },
     {
       "id": "K28.MATH_OPERATIONS",

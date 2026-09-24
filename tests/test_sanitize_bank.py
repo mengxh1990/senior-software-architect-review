@@ -1466,49 +1466,13 @@ class PastPaperParsingTests(unittest.TestCase):
             for item_id, topic_id in expected.items():
                 if item_id in items:
                     self.assertEqual(items[item_id]["candidate_topics"], [topic_id])
-        self.assertEqual(
-            question_registry.default_metadata(
-                "past-papers/comprehensive-by-year/2022.md#26",
-                "K03.SOFTWARE_DESIGN_UML",
-            )["concept_id"],
-            "K03.mda_cim_pim",
-        )
-        self.assertEqual(
-            question_registry.default_metadata(
-                "past-papers/comprehensive-by-year/2018下.md#23",
-                "K06.DESIGN_DATA_VIEWS",
-            )["concept_id"],
-            "K06.user_document_classification",
-        )
-        historical = question_registry.resolve_metadata(
-            {
-                "item_id": "past-papers/comprehensive-by-year/2018下.md#23",
-                "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
-                "concept_id": "K15.STRUCTURED_ANALYSIS_DFD",
-                "question_family_id": "K15.STRUCTURED_ANALYSIS_DFD",
-                "facet": None,
-            },
-            {},
-        )
+        historical = question_registry.canonicalize_public_event({
+            "item_id": "past-papers/comprehensive-by-year/2018下.md#23",
+            "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
+            "subject": "comprehensive",
+            "skill": "recognition",
+        })
         self.assertEqual("K06.DESIGN_DATA_VIEWS", historical["topic_id"])
-        self.assertEqual("documentation", historical["facet"])
-        self.assertEqual("K06.user_document_classification", historical["concept_id"])
-
-    def test_cross_year_ip_variants_share_a_family_for_quiz_deduplication(self) -> None:
-        ids = (
-            "past-papers/comprehensive-by-year/2016下.md#68-68",
-            "past-papers/comprehensive-by-year/2022.md#68",
-        )
-        metadata = [
-            question_registry.default_metadata(item_id, "K17.IP_COPYRIGHT")
-            for item_id in ids
-        ]
-        self.assertEqual(
-            {item["concept_id"] for item in metadata}, {"K17.IP_COPYRIGHT"}
-        )
-        self.assertEqual(
-            {item["question_family_id"] for item in metadata}, {"K17.IP_COPYRIGHT"}
-        )
 
     def test_optional_images_do_not_break_option_parsing(self) -> None:
         text = self.TRANSCRIPT.replace(

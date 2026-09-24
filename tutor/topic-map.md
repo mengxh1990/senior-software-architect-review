@@ -2,17 +2,7 @@
 
 > 由 `python3 scripts/gen_topic_map.py` 从 [`tutor/curriculum.json`](./curriculum.json) 生成。若要修改，请改 curriculum.json 后重跑该脚本。
 
-## 1. 聚合考点（`record --facet` 必填）
-
-| Topic ID | 名称 | Facets |
-|---|---|---|
-| `K05.TEST_CMMI_PATTERNS` | 软件测试、CMMI 与常见设计模式 | `testing` / `cmmi` / `design_patterns` |
-| `K06.DESIGN_DATA_VIEWS` | 概要设计、数据设计、文档与 UML 视图 | `high_level_design` / `data_design` / `uml_views` / `documentation` |
-| `K12.PATTERNS_SOA_MICROSERVICES` | 设计模式、SOA 与微服务核心概念 | `design_patterns` / `soa` / `microservices` |
-| `K13.VIEWS_SOA_LAYERING` | 4+1 视图、SOA 与分层架构 | `four_plus_one` / `soa` / `layering` |
-| `K23.PROJECT_MANAGEMENT_METRICS` | 项目管理、配置管理与软件度量 | `project_management` / `software_metrics` |
-
-## 2. 所有考点 → 资源映射
+## 1. 所有考点 → 资源映射
 
 | Topic ID | 名称 | 科目 | 频次 | 时长(分钟) | 有 exam-bank 题 | 主要资源 |
 |---|---|---|---|---|---|---|
@@ -23,7 +13,7 @@
 | `K05.TEST_CMMI_PATTERNS` | 软件测试、CMMI 与常见设计模式 | comprehensive/essay | 14 | 120 | ✅ | `exam-bank/07-software-engineering.md`, `exam-bank/13-design-patterns.md`, `cheatsheets/software-engineering-cmmi.md` |
 | `K06.DESIGN_DATA_VIEWS` | 概要设计、数据设计、文档与 UML 视图 | comprehensive/case/essay | 12 | 120 | ✅ | `exam-bank/14-absd-views.md`, `knowledge-index/14-absd-views.md`, `cheatsheets/absd-and-adl.md` |
 | `K07.REALTIME_EMBEDDED` | 实时系统、嵌入式与调度基础 | comprehensive/case | 11 | 150 | ✅ | `exam-bank/22-embedded.md`, `knowledge-index/22-embedded.md`, `past-papers/case-types/08-embedded-components.md` |
-| `K08.SOFTWARE_PROCESS_MODELS` | 软件过程模型、敏捷与 RUP | comprehensive | 11 | 60 | ✅ | `exam-bank/07-software-engineering.md`, `notes/04-software-engineering/README.md`, `cheatsheets/software-engineering-cmmi.md` |
+| `K08.SOFTWARE_PROCESS_MODELS` | 软件过程模型、敏捷与 RUP | comprehensive | 11 | 60 | ✅ | `exam-bank/07-software-engineering.md`, `exam-bank/24-devops-serverless.md`, `notes/04-software-engineering/README.md` (+1) |
 | `K09.QUALITY_SCENARIOS` | 质量属性六元组与质量战术 | comprehensive/case/essay | 11 | 90 | ✅ | `exam-bank/11-quality-attributes.md`, `knowledge-index/11-quality-attributes.md`, `cheatsheets/quality-attributes.md` (+1) |
 | `K10.DATABASE_MODELING` | 关系数据库、范式与关系代数 | comprehensive/case | 10 | 150 | ✅ | `exam-bank/03-database.md`, `knowledge-index/03-database.md`, `past-papers/case-types/02-database-design.md` |
 | `K11.COMPONENTS_4PLUS1` | 构件平台与 4+1 视图 | comprehensive/case/essay | 9 | 75 | ✅ | `exam-bank/14-absd-views.md`, `knowledge-index/14-absd-views.md`, `notes/06-system-architecture-design/README.md` |
@@ -36,13 +26,13 @@
 | `K18.COMPUTER_ARCH_STORAGE` | 计算机组成与存储层次 | comprehensive | 6 | 90 | ✅ | `exam-bank/01-computer-systems.md`, `knowledge-index/01-computer-systems.md`, `cheatsheets/computer-systems-formulas.md` |
 | `K19.ATAM_TACTICS` | ATAM、四类点与质量属性战术 | comprehensive/case/essay | 6 | 90 | ✅ | `exam-bank/12-atam-evaluation.md`, `knowledge-index/12-atam-evaluation.md`, `cheatsheets/architecture-evaluation.md` (+1) |
 | `K20.SECURITY_FOUNDATIONS` | CIA、安全服务、STRIDE 与等保 | comprehensive/case/essay | 6 | 120 | ✅ | `exam-bank/21-security.md`, `knowledge-index/21-security.md`, `past-papers/case-types/07-security-architecture.md` (+1) |
-| `K21.MESSAGING_CACHE` | 消息中间件、缓存与一致性 | comprehensive/case/essay | 5 | 120 | ✅ | `exam-bank/16-middleware.md`, `exam-bank/18-cache.md`, `knowledge-index/16-middleware.md` (+2) |
+| `K21.MESSAGING_CACHE` | 消息中间件、缓存与一致性 | comprehensive/case/essay | 5 | 120 | ✅ | `exam-bank/16-middleware.md`, `exam-bank/17-distributed-transactions.md`, `exam-bank/18-cache.md` (+3) |
 | `K22.ENGLISH_READING` | 专业英语阅读与高频词 | comprehensive | 23 | 75 | ✅ | `exam-bank/23-english-reading.md`, `cheatsheets/english-reading.md`, `past-papers/HIGH_FREQ.md` |
 | `K23.PROJECT_MANAGEMENT_METRICS` | 项目管理、配置管理与软件度量 | comprehensive | 8 | 120 | ✅ | `exam-bank/08-project-management.md`, `exam-bank/09-software-metrics.md`, `knowledge-index/08-project-management.md` (+3) |
-| `K24.INFORMATION_SYSTEMS` | 信息系统、ERP 与电子政务 | comprehensive | 6 | 75 | ✅ | `exam-bank/27-information-systems.md`, `notes/02-information-systems/README.md`, `past-papers/SURVIVAL_CARD.md` (+1) |
+| `K24.INFORMATION_SYSTEMS` | 信息系统、ERP 与电子政务 | comprehensive | 6 | 75 | ✅ | `exam-bank/25-enterprise-integration.md`, `exam-bank/27-information-systems.md`, `notes/02-information-systems/README.md` (+2) |
 | `K25.RELIABILITY_ENGINEERING` | 软件可靠性工程、容错与评估 | comprehensive/case | 5 | 120 | ✅ | `exam-bank/20-reliability.md`, `knowledge-index/20-reliability.md`, `notes/08-software-reliability/README.md` (+2) |
 | `K26.ARCH_EVOLUTION` | 软件架构演化、迁移与维护 | comprehensive/case | 5 | 120 | ✅ | `exam-bank/26-soa-evolution.md`, `notes/09-architecture-evolution/README.md`, `past-papers/case-types/11-architecture-evolution.md` (+1) |
-| `K27.EMERGING_TECH` | CPS、AI、边缘计算与数字孪生 | comprehensive | 12 | 90 | ✅ | `exam-bank/28-emerging-tech.md`, `notes/10-emerging-tech/README.md`, `notes/23-frontier-tech/README.md` (+3) |
+| `K27.EMERGING_TECH` | CPS、AI、边缘计算与数字孪生 | comprehensive | 12 | 90 | ✅ | `exam-bank/19-big-data.md`, `exam-bank/28-emerging-tech.md`, `notes/10-emerging-tech/README.md` (+4) |
 | `K28.MATH_OPERATIONS` | 应用数学、图论与运筹学 | comprehensive | 15 | 90 | ✅ | `exam-bank/29-applied-math.md`, `notes/20-math-foundations/README.md`, `past-papers/HIGH_FREQ.md` (+2) |
 | `C01.CASE_ATAM` | 案例主赛道：架构评估与质量属性 | case | 0 | 120 | ⚠️ 无 | `past-papers/CASE_SURVIVAL.md`, `past-papers/case-types/01-architecture-evaluation.md` |
 | `C02.CASE_DATABASE` | 案例主赛道：数据库设计 | case | 0 | 180 | ⚠️ 无 | `past-papers/CASE_SURVIVAL.md`, `past-papers/case-types/02-database-design.md` |
@@ -55,7 +45,7 @@
 | `P05.ESSAY_EAI` | 论文主题：企业应用集成 EAI | essay | 5 | 240 | ⚠️ 无 | `past-papers/PAPER_SURVIVAL.md`, `past-papers/paper-topics/11-enterprise-integration.md`, `past-papers/paper-samples/11-enterprise-integration.md` |
 | `P06.ESSAY_ATAM` | 论文主题：架构评估 | essay | 3 | 210 | ⚠️ 无 | `past-papers/PAPER_SURVIVAL.md`, `past-papers/paper-topics/02-architecture-evaluation.md`, `past-papers/paper-samples/02-architecture-evaluation.md` |
 
-## 3. 无 exam-bank 题的考点（自编题时 `--source-type self_authored`）
+## 2. 无 exam-bank 题的考点（自编题时 `--source-type self_authored`）
 
 - `C01.CASE_ATAM` — 案例主赛道：架构评估与质量属性
 - `C02.CASE_DATABASE` — 案例主赛道：数据库设计
@@ -68,7 +58,7 @@
 - `P05.ESSAY_EAI` — 论文主题：企业应用集成 EAI
 - `P06.ESSAY_ATAM` — 论文主题：架构评估
 
-## 4. exam-bank 文件 → topic 反查
+## 3. exam-bank 文件 → topic 反查
 
 - `exam-bank/01-computer-systems.md` → `K18.COMPUTER_ARCH_STORAGE`
 - `exam-bank/02-os-concepts.md` → `K01.OS_MEMORY_KERNEL`, `K14.OS_SCHEDULING_FILES`
@@ -86,11 +76,15 @@
 - `exam-bank/14-absd-views.md` → `K06.DESIGN_DATA_VIEWS`, `K11.COMPONENTS_4PLUS1`, `K13.VIEWS_SOA_LAYERING`
 - `exam-bank/15-microservice-cloud-native.md` → `K12.PATTERNS_SOA_MICROSERVICES`
 - `exam-bank/16-middleware.md` → `K21.MESSAGING_CACHE`
+- `exam-bank/17-distributed-transactions.md` → `K21.MESSAGING_CACHE`
 - `exam-bank/18-cache.md` → `K21.MESSAGING_CACHE`
+- `exam-bank/19-big-data.md` → `K27.EMERGING_TECH`
 - `exam-bank/20-reliability.md` → `K25.RELIABILITY_ENGINEERING`
 - `exam-bank/21-security.md` → `K20.SECURITY_FOUNDATIONS`
 - `exam-bank/22-embedded.md` → `K07.REALTIME_EMBEDDED`
 - `exam-bank/23-english-reading.md` → `K22.ENGLISH_READING`
+- `exam-bank/24-devops-serverless.md` → `K08.SOFTWARE_PROCESS_MODELS`
+- `exam-bank/25-enterprise-integration.md` → `K24.INFORMATION_SYSTEMS`
 - `exam-bank/26-soa-evolution.md` → `K13.VIEWS_SOA_LAYERING`, `K26.ARCH_EVOLUTION`
 - `exam-bank/27-information-systems.md` → `K24.INFORMATION_SYSTEMS`
 - `exam-bank/28-emerging-tech.md` → `K27.EMERGING_TECH`

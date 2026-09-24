@@ -91,7 +91,6 @@ def public_curriculum() -> dict[str, Any]:
         "name",
         "subjects",
         "skills",
-        "facets",
         "frequency_count",
         "frequency_confidence",
         "priority_weight",
@@ -435,7 +434,7 @@ class ExamHandler(SimpleHTTPRequestHandler):
                 if plan["target_subject"] == "comprehensive":
                     curriculum = tutor.load_curriculum()
                     try:
-                        selected, chosen, substitution = tutor.select_quiz_group(
+                        selected, chosen = tutor.select_quiz_group(
                             self.data_dir,
                             tutor.parse_date(plan["today"]),
                             5,
@@ -454,7 +453,6 @@ class ExamHandler(SimpleHTTPRequestHandler):
                             "topic_id": selected[0]["topic_id"],
                             "topic_name": selected[0]["topic_name"],
                             "name": chosen[0]["name"],
-                            "substitution": substitution,
                         }
             json_response(self, {"ok": True, "data": plan})
         except RequestError as error:
@@ -501,7 +499,6 @@ class ExamHandler(SimpleHTTPRequestHandler):
                     "event_type": "practice",
                     "topic_id": item["topic_id"],
                     "item_id": item_id,
-                    "facet": item["facet"],
                     "at": finished_at,
                     "subject": "comprehensive",
                     "skill": "recognition",
@@ -519,8 +516,6 @@ class ExamHandler(SimpleHTTPRequestHandler):
                     "question_id": result["id"],
                     "selected_answer": result["selected"],
                     "correct_answer": result["correct_answer"],
-                    "concept_id": item["concept_id"],
-                    "question_family_id": item["question_family_id"],
                     "question_fingerprint": item["question_fingerprint"],
                     "variant_of": None,
                 }
@@ -530,7 +525,6 @@ class ExamHandler(SimpleHTTPRequestHandler):
             "event_type": "mock",
             "topic_id": None,
             "item_id": PAPER_ID,
-            "facet": None,
             "at": finished_at,
             "subject": "comprehensive",
             "skill": "recognition",

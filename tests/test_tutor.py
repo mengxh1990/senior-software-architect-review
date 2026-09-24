@@ -193,7 +193,7 @@ def _append_mock_gap_session(
     mock_id: str,
     *,
     at: str = "2026-08-10T10:00:00+08:00",
-    wrong_items: Iterable[tuple[str, str, str | None]] = (),
+    wrong_items: Iterable[tuple[str, str]] = (),
 ) -> None:
     """Append one whole-mock event plus its wrong per-question events.
 
@@ -207,7 +207,6 @@ def _append_mock_gap_session(
             "event_type": "mock",
             "topic_id": None,
             "item_id": f"paper-{mock_id}",
-            "facet": None,
             "at": at,
             "subject": "comprehensive",
             "skill": "recognition",
@@ -224,14 +223,13 @@ def _append_mock_gap_session(
             "feedback_seen": True,
         }
     ]
-    for number, (topic_id, item_id, facet) in enumerate(wrong_items, 1):
+    for number, (topic_id, item_id) in enumerate(wrong_items, 1):
         events.append(
             {
                 "attempt_id": f"{mock_id}-q-{number:02d}",
                 "event_type": "practice",
                 "topic_id": topic_id,
                 "item_id": item_id,
-                "facet": facet,
                 "at": at,
                 "subject": "comprehensive",
                 "skill": "recognition",
@@ -708,132 +706,61 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertIn("item-id", rejected.stderr)
             self.assertEqual(self._status(data_dir)["topics"], {})
 
-    def test_registered_question_supplies_concept_metadata_and_rejects_duplicate_content(self) -> None:
+    def test_registered_question_records_identity_and_rejects_duplicate_content(self) -> None:
         topic_id = self._recognition_topic()["id"]
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
             self._init(data_dir)
             registration = data_dir / "question.json"
-            registration.write_text(
-                json.dumps(
-                    {
-                        "item_id": "self-authored/registered-001",
-                        "topic_id": topic_id,
-                        "concept_id": f"{topic_id}.registered",
-                        "question_family_id": f"{topic_id}.registered.variant",
-                        "stem": "测试登记题",
-                        "options": ["选项乙", "选项甲"],
-                    },
-                    ensure_ascii=False,
-                ),
-                encoding="utf-8",
-            )
+            registration.write_text(json.dumps({
+                "item_id": "self-authored/registered-001",
+                "topic_id": topic_id,
+                "stem": "测试登记题",
+                "options": ["选项乙", "选项甲"],
+            }, ensure_ascii=False), encoding="utf-8")
             _run_cli(data_dir, "register-question", "--file", str(registration))
             _run_cli(
-                data_dir,
-                "record",
-                "--topic",
-                topic_id,
-                "--skill",
-                "recognition",
-                "--score",
-                "1",
-                "--max-score",
-                "1",
-                "--attempt-id",
-                "registered-attempt",
-                "--item-id",
-                "self-authored/registered-001",
-                "--at",
-                "2026-08-10T09:00:00+08:00",
+                data_dir, "record", "--topic", topic_id, "--skill", "recognition",
+                "--score", "1", "--max-score", "1", "--attempt-id", "registered-attempt",
+                "--item-id", "self-authored/registered-001",
+                "--at", "2026-08-10T09:00:00+08:00",
             )
-            event = json.loads(
-                (data_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines()[-1]
-            )
-            self.assertEqual(event["concept_id"], f"{topic_id}.registered")
-            self.assertEqual(
-                event["question_family_id"], f"{topic_id}.registered.variant"
-            )
+            event = json.loads((data_dir / "attempts.jsonl").read_text().splitlines()[-1])
+            self.assertEqual(event["topic_id"], topic_id)
             self.assertEqual(len(event["question_fingerprint"]), 64)
 
             duplicate = data_dir / "duplicate.json"
-            duplicate.write_text(
-                json.dumps(
-                    {
-                        "item_id": "self-authored/registered-duplicate",
-                        "topic_id": topic_id,
-                        "concept_id": f"{topic_id}.registered",
-                        "question_family_id": f"{topic_id}.registered.variant",
-                        "stem": "测试登记题",
-                        "options": ["选项甲", "选项乙"],
-                    },
-                    ensure_ascii=False,
-                ),
-                encoding="utf-8",
-            )
+            duplicate.write_text(json.dumps({
+                "item_id": "self-authored/registered-duplicate",
+                "topic_id": topic_id,
+                "stem": "测试登记题",
+                "options": ["选项甲", "选项乙"],
+            }, ensure_ascii=False), encoding="utf-8")
             rejected = _run_cli(
-                data_dir,
-                "register-question",
-                "--file",
-                str(duplicate),
+                data_dir, "register-question", "--file", str(duplicate),
                 expected_returncode=None,
             )
             self.assertNotEqual(rejected.returncode, 0)
             self.assertIn("不能换 ID 重复计证据", rejected.stderr)
 
-            same_family = data_dir / "same-family.json"
-            same_family.write_text(
-                json.dumps(
-                    {
-                        "item_id": "self-authored/registered-variant-002",
-                        "topic_id": topic_id,
-                        "concept_id": f"{topic_id}.registered",
-                        "question_family_id": f"{topic_id}.registered.variant",
-                        "variant_of": "self-authored/registered-001",
-                        "stem": "同一考法的另一种题干",
-                        "options": ["选项丙", "选项丁"],
-                    },
-                    ensure_ascii=False,
-                ),
-                encoding="utf-8",
+            variant = data_dir / "variant.json"
+            variant.write_text(json.dumps({
+                "item_id": "self-authored/registered-variant-002",
+                "topic_id": topic_id,
+                "variant_of": "self-authored/registered-001",
+                "stem": "另一种题干",
+                "options": ["选项丙", "选项丁"],
+            }, ensure_ascii=False), encoding="utf-8")
+            _run_cli(data_dir, "register-question", "--file", str(variant))
+            _run_cli(
+                data_dir, "record", "--topic", topic_id, "--skill", "recognition",
+                "--score", "1", "--max-score", "1", "--attempt-id", "variant-same-day",
+                "--item-id", "self-authored/registered-variant-002",
+                "--at", "2026-08-10T10:00:00+08:00",
             )
-            _run_cli(data_dir, "register-question", "--file", str(same_family))
-            # Same-family same-day answers remain valid evidence: the cooldown
-            # is a scheduling rule applied when recommendations are built,
-            # never a reason to refuse recording an attempt.
-            cooled = _run_cli(
-                data_dir,
-                "record",
-                "--topic",
-                topic_id,
-                "--skill",
-                "recognition",
-                "--score",
-                "1",
-                "--max-score",
-                "1",
-                "--attempt-id",
-                "same-family-same-day",
-                "--item-id",
-                "self-authored/registered-variant-002",
-                "--at",
-                "2026-08-10T10:00:00+08:00",
-            )
-            self.assertEqual(cooled.returncode, 0)
-            recorded = [
-                json.loads(line)
-                for line in (data_dir / "attempts.jsonl")
-                .read_text(encoding="utf-8")
-                .splitlines()
-            ]
-            same_day = next(
-                event
-                for event in recorded
-                if event["attempt_id"] == "same-family-same-day"
-            )
-            self.assertEqual(
-                same_day["question_family_id"], f"{topic_id}.registered.variant"
-            )
+            recorded = [json.loads(line) for line in (data_dir / "attempts.jsonl").read_text().splitlines()]
+            same_day = next(event for event in recorded if event["attempt_id"] == "variant-same-day")
+            self.assertEqual(same_day["variant_of"], "self-authored/registered-001")
 
     def test_quiz_prepare_hides_answers_and_persists_private_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -1341,63 +1268,6 @@ class TutorAcceptanceTest(unittest.TestCase):
             label = _status_label(_find_topic_record(self._status(data_dir), topic_id))
             self.assertNotIn(label, PASS_READY_STATES)
 
-    def test_aggregate_topic_requires_coverage_of_declared_facets(self) -> None:
-        topic_id = "K05.TEST_CMMI_PATTERNS"
-        with tempfile.TemporaryDirectory() as temporary:
-            data_dir = Path(temporary)
-            self._init(data_dir)
-            for number in range(6):
-                day = 10 if number < 5 else 12
-                _run_cli(
-                    data_dir,
-                    "record",
-                    "--topic",
-                    topic_id,
-                    "--skill",
-                    "recognition",
-                    "--facet",
-                    "cmmi",
-                    "--score",
-                    "1",
-                    "--max-score",
-                    "1",
-                    "--attempt-id",
-                    f"cmmi-only-{number}",
-                    "--item-id",
-                    f"cmmi-item-{number}",
-                    "--at",
-                    f"2026-08-{day:02d}T09:{number:02d}:00+08:00",
-                )
-            cmmi_only = _find_topic_record(self._status(data_dir), topic_id)
-            self.assertNotIn(
-                cmmi_only["mastery"]["recognition"]["status"], PASS_READY_STATES
-            )
-
-            for facet, day in (("testing", 13), ("design_patterns", 14)):
-                _run_cli(
-                    data_dir,
-                    "record",
-                    "--topic",
-                    topic_id,
-                    "--skill",
-                    "recognition",
-                    "--facet",
-                    facet,
-                    "--score",
-                    "1",
-                    "--max-score",
-                    "1",
-                    "--attempt-id",
-                    f"facet-{facet}",
-                    "--item-id",
-                    f"facet-item-{facet}",
-                    "--at",
-                    f"2026-08-{day:02d}T09:00:00+08:00",
-                )
-            covered = _find_topic_record(self._status(data_dir), topic_id)
-            self.assertIn(
-                covered["mastery"]["recognition"]["status"], PASS_READY_STATES
-            )
 
     def test_cross_subject_topic_exposes_unmeasured_dimensions(self) -> None:
         topic = next(
@@ -1839,7 +1709,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertEqual(items[0]["subject"], "comprehensive")
             self.assertTrue(any(item["subject"] == "case" for item in items[1:]))
 
-    def test_diagnosis_merges_same_topic_mock_gaps_into_one_concept(self) -> None:
+    def test_diagnosis_groups_mock_gaps_by_stable_topic(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
             self._init(data_dir)
@@ -1847,47 +1717,21 @@ class TutorAcceptanceTest(unittest.TestCase):
                 data_dir,
                 "merge-mock-001",
                 wrong_items=[
-                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#1", None),
-                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#2", None),
-                    ("K12.PATTERNS_SOA_MICROSERVICES", "exam-bank/13-design-patterns.md#1", "design_patterns"),
-                    ("K12.PATTERNS_SOA_MICROSERVICES", "exam-bank/15-microservice-cloud-native.md#1", "microservices"),
+                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#1"),
+                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#2"),
+                    ("K12.PATTERNS_SOA_MICROSERVICES", "exam-bank/13-design-patterns.md#1"),
+                    ("K12.PATTERNS_SOA_MICROSERVICES", "exam-bank/15-microservice-cloud-native.md#1"),
                 ],
             )
-            payload = _json_output(
-                _run_cli(data_dir, "diagnose", "--subject", "comprehensive", "--json")
-            )
-            issues = {issue["concept_id"]: issue for issue in payload["issues"]}
-            # Same-topic questions share one stable mergeable concept instead
-            # of a unique synthetic concept per question; declared facets keep
-            # their concepts apart.
+            payload = _json_output(_run_cli(data_dir, "diagnose", "--subject", "comprehensive", "--json"))
+            issues = {issue["topic_id"]: issue for issue in payload["issues"]}
+            self.assertEqual(sorted(issues), ["K08.SOFTWARE_PROCESS_MODELS", "K12.PATTERNS_SOA_MICROSERVICES"])
+            self.assertEqual(len(issues["K08.SOFTWARE_PROCESS_MODELS"]["source_item_ids"]), 2)
+            self.assertEqual(len(issues["K12.PATTERNS_SOA_MICROSERVICES"]["source_item_ids"]), 2)
             self.assertEqual(
-                sorted(issues),
-                [
-                    "K08.SOFTWARE_PROCESS_MODELS",
-                    "K12.PATTERNS_SOA_MICROSERVICES:design_patterns",
-                    "K12.soa_microservices_governance",
-                ],
+                issues["K08.SOFTWARE_PROCESS_MODELS"]["topic_name"],
+                next(topic["name"] for topic in self.topics if topic["id"] == "K08.SOFTWARE_PROCESS_MODELS"),
             )
-            self.assertEqual(
-                sorted(issues["K08.SOFTWARE_PROCESS_MODELS"]["source_item_ids"]),
-                [
-                    "exam-bank/07-software-engineering.md#1",
-                    "exam-bank/07-software-engineering.md#2",
-                ],
-            )
-            # The study-item label is human-readable, not a machine id or a
-            # "(N)" header fragment from the source bank.
-            k08_name = next(
-                topic["name"]
-                for topic in self.topics
-                if topic["id"] == "K08.SOFTWARE_PROCESS_MODELS"
-            )
-            self.assertEqual(
-                issues["K08.SOFTWARE_PROCESS_MODELS"]["concept_label"], k08_name
-            )
-            for issue in issues.values():
-                self.assertNotIn(":", issue["concept_label"])
-                self.assertNotRegex(issue["concept_label"], r"^\(\d+\)$")
 
     def test_weakpoints_ranks_overdue_and_recent_topics_readonly(self) -> None:
         """The read-only weakpoint ranking must stay side-effect free."""
@@ -2029,16 +1873,9 @@ class TutorAcceptanceTest(unittest.TestCase):
             for question in self._quiz_manifest(data_dir, quiz_id)["questions"]
         }
 
-    def _manifest_concept_ids(
-        self, data_dir: Path, quiz_id: str
-    ) -> set[str]:
-        return {
-            question["concept_id"]
-            for question in self._quiz_manifest(data_dir, quiz_id)["questions"]
-        }
 
     def _pin_real_uml_relationship_question(self, data_dir: Path, quiz_id: str) -> None:
-        """Use the actual curated UML item for fine-concept variant tests."""
+        """Use an existing UML item for follow-up practice."""
 
         scripts_path = str(REPO_ROOT / "scripts")
         if scripts_path not in sys.path:
@@ -2052,8 +1889,8 @@ class TutorAcceptanceTest(unittest.TestCase):
             for item in module.load_quiz_question_pool(curriculum)
             if item["id"] == "exam-bank/05-uml.md#4"
         )
-        question = module.quiz_question_for_topic(raw, topic, {})
-        assert question and question["concept_id"] == "K03.uml_relationships"
+        question = module.quiz_question_for_topic(raw, topic)
+        assert question and question["topic_id"] == "K03.SOFTWARE_DESIGN_UML"
         manifest_path = data_dir / "quiz-sessions" / f"{quiz_id}.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         manifest["questions"][0] = {**question, "number": 1, "mode": "practice"}
@@ -2067,7 +1904,7 @@ class TutorAcceptanceTest(unittest.TestCase):
         data_dir: Path,
         at: str | None = None,
     ) -> dict[str, Any] | None:
-        """Grade a real UML item with curated fine-concept variant evidence."""
+        """Grade a real UML item and return its follow-up question."""
 
         prepared = self._prepare_quiz(data_dir, limit=1)
         self._pin_real_uml_relationship_question(data_dir, prepared["quiz_id"])
@@ -2092,7 +1929,7 @@ class TutorAcceptanceTest(unittest.TestCase):
     def _grade_quiz_with_wrong_answers(
         self, data_dir: Path
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-        """Grade a group containing a real fine-concept question."""
+        """Grade a group containing a real UML question."""
 
         prepared = self._prepare_quiz(data_dir)
         self._pin_real_uml_relationship_question(data_dir, prepared["quiz_id"])
@@ -2111,7 +1948,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             for result in graded["results"]
             if result.get("variant_question")
         ]
-        self.assertTrue(variants, "明确细考点的错题应产生同细考点变式题")
+        self.assertTrue(variants, "错题应产生同大考点的后续练习题")
         return graded, variants
 
     def test_quiz_grade_treats_explicit_x_as_conceded_evidence(self) -> None:
@@ -2408,102 +2245,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             ]
             self.assertFalse(any(event["attempt_id"].endswith("-q-3") for event in attempts))
 
-    def test_variant_question_does_not_fall_back_to_another_concept(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            data_dir = Path(temporary)
-            self._init(data_dir)
-            prepared = self._prepare_quiz(data_dir, limit=1)
-            manifest_path = (
-                data_dir / "quiz-sessions" / f"{prepared['quiz_id']}.json"
-            )
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            manifest["questions"][0]["concept_id"] = "test.no_matching_concept"
-            manifest_path.write_text(
-                json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True)
-                + "\n",
-                encoding="utf-8",
-            )
-            correct = "".join(manifest["questions"][0]["correct"])
-            wrong = next(letter for letter in "ABCD" if letter != correct)
-            graded = _json_output(
-                _run_cli(
-                    data_dir,
-                    "quiz-grade",
-                    "--quiz-id",
-                    prepared["quiz_id"],
-                    "--answers",
-                    wrong,
-                )
-            )
-            self.assertFalse(graded["results"][0]["is_correct"])
-            self.assertIsNone(
-                graded["results"][0]["variant_question"],
-                "a different concept in the same topic is not a valid variant",
-            )
 
-    def test_broad_topic_does_not_make_dfd_and_documents_variants(self) -> None:
-        scripts_path = str(REPO_ROOT / "scripts")
-        if scripts_path not in sys.path:
-            sys.path.insert(0, scripts_path)
-        import tutor as module
-        curriculum = module.load_curriculum()
-        topics = module.topic_map(curriculum)
-        pool = module.load_quiz_question_pool(curriculum)
-        broad = module.pick_variant_question(
-            {
-                "item_id": "past-papers/comprehensive-by-year/2025上.md#30",
-                "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
-                "concept_id": "K15.STRUCTURED_ANALYSIS_DFD",
-            },
-            pool, topics, {}, set(),
-        )
-        self.assertIsNone(broad)
-        fine = module.pick_variant_question(
-            {
-                "item_id": "exam-bank/05-uml.md#4",
-                "topic_id": "K03.SOFTWARE_DESIGN_UML",
-                "concept_id": "K03.uml_relationships",
-            },
-            pool, topics, {}, set(),
-        )
-        self.assertIsNotNone(fine)
-        self.assertIn(
-            fine["item_id"],
-            {"exam-bank/05-uml.md#5", "past-papers/comprehensive-by-year/2024下.md#38"},
-        )
-        documents = module.pick_variant_question(
-            {
-                "item_id": "past-papers/comprehensive-by-year/2018下.md#23",
-                "topic_id": "K06.DESIGN_DATA_VIEWS",
-                "concept_id": "K06.user_document_classification",
-            },
-            pool, topics, {}, set(),
-        )
-        self.assertIsNotNone(documents)
-        self.assertEqual(
-            "past-papers/comprehensive-by-year/2009下.md#21-21",
-            documents["item_id"],
-        )
-        mda_raw = next(
-            item for item in pool
-            if item["id"] == "past-papers/comprehensive-by-year/2022.md#26"
-        )
-        corrected_mda = module.quiz_question_for_topic(
-            mda_raw,
-            topics["K03.SOFTWARE_DESIGN_UML"],
-            {
-                mda_raw["id"]: {
-                    "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
-                    "concept_id": "K15.STRUCTURED_ANALYSIS_DFD",
-                    "question_family_id": "K15.STRUCTURED_ANALYSIS_DFD",
-                }
-            },
-        )
-        self.assertIsNotNone(corrected_mda)
-        self.assertEqual("K03.mda_cim_pim", corrected_mda["concept_id"])
-        self.assertIsNone(
-            module.pick_variant_question(corrected_mda, pool, topics, {}, set())
-        )
 
     def test_variant_question_does_not_repeat_within_the_cooldown_window(
         self,
@@ -2812,153 +2554,8 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "未判分的题组已经把题目展示给考生，同一天不得再次出同样的题",
             )
 
-    def test_quiz_prepare_cools_concepts_already_tested_today(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            data_dir = Path(temporary)
-            self._init(data_dir)
-            first = self._prepare_quiz(data_dir)
-            manifest = self._quiz_manifest(data_dir, first["quiz_id"])
-            answers = ",".join(
-                "".join(question["correct"]) for question in manifest["questions"]
-            )
-            _run_cli(
-                data_dir,
-                "quiz-grade",
-                "--quiz-id",
-                first["quiz_id"],
-                "--answers",
-                answers,
-                "--confidences",
-                "sure,sure,sure,sure,sure",
-            )
-            second = self._prepare_quiz(data_dir)
-            self.assertFalse(
-                self._manifest_concept_ids(data_dir, first["quiz_id"])
-                & self._manifest_concept_ids(data_dir, second["quiz_id"]),
-                "同一细考点当天已经考过，不应在同一天的下一组再次排课",
-            )
 
-    def test_quiz_prepare_announces_a_concept_it_can_actually_serve(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            data_dir = Path(temporary)
-            self._init(data_dir)
-            _append_mock_gap_session(
-                data_dir,
-                "mock-uml",
-                at="2026-08-10T10:00:00+08:00",
-                wrong_items=[
-                    ("K03.SOFTWARE_DESIGN_UML", "exam-bank/05-uml.md#1", None)
-                ],
-            )
-            registration = data_dir / "uml-variant.json"
-            registration.write_text(
-                json.dumps(
-                    {
-                        "item_id": "self-authored/uml-diagram-count-variant",
-                        "topic_id": "K03.SOFTWARE_DESIGN_UML",
-                        "concept_id": "K03.uml_diagram_count",
-                        "question_family_id": "K03.uml_diagram_count.variant",
-                        "variant_of": "exam-bank/05-uml.md#1",
-                        "stem": "UML 2.x 图分类变式：结构与行为图各有多少种？",
-                        "options": ["7 与 7", "9 与 5", "13 与 4", "17 与 0"],
-                    },
-                    ensure_ascii=False,
-                ),
-                encoding="utf-8",
-            )
-            _run_cli(data_dir, "register-question", "--file", str(registration))
-            _run_cli(
-                data_dir,
-                "record",
-                "--topic",
-                "K03.SOFTWARE_DESIGN_UML",
-                "--skill",
-                "recognition",
-                "--score",
-                "1",
-                "--max-score",
-                "1",
-                "--confidence",
-                "sure",
-                "--attempt-id",
-                "uml-remedy",
-                "--item-id",
-                "self-authored/uml-diagram-count-variant",
-                "--at",
-                "2026-08-10T15:00:00+08:00",
-            )
-            prepared = _json_output(
-                _run_cli(
-                    data_dir,
-                    "quiz-prepare",
-                    "--subject",
-                    "comprehensive",
-                    "--limit",
-                    "5",
-                    "--today",
-                    "2026-08-20",
-                )
-            )
-            # 该细考点的两道题都在 avoid 列表里，本组一道都出不了它；
-            # 开场白不得宣称复测这个细考点。
-            self.assertIn("UML 2.x 图分类与数量", prepared["objective"])
-            self.assertIn("并非该细考点复测", prepared["objective"])
-            self.assertEqual(
-                "K03.uml_diagram_count",
-                prepared["substitution"]["requested_concept_id"],
-            )
 
-    def test_progress_previews_explicit_mda_substitution_without_repeating_it(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            data_dir = Path(temporary)
-            self._init(data_dir)
-            _run_cli(data_dir, "configure", "--subject-policy", "essay=manual_trigger")
-            _append_mock_gap_session(
-                data_dir, "mock-mda-substitution",
-                at="2026-09-20T10:00:00+08:00",
-                wrong_items=[(
-                    "K03.SOFTWARE_DESIGN_UML",
-                    "past-papers/comprehensive-by-year/2022.md#26", None,
-                )],
-            )
-            _run_cli(data_dir, "status", "--json")  # Apply the synthetic pending log first.
-            before = _snapshot_files(data_dir)
-            progress = _json_output(
-                _run_cli(data_dir, "progress", "--json", "--today", "2026-09-24")
-            )
-            self.assertEqual(before, _snapshot_files(data_dir))
-            action = progress["next_action"]
-            self.assertEqual("K03.SOFTWARE_DESIGN_UML", action["topic_id"])
-            self.assertEqual("K03.mda_cim_pim", action["substitution"]["requested_concept_id"])
-            self.assertIn("并非该细考点复测", action["reason"])
-            prepared = _json_output(_run_cli(
-                data_dir, *action["command"].split(), "--limit", "5", "--today", "2026-09-24"
-            ))
-            self.assertEqual(action["substitution"], prepared["substitution"])
-            manifest = self._quiz_manifest(data_dir, prepared["quiz_id"])
-            self.assertEqual({"K03.SOFTWARE_DESIGN_UML"}, {
-                question["topic_id"] for question in manifest["questions"]
-            })
-            self.assertNotIn("K03.mda_cim_pim", {
-                question["concept_id"] for question in manifest["questions"]
-            })
-            answers = ",".join("".join(q["correct"]) for q in manifest["questions"])
-            _run_cli(data_dir, "quiz-grade", "--quiz-id", prepared["quiz_id"],
-                     "--answers", answers)
-            diagnosis = _json_output(_run_cli(
-                data_dir, "diagnose", "--json", "--subject", "comprehensive",
-                "--today", "2026-09-24",
-            ))
-            self.assertIn("K03.mda_cim_pim", {
-                issue["concept_id"] for issue in diagnosis["issues"]
-                if issue["status"] == "pending_remediation"
-            })
-            later = _json_output(_run_cli(
-                data_dir, "progress", "--json", "--today", "2026-09-24"
-            ))
-            self.assertNotEqual("K03.mda_cim_pim", (
-                later["next_action"].get("substitution") or {}
-            ).get("requested_concept_id"))
 
     def test_manual_quiz_topic_outside_recommendation_cutoff_is_allowed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -2980,75 +2577,6 @@ class TutorAcceptanceTest(unittest.TestCase):
                 question["topic_id"] for question in manifest["questions"]
             })
 
-    def test_quiz_prepare_serves_a_gap_with_its_own_concept_variant(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            data_dir = Path(temporary)
-            self._init(data_dir)
-            _append_mock_gap_session(
-                data_dir,
-                "mock-uml-relations",
-                at="2026-08-10T10:00:00+08:00",
-                wrong_items=[
-                    ("K03.SOFTWARE_DESIGN_UML", "exam-bank/05-uml.md#4", None)
-                ],
-            )
-            registration = data_dir / "uml-relations-variant.json"
-            registration.write_text(
-                json.dumps(
-                    {
-                        "item_id": "self-authored/uml-relations-variant",
-                        "topic_id": "K03.SOFTWARE_DESIGN_UML",
-                        "concept_id": "K03.uml_relationships",
-                        "question_family_id": "K03.uml_relationships.variant",
-                        "variant_of": "exam-bank/05-uml.md#4",
-                        "stem": "UML 关系变式：实现与依赖分别用什么线型表示？",
-                        "options": ["实线空心三角与虚线箭头", "实线实心菱形与虚线", "虚线箭头与实线", "实线关联与虚线关联"],
-                    },
-                    ensure_ascii=False,
-                ),
-                encoding="utf-8",
-            )
-            _run_cli(data_dir, "register-question", "--file", str(registration))
-            _run_cli(
-                data_dir,
-                "record",
-                "--topic",
-                "K03.SOFTWARE_DESIGN_UML",
-                "--skill",
-                "recognition",
-                "--score",
-                "1",
-                "--max-score",
-                "1",
-                "--confidence",
-                "sure",
-                "--attempt-id",
-                "uml-relations-remedy",
-                "--item-id",
-                "self-authored/uml-relations-variant",
-                "--at",
-                "2026-08-10T15:00:00+08:00",
-            )
-            prepared = _json_output(
-                _run_cli(
-                    data_dir,
-                    "quiz-prepare",
-                    "--subject",
-                    "comprehensive",
-                    "--limit",
-                    "5",
-                    "--today",
-                    "2026-08-20",
-                )
-            )
-            concepts = {
-                question["concept_id"]
-                for question in self._quiz_manifest(data_dir, prepared["quiz_id"])[
-                    "questions"
-                ]
-            }
-            self.assertIn("K03.uml_relationships", concepts)
-            self.assertIn("UML 泛化、实现与依赖关系", prepared["objective"])
 
     def test_subject_policy_blocks_automatic_recommendation_only(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -3136,7 +2664,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             _append_mock_gap_session(
                 data_dir,
                 "skip-mock-001",
-                wrong_items=[(topic_id, "exam-bank/07-software-engineering.md#1", None)],
+                wrong_items=[(topic_id, "exam-bank/07-software-engineering.md#1")],
             )
             baseline = _json_output(
                 _run_cli(
@@ -3202,10 +2730,10 @@ class TutorAcceptanceTest(unittest.TestCase):
                 data_dir,
                 "evict-comprehensive",
                 wrong_items=[
-                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#1", None),
-                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#2", None),
-                    ("K12.PATTERNS_SOA_MICROSERVICES", "exam-bank/13-design-patterns.md#1", "design_patterns"),
-                    ("K09.QUALITY_SCENARIOS", "exam-bank/11-quality-attributes.md#1", None),
+                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#1"),
+                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#2"),
+                    ("K12.PATTERNS_SOA_MICROSERVICES", "exam-bank/13-design-patterns.md#1"),
+                    ("K09.QUALITY_SCENARIOS", "exam-bank/11-quality-attributes.md#1"),
                 ],
             )
             payload = _json_output(
@@ -3236,7 +2764,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 data_dir,
                 "corrupt-postmortem-001",
                 wrong_items=[
-                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#1", None)
+                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#1")
                 ],
             )
             (data_dir / "postmortems.jsonl").write_text(
@@ -3413,8 +2941,6 @@ class TutorAcceptanceTest(unittest.TestCase):
                     "--wrong-reason",
                     "knowledge_gap",
                 ]
-                if topic.get("facets"):
-                    record_arguments.extend(["--facet", topic["facets"][0]])
                 _run_cli(
                     data_dir,
                     *record_arguments,
@@ -3851,8 +3377,6 @@ class TutorAcceptanceTest(unittest.TestCase):
             for event in events:
                 if event["attempt_id"] in targets:
                     event["item_id"] = targets[event["attempt_id"]]
-                    event["concept_id"] = "K15.STRUCTURED_ANALYSIS_DFD"
-                    event["question_family_id"] = "K15.STRUCTURED_ANALYSIS_DFD"
             attempts_path.write_text(
                 "".join(json.dumps(event, ensure_ascii=False) + "\n" for event in events),
                 encoding="utf-8",
@@ -3871,14 +3395,11 @@ class TutorAcceptanceTest(unittest.TestCase):
             question.update({
                 "item_id": targets["legacy-mda"],
                 "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
-                "concept_id": "K15.STRUCTURED_ANALYSIS_DFD",
-                "question_family_id": "K15.STRUCTURED_ANALYSIS_DFD",
             })
             manifest["status"] = "graded"
             manifest["response_key"] = {"answers": ["A"], "confidences": ["sure"]}
             manifest["result"] = {
-                "results": [{"number": 1, "topic_id": question["topic_id"],
-                             "concept_id": question["concept_id"]}]
+                "results": [{"number": 1, "topic_id": question["topic_id"]}]
             }
             manifest_path.write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
 
@@ -3934,7 +3455,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             _run_cli(data_dir, "doctor")
             _run_cli(data_dir, "progress", "--json", "--today", "2026-09-24")
 
-    def test_legacy_mock_diagnosis_uses_corrected_topic_and_concept(self) -> None:
+    def test_legacy_mock_diagnosis_uses_corrected_topic(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
             self._init(data_dir)
@@ -3943,7 +3464,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 at="2026-09-20T10:00:00+08:00",
                 wrong_items=[(
                     "K15.STRUCTURED_ANALYSIS_DFD",
-                    "past-papers/comprehensive-by-year/2022.md#26", None,
+                    "past-papers/comprehensive-by-year/2022.md#26",
                 )],
             )
             diagnosis = _json_output(_run_cli(
@@ -3951,7 +3472,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "--today", "2026-09-24",
             ))
             issue = next(item for item in diagnosis["issues"]
-                         if item["concept_id"] == "K03.mda_cim_pim")
+                         if item["topic_id"] == "K03.SOFTWARE_DESIGN_UML")
             self.assertEqual("K03.SOFTWARE_DESIGN_UML", issue["topic_id"])
             progress = _json_output(_run_cli(
                 data_dir, "progress", "--json", "--today", "2026-09-24"
@@ -3977,8 +3498,6 @@ class TutorAcceptanceTest(unittest.TestCase):
             event = json.loads(attempts_path.read_text(encoding="utf-8"))
             event.update({
                 "item_id": "past-papers/comprehensive-by-year/2022.md#26",
-                "concept_id": "K15.STRUCTURED_ANALYSIS_DFD",
-                "question_family_id": "K15.STRUCTURED_ANALYSIS_DFD",
             })
             attempts_path.write_text(json.dumps(event, ensure_ascii=False) + "\n", encoding="utf-8")
             state = json.loads((data_dir / "state.json").read_text(encoding="utf-8"))
@@ -4017,14 +3536,12 @@ class TutorAcceptanceTest(unittest.TestCase):
             raw = next(item for item in module.load_quiz_question_pool(curriculum)
                        if item["id"] == "past-papers/comprehensive-by-year/2022.md#26")
             question = module.quiz_question_for_topic(
-                raw, module.topic_map(curriculum)["K03.SOFTWARE_DESIGN_UML"], {}
+                raw, module.topic_map(curriculum)["K03.SOFTWARE_DESIGN_UML"]
             )
             assert question is not None
             question.update({
                 "number": 1, "mode": "practice",
                 "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
-                "concept_id": "K15.STRUCTURED_ANALYSIS_DFD",
-                "question_family_id": "K15.STRUCTURED_ANALYSIS_DFD",
             })
             manifest["questions"] = [question]
             path.write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
@@ -4036,7 +3553,6 @@ class TutorAcceptanceTest(unittest.TestCase):
             event = next(json.loads(line) for line in (data_dir / "attempts.jsonl").read_text().splitlines()
                          if json.loads(line).get("item_id") == question["item_id"])
             self.assertEqual("K03.SOFTWARE_DESIGN_UML", event["topic_id"])
-            self.assertEqual("K03.mda_cim_pim", event["concept_id"])
 
     def test_concurrent_records_are_serialized_without_lost_progress(self) -> None:
         topic_id = self._recognition_topic()["id"]

@@ -19,7 +19,7 @@
 | `state.json` | 可重建的当前状态与三科证据摘要 |
 | `attempts.jsonl` | 只追加的原始作答事件 |
 | `postmortems.jsonl` | 只追加的考后错因补充，与可信交卷记录关联 |
-| `question-registry.json` | 私有自编题登记、细考点、题型族、变式来源与内容指纹 |
+| `question-registry.json` | 私有自编题登记、变式来源与内容指纹 |
 | `dashboard.md` | 便于人阅读的进度面板 |
 | `paper-project.md` | 论文项目素材，可能含敏感信息 |
 
@@ -70,9 +70,6 @@ unseen → learning → fragile → pass_ready
   "attempt_id": "a-20260810-k19-001",
   "topic_id": "K19.ATAM_TACTICS",
   "item_id": "exam-bank/12-atam-evaluation.md#3",
-  "concept_id": "K19.atam_tradeoff_point",
-  "question_family_id": "K19.atam_points.variant",
-  "facet": null,
   "at": "2026-08-10T20:30:00+08:00",
   "subject": "comprehensive",
   "skill": "recognition",
@@ -98,9 +95,8 @@ unseen → learning → fragile → pass_ready
 - 普通答错只能在考生明确说明时记录 `wrong_reasons`，并标记 `wrong_reason_source=learner`；未说明时保持空数组并作为 `unclassified` 统计，不得默认推断为 `concept_confusion`。`knowledge_gap`（明确不会）和 `guessed_correct`（明确猜测）属于可由输入直接确认的事实。
 - 题目本身无效（缺关键图表、答案不在选项中、题干被解析污染）时不写事件：判分时用 `--invalidate` 排除该题，只对有效题记档；题库疑点用 `--audit` 写入 `.study/quiz-audit-queue.jsonl`，由独立维护任务处理。
 - `item_id` 必填并稳定标识一道独立题目；不得用新的 `attempt_id` 兜底。复做同一 `item_id` 可以验证遗忘，但不能冒充多个独立掌握证据。
-- 自编题先登记题干、选项、稳定细考点 `concept_id`、题型族 `question_family_id` 和内容指纹；同内容换 ID 不得作为新证据。同一细考点的变式用 `variant_of` 关联来源题。
+- 自编题先登记题干、选项、稳定大考点 `topic_id` 和内容指纹；同内容换 ID 不得作为新证据。后续练习用 `variant_of` 关联来源题。
 - 变式题的作答同样是有效证据：由 `quiz-variant-grade` 写成 `recognition` attempt，`attempt_id` 为 `<quiz-id>-v-<序号>`，`variant_of` 指回产生它的原题；未声明把握度时记为 `unsure`，不得冒充确定掌握。
-- `curriculum.json` 声明了 `facets` 的聚合考点，在识别/应用训练中必须记录合法 `facet`；达到题数但未覆盖全部子主题时仍不能 `pass_ready`。
 - `source_type` 只能明确标记为 `official_outline`、`real`、`recalled_real`、`self_authored` 或 `simulation`，不得把模拟题称为真题。
 - 用户输入无效、尚未回答或只阅读讲解时，不写掌握证据。
 - 案例和论文记录得分点与 AI 估分，不能冒充官方成绩。
@@ -140,7 +136,7 @@ careless, guessed_correct
 
 ## 7. 排课优先级
 
-存在完整模考时，先把该场逐题事件与 `postmortems.jsonl` 合并，形成具体薄弱点队列：未纠偏错题 → 到期跨日复测 → 猜对或不确定题 → 通用考点排序。完成当日纠偏的细考点进入冷却，不能继续用同题或同题型密集刷题。
+存在完整模考时，先把该场逐题事件与 `postmortems.jsonl` 合并，按稳定大考点形成薄弱点队列：模考失分 → 到期跨日复测 → 猜对或不确定题 → 通用考点排序。同日已展示的题目不得重复；同一大考点的补练只作为该考点证据，不宣称证明原题对应的具体知识已纠偏。
 
 先确定科目瓶颈，再确定考点：
 
@@ -167,8 +163,7 @@ priority =
 7. 考前不足 3 天停止低频新课，只看保命卡、错题和答题骨架。
 
 案例应用能力到期且尚未 `pass_ready` 时，可以先于普通科目分配进入案例赛道；
-已 `pass_ready` 的到期项只做周期维护，不单独触发跨科切换。若细考点没有可用
-同概念新题，允许在同一稳定考点内明示替代练习，但替代题不完成该细考点的纠偏。
+已 `pass_ready` 的到期项只做周期维护，不单独触发跨科切换。大考点补练优先选择未做且通过质量门禁的题目。
 
 默认时间分配：瓶颈科 50%、第二科 30%、最强科 20%。
 

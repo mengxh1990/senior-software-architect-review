@@ -209,13 +209,6 @@ def load_curriculum() -> dict[str, Any]:
         topic_id = topic["id"]
         if topic_id in seen:
             raise TutorError(f"课程表考点 ID 重复：{topic_id}")
-        facets = topic.get("facets", [])
-        if (
-            not isinstance(facets, list)
-            or any(not isinstance(facet, str) or not facet for facet in facets)
-            or len(facets) != len(set(facets))
-        ):
-            raise TutorError(f"课程表考点 {topic_id} facets 无效")
         seen.add(topic_id)
     groups = curriculum.get("strategy", {}).get("comprehensive_cold_start_groups", [])
     if not isinstance(groups, list) or any(not isinstance(group, list) for group in groups):
@@ -530,8 +523,22 @@ def load_profile_and_state(
         curriculum = load_curriculum()
         for event in pending:
             apply_event_to_state(state, event, curriculum)
-        if persist_pending:
-            save_state_bundle(data_dir, profile, state, backup=True)
+    # Project the current topic-level mastery rule in memory. Older private
+    # states may have been evaluated against subtopic coverage requirements;
+    # reading progress must not require rewriting their answer ledger.
+    curriculum = load_curriculum()
+    topics = topic_map(curriculum)
+    safe_target = float(state.get("strategy", {}).get("safe_target", 52))
+    for topic_id, topic_record in state.get("topics", {}).items():
+        topic = topics.get(topic_id)
+        if topic is None:
+            continue
+        for skill, record in topic_record.get("mastery", {}).items():
+            if isinstance(record, dict):
+                record["status"] = skill_status(skill, record, safe_target)
+        refresh_topic_status(topic_record, topic.get("skills", []))
+    if pending and persist_pending:
+        save_state_bundle(data_dir, profile, state, backup=True)
     return profile, state
 
 
@@ -804,7 +811,6 @@ def skill_status(
     skill: str,
     record: dict[str, Any],
     safe_target: float,
-    required_facets: Iterable[str] = (),
 ) -> str:
     attempts = int(record.get("attempt_count", 0))
     if attempts == 0:
@@ -815,11 +821,6 @@ def skill_status(
         item for item in record.get("qualified_evidence", []) if isinstance(item, dict)
     ]
     unique_items = {item.get("item_id") for item in evidence if item.get("item_id")}
-    required_facet_set = set(required_facets)
-    covered_facets = {item.get("facet") for item in evidence if item.get("facet")}
-    facets_satisfied = skill == "production" or required_facet_set.issubset(
-        covered_facets
-    )
     dates = sorted(
         {
             parse_datetime(item.get("at")).date().isoformat()
@@ -867,7 +868,6 @@ def skill_status(
             len(unique_items) >= 6
             and len(dates) >= 2
             and accuracy >= 0.8
-            and facets_satisfied
         ):
             return "pass_ready"
     elif skill == "application":
@@ -885,7 +885,6 @@ def skill_status(
             len(unique_items) >= 2
             and accuracy >= 0.6
             and distinct_pair_is_spaced
-            and facets_satisfied
         ):
             return "pass_ready"
     elif skill == "production":
@@ -1019,14 +1018,6 @@ def validate_record_event(event: dict[str, Any], curriculum: dict[str, Any]) -> 
     skill = event.get("skill")
     if skill not in topic.get("skills", []):
         raise TutorError(f"{topic_id} 不支持能力维度 {skill}")
-    facets = topic.get("facets", [])
-    facet = event.get("facet")
-    if facets and skill != "production" and facet not in facets:
-        raise TutorError(
-            f"{topic_id}/{skill} 必须用 --facet 标明子主题：" + ", ".join(facets)
-        )
-    if facet is not None and facet not in facets:
-        raise TutorError(f"{topic_id} 不支持 facet {facet}")
     item_id = event.get("item_id")
     if not isinstance(item_id, str) or not item_id.strip():
         raise TutorError("item-id 必填，且必须稳定标识一道独立题目")
@@ -1091,8 +1082,6 @@ def validate_record_event(event: dict[str, Any], curriculum: dict[str, Any]) -> 
     if wrong_reason_source is not None and wrong_reason_source not in WRONG_REASON_SOURCES:
         raise TutorError("wrong_reason_source 无效")
     for key in (
-        "concept_id",
-        "question_family_id",
         "question_fingerprint",
         "variant_of",
         "wrong_reason_source",
@@ -1196,7 +1185,6 @@ def apply_record_event(
             {
                 "attempt_id": attempt_id,
                 "item_id": event["item_id"],
-                "facet": event.get("facet"),
                 "at": attempted_iso,
                 "score": score,
                 "max_score": maximum,
@@ -1205,8 +1193,6 @@ def apply_record_event(
                 "complete": event.get("complete", False),
                 "duration_seconds": event.get("duration_seconds"),
                 "word_count": event.get("word_count"),
-                "concept_id": event.get("concept_id"),
-                "question_family_id": event.get("question_family_id"),
                 "question_fingerprint": event.get("question_fingerprint"),
                 "variant_of": event.get("variant_of"),
             }
@@ -1246,7 +1232,7 @@ def apply_record_event(
     lifetime_accuracy = record["score_sum"] / record["max_score_sum"]
     record["mastery"] = round(lifetime_accuracy * evidence_factor, 4)
     record["status"] = skill_status(
-        skill, record, safe_target, topic.get("facets", [])
+        skill, record, safe_target
     )
     if record["status"] == "pass_ready":
         record["ever_pass_ready"] = True
@@ -1301,8 +1287,6 @@ def apply_record_event(
 # before the keys existed store ``None``; a replay that now fills them in is
 # still the same answer, so ``None`` on either side must stay compatible.
 DERIVED_EVENT_KEYS = (
-    "concept_id",
-    "question_family_id",
     "question_fingerprint",
     "variant_of",
 )
@@ -1315,7 +1299,6 @@ def events_conflict(existing: dict[str, Any], candidate: dict[str, Any], *, comp
         "event_type",
         "topic_id",
         "item_id",
-        "facet",
         "subject",
         "skill",
         "mode",
@@ -1355,7 +1338,7 @@ def cmd_record(args: argparse.Namespace) -> int:
     registered = private_registry.get(args.item_id)
     if args.item_id.startswith("self-authored/") and registered is None:
         raise TutorError(
-            "自编题必须先用 register-question 登记题干、细考点与题型族，"
+            "自编题必须先用 register-question 登记题干和选项，"
             "再记录作答"
         )
     if registered is not None and registered.get("topic_id") != args.topic:
@@ -1363,10 +1346,6 @@ def cmd_record(args: argparse.Namespace) -> int:
             f"题目 {args.item_id} 已登记到 {registered.get('topic_id')}，"
             f"不能记录到 {args.topic}"
         )
-    concept_id = args.concept_id or (registered or {}).get("concept_id")
-    family_id = args.question_family_id or (registered or {}).get(
-        "question_family_id"
-    )
     fingerprint = args.question_fingerprint or (registered or {}).get(
         "question_fingerprint"
     )
@@ -1390,7 +1369,6 @@ def cmd_record(args: argparse.Namespace) -> int:
         "event_type": "practice",
         "topic_id": args.topic,
         "item_id": args.item_id,
-        "facet": args.facet,
         "at": parse_datetime(args.at).isoformat(timespec="seconds"),
         "subject": subject,
         "skill": args.skill,
@@ -1406,8 +1384,6 @@ def cmd_record(args: argparse.Namespace) -> int:
         "source_type": args.source_type,
         "source": args.source,
         "feedback_seen": False,
-        "concept_id": concept_id,
-        "question_family_id": family_id,
         "question_fingerprint": fingerprint,
         "variant_of": variant_of,
     }
@@ -1860,19 +1836,16 @@ def learning_diagnosis(
     *,
     state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Merge the latest full mock, its postmortem and later variants."""
+    """Summarize mock gaps and later practice by stable topic and skill."""
 
     if subject not in SUBJECTS:
         raise TutorError(f"未知科目：{subject}")
-    # Callers that already hold the validated state pass it in; reloading it
-    # here would repeat four file reads on every learning-plan request.
     if state is None:
         _, state = load_profile_and_state(data_dir, persist_pending=False)
     attempts = load_attempts(state_paths(data_dir)["attempts"])
     mock_events = sorted(
         (
-            event
-            for event in attempts
+            event for event in attempts
             if event.get("event_type") == "mock" and event.get("subject") == subject
         ),
         key=lambda event: parse_datetime(event.get("at")),
@@ -1880,18 +1853,15 @@ def learning_diagnosis(
     if not mock_events:
         return {"subject": subject, "mock": None, "issues": []}
     mock = mock_events[-1]
-    postmortems = {
-        item["mock_id"]: item for item in load_postmortems(data_dir)
-    }
-    private_registry = load_private_question_registry(data_dir)
-    grouped: dict[str, dict[str, Any]] = {}
+    postmortems = {item["mock_id"]: item for item in load_postmortems(data_dir)}
+    topics = topic_map(load_curriculum())
+    grouped: dict[tuple[str, str], dict[str, Any]] = {}
     for source_mock in mock_events:
         mock_id = source_mock["attempt_id"]
         prefix = f"{mock_id}-q-"
         question_events = sorted(
             (
-                event
-                for event in attempts
+                event for event in attempts
                 if event.get("event_type") == "practice"
                 and str(event.get("attempt_id", "")).startswith(prefix)
             ),
@@ -1902,24 +1872,23 @@ def learning_diagnosis(
             for item in postmortems.get(mock_id, {}).get("items", [])
             if isinstance(item, dict)
         }
-        for event in question_events:
+        for original in question_events:
+            event = question_registry.canonicalize_public_event(original)
             wrong = _event_ratio(event) < 1.0
             uncertain = event.get("confidence") in {"guess", "unsure"}
             if not wrong and not uncertain:
                 continue
-            metadata = question_registry.resolve_metadata(event, private_registry)
-            concept_id = metadata.get("concept_id")
-            if not concept_id:
+            topic_id = event.get("topic_id")
+            skill = event.get("skill")
+            if topic_id not in topics or skill not in SKILLS:
                 continue
             issue = grouped.setdefault(
-                concept_id,
+                (topic_id, skill),
                 {
-                    "concept_id": concept_id,
-                    "concept_label": metadata.get("concept_label") or concept_id,
-                    "question_family_id": metadata.get("question_family_id"),
-                    "topic_id": metadata.get("topic_id"),
+                    "topic_id": topic_id,
+                    "topic_name": topics[topic_id]["name"],
                     "subject": subject,
-                    "skill": event.get("skill"),
+                    "skill": skill,
                     "source_mock_id": mock_id,
                     "source_mock_ids": [],
                     "source_paper_id": source_mock.get("item_id"),
@@ -1946,14 +1915,9 @@ def learning_diagnosis(
             if wrong:
                 issue["signal"] = "wrong"
 
-    review_interval = 1
-    # One pass resolves every attempt's metadata once; each issue then only
-    # filters the strong same-concept candidates instead of rescanning (and
-    # re-resolving) the whole event log per issue.
-    strong_by_concept: dict[
-        str, list[tuple[datetime, dict[str, Any], dict[str, Any]]]
-    ] = {}
-    for event in attempts:
+    strong_by_topic: dict[tuple[str, str], list[tuple[datetime, dict[str, Any]]]] = {}
+    for original in attempts:
+        event = question_registry.canonicalize_public_event(original)
         if (
             event.get("event_type") != "practice"
             or event.get("subject") != subject
@@ -1961,15 +1925,10 @@ def learning_diagnosis(
             or event.get("confidence") != "sure"
         ):
             continue
-        metadata = question_registry.resolve_metadata(event, private_registry)
-        strong_concept = metadata.get("concept_id")
-        if not strong_concept:
-            continue
-        strong_by_concept.setdefault(strong_concept, []).append(
-            (parse_datetime(event.get("at")), event, metadata)
-        )
-    for issue in grouped.values():
-        concept_id = issue["concept_id"]
+        key = (event.get("topic_id"), event.get("skill"))
+        if key in grouped:
+            strong_by_topic.setdefault(key, []).append((parse_datetime(event["at"]), event))
+    for key, issue in grouped.items():
         source_items = set(issue["source_item_ids"])
         source_at = parse_datetime(issue["source_at"])
         remedies = [
@@ -1977,24 +1936,18 @@ def learning_diagnosis(
                 "attempt_id": event.get("attempt_id"),
                 "item_id": event.get("item_id"),
                 "at": event.get("at"),
-                "question_family_id": metadata.get("question_family_id"),
             }
-            for attempted_at, event, metadata in strong_by_concept.get(concept_id, [])
+            for attempted_at, event in strong_by_topic.get(key, [])
             if attempted_at > source_at and event.get("item_id") not in source_items
         ]
         distinct_items = {item["item_id"] for item in remedies if item.get("item_id")}
         dates = {
             parse_datetime(item["at"]).date().isoformat()
-            for item in remedies
-            if item.get("at")
+            for item in remedies if item.get("at")
         }
         verified = len(distinct_items) >= 2 and len(dates) >= 2
         last_remedy_date = max((parse_date(value) for value in dates), default=None)
-        review_date = (
-            last_remedy_date + timedelta(days=review_interval)
-            if last_remedy_date
-            else today
-        )
+        review_date = last_remedy_date + timedelta(days=1) if last_remedy_date else today
         if verified:
             status = "verified"
         elif remedies and review_date <= today:
@@ -2007,21 +1960,11 @@ def learning_diagnosis(
         issue["remedy_attempts"] = remedies
         issue["next_review_at"] = review_date.isoformat()
         issue["avoid_item_ids"] = sorted(source_items | distinct_items)
-        issue["avoid_question_family_ids"] = sorted(
-            {
-                value
-                for value in [
-                    issue.get("question_family_id"),
-                    *[item.get("question_family_id") for item in remedies],
-                ]
-                if value
-            }
-        )
         issue["reason"] = {
-            "pending_remediation": "最近完整模考暴露，尚无对准的确定作答变式",
-            "due_review": "已完成当日纠偏，现已到跨日复测日",
-            "awaiting_review": "已完成当日纠偏，等待跨日复测",
-            "verified": "已由不同题目和不同日期的确定作答验证",
+            "pending_remediation": "模考该考点有失分，优先安排新题练习",
+            "due_review": "该考点已到跨日复测日",
+            "awaiting_review": "该考点等待跨日复测",
+            "verified": "该考点已有不同题目和不同日期的确定作答证据",
         }[status]
 
     priority = {
@@ -2036,13 +1979,12 @@ def learning_diagnosis(
             priority[item["status"]],
             0 if item["signal"] == "wrong" else 1,
             item["topic_id"],
-            item["concept_id"],
         ),
     )
     return {
         "subject": subject,
         "mock": {
-            "mock_id": mock_id,
+            "mock_id": mock["attempt_id"],
             "paper_id": mock.get("item_id"),
             "at": mock.get("at"),
             "score": mock.get("score"),
@@ -2067,7 +2009,7 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
     )
     for index, issue in enumerate(payload["issues"], 1):
         print(
-            f"{index}. {issue['concept_label']} [{issue['status']}] — {issue['reason']}"
+            f"{index}. {issue['topic_name']} [{issue['status']}] — {issue['reason']}"
         )
     return 0
 
@@ -2390,10 +2332,9 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
 
     recommendations = plan.get("recommendations") or []
     if recommendations:
-        substitution = None
         if next_action["mode"] == "quiz_prepare":
             curriculum = load_curriculum()
-            selected, selected_recommendations, substitution = select_quiz_group(
+            selected, selected_recommendations = select_quiz_group(
                 args.data_dir,
                 today,
                 5,
@@ -2409,24 +2350,15 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
         command = next_action["command"]
         if next_action["mode"] in {"quiz_prepare", "case_prepare"}:
             command = f"{command} --topic {topic_id}"
-        reason = first.get("reason")
-        if substitution:
-            reason = (
-                f"{substitution['requested_concept_label']}："
-                f"{substitution['availability_message']}；"
-                "改为同考点替代练习，并非该细考点复测"
-            )
         next_action = {
             **next_action,
             "topic_id": topic_id,
             "topic_name": first.get("name"),
             "skill": first.get("skill"),
-            "reason": reason,
+            "reason": first.get("reason"),
             "estimated_minutes": first.get("estimated_minutes"),
             "command": command,
         }
-        if substitution:
-            next_action["substitution"] = substitution
     exam_date = profile.get("exam_date")
     return {
         "today": today.isoformat(),
@@ -2967,7 +2899,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
     diagnostic_items = [
         {
             "topic_id": issue["topic_id"],
-            "name": issue["concept_label"],
+            "name": issue["topic_name"],
             "subject": issue["subject"],
             "skill": issue["skill"],
             "priority_score": 999.0 - index,
@@ -2977,14 +2909,11 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
             "reason": issue["reason"],
             "resources": [],
             "diagnostic_status": issue["status"],
-            "concept_id": issue["concept_id"],
-            "question_family_id": issue["question_family_id"],
             "source_mock_id": issue["source_mock_id"],
             "source_item_ids": issue["source_item_ids"],
             "wrong_reasons": issue["wrong_reasons"],
             "supporting_topic_id": issue.get("supporting_topic_id"),
             "avoid_item_ids": issue["avoid_item_ids"],
-            "avoid_question_family_ids": issue["avoid_question_family_ids"],
         }
         for index, issue in enumerate(active_diagnostics)
     ]
@@ -3302,18 +3231,13 @@ def quiz_session_path(data_dir: Path, quiz_id: str) -> Path:
     return quiz_sessions_dir(data_dir) / f"{quiz_id}.json"
 
 
-def quiz_questions_served_on(data_dir: Path, day: date) -> tuple[set[str], set[str]]:
-    """Items and fine concepts already handed to the learner on ``day``.
-
-    Prepared-but-ungraded sessions count: the questions were shown, so serving
-    them again the same day is a repeat even though no attempt exists yet.
-    """
+def quiz_questions_served_on(data_dir: Path, day: date) -> set[str]:
+    """Include prepared but ungraded questions in the same-day item cooldown."""
 
     items: set[str] = set()
-    concepts: set[str] = set()
     directory = quiz_sessions_dir(data_dir)
     if not directory.is_dir():
-        return items, concepts
+        return items
     for path in sorted(directory.glob("*.json")):
         try:
             manifest = json.loads(path.read_text(encoding="utf-8"))
@@ -3326,37 +3250,10 @@ def quiz_questions_served_on(data_dir: Path, day: date) -> tuple[set[str], set[s
         if parse_datetime(created_at).date() != day:
             continue
         for question in questions:
-            if not isinstance(question, dict) or not isinstance(
-                question.get("item_id"), str
-            ):
+            if not isinstance(question, dict) or not isinstance(question.get("item_id"), str):
                 raise TutorError(f"客观题会话损坏：{path}")
             items.add(question["item_id"])
-            concept_id = question_registry.canonicalize_public_event(question).get(
-                "concept_id"
-            )
-            if isinstance(concept_id, str) and concept_id:
-                concepts.add(concept_id)
-    return items, concepts
-
-
-def substituted_quiz_concepts(data_dir: Path) -> set[str]:
-    """Do not repeatedly auto-route an unserviceable fine concept."""
-
-    concepts: set[str] = set()
-    directory = quiz_sessions_dir(data_dir)
-    if not directory.is_dir():
-        return concepts
-    for path in sorted(directory.glob("*.json")):
-        try:
-            manifest = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as error:
-            raise TutorError(f"客观题会话损坏：{path}") from error
-        substitution = manifest.get("substitution")
-        if isinstance(substitution, dict) and isinstance(
-            substitution.get("requested_concept_id"), str
-        ):
-            concepts.add(substitution["requested_concept_id"])
-    return concepts
+    return items
 
 
 def recently_served_variant_item_ids(
@@ -3438,49 +3335,6 @@ def recently_mastered_item_ids(
 def paper_source_type(year: str | None) -> str:
     return "recalled_real" if year in RECALLED_REAL_YEARS else "real"
 
-
-def infer_quiz_facet(topic: dict[str, Any], item: dict[str, Any]) -> str | None:
-    facets = topic.get("facets", [])
-    if not facets:
-        return None
-    text = " ".join(
-        [
-            str(item.get("stem") or ""),
-            str(item.get("source") or ""),
-            str(item.get("tag_label") or ""),
-        ]
-    ).lower()
-    rules = {
-        "K05.TEST_CMMI_PATTERNS": (
-            ("cmmi", ("cmmi", "能力成熟度")),
-            ("design_patterns", ("设计模式", "design-patterns", "gof", "模式")),
-            ("testing", ("测试", "白盒", "黑盒", "覆盖", "质量保证", "质量管理", "静态分析", "净室", "性能评测")),
-        ),
-        "K06.DESIGN_DATA_VIEWS": (
-            ("documentation", ("用户文档", "系统文档", "软件文档", "文档分类")),
-            ("uml_views", ("uml", "视图", "建模")),
-            ("data_design", ("数据设计", "数据库", "数据模型")),
-            ("high_level_design", ("概要设计", "总体设计", "模块", "输入设计", "界面设计", "用户界面", "系统设计", "系统建议", "处理流程")),
-        ),
-        "K12.PATTERNS_SOA_MICROSERVICES": (
-            ("microservices", ("微服务", "microservice", "ddd", "cqrs", "云原生", "断路器", "熔断", "服务网格", "api 网关")),
-            ("soa", ("soa", "esb", "soap", "wsdl", "面向服务")),
-            ("design_patterns", ("设计模式", "design-patterns", "gof", "工厂", "桥接模式", "结构型模式", "命令模式", "装饰器模式", "singleton", "观察者")),
-        ),
-        "K13.VIEWS_SOA_LAYERING": (
-            ("four_plus_one", ("4+1", "逻辑视图", "进程视图", "物理视图", "架构视图", "架构描述", "网络架构数据流图", "视图")),
-            ("soa", ("soa", "esb", "面向服务")),
-            ("layering", ("分层", "层次", "逻辑层", "客户机", "c/s", "负载均衡")),
-        ),
-        "K23.PROJECT_MANAGEMENT_METRICS": (
-            ("software_metrics", ("度量", "software-metrics", "功能点", "mccabe", "halstead", "loc", "psp", "tsp")),
-            ("project_management", ("项目", "project-management", "进度", "成本", "挣值", "wbs", "配置", "版本控制")),
-        ),
-    }
-    for facet, keywords in rules.get(topic["id"], ()):
-        if any(keyword in text for keyword in keywords):
-            return facet
-    return None
 
 
 def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
@@ -3564,7 +3418,6 @@ def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
 def quiz_question_for_topic(
     raw: dict[str, Any],
     topic: dict[str, Any],
-    private_registry: dict[str, dict[str, Any]],
 ) -> dict[str, Any] | None:
     topic_id = topic["id"]
     # The quality gate is absolute: an item that is missing its figure, table
@@ -3577,26 +3430,10 @@ def quiz_question_for_topic(
         return None
     if topic_id not in raw.get("candidate_topics", []):
         return None
-    facet = infer_quiz_facet(topic, raw)
-    if topic.get("facets") and facet is None:
-        return None
-    registered = private_registry.get(raw["id"])
-    matching_registry = (
-        private_registry
-        if not registered or registered.get("topic_id") == topic_id
-        else {}
-    )
-    metadata = question_registry.resolve_metadata(
-        {"item_id": raw["id"], "topic_id": topic_id, "facet": facet},
-        matching_registry,
-    )
     return {
         "item_id": raw["id"],
         "topic_id": topic_id,
         "topic_name": topic["name"],
-        "facet": facet,
-        "concept_id": metadata.get("concept_id"),
-        "question_family_id": metadata.get("question_family_id"),
         "stem": raw["stem"],
         "context_id": raw.get("context_id"),
         "context_title": raw.get("context_title"),
@@ -3629,227 +3466,68 @@ def select_quiz_group(
     recommendations: list[dict[str, Any]],
     curriculum: dict[str, Any],
     topics: dict[str, dict[str, Any]],
-    *,
-    requested_topic: str | None = None,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, str] | None]:
-    """Preview or select one complete, same-topic group without writing a session."""
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Select a complete group within one stable topic, avoiding seen items."""
 
     attempts = load_attempts(state_paths(data_dir)["attempts"])
     route_topics = list(dict.fromkeys(item["topic_id"] for item in recommendations))
     pool = load_quiz_question_pool(curriculum)
-    private_registry = load_private_question_registry(data_dir)
     attempted_items = {event.get("item_id") for event in attempts}
-    served_today_items = {
-        event.get("item_id")
-        for event in attempts
+    served_today_items = quiz_questions_served_on(data_dir, today)
+    served_today_items.update(
+        event.get("item_id") for event in attempts
         if event.get("at") and parse_datetime(event["at"]).date() == today
-    }
-    session_items, cooled_today_concepts = quiz_questions_served_on(
-        data_dir, today
     )
-    served_today_items |= session_items
-    for event in attempts:
-        if not event.get("at") or parse_datetime(event["at"]).date() != today:
-            continue
-        concept_id = question_registry.resolve_metadata(event, private_registry).get(
-            "concept_id"
-        )
-        if concept_id:
-            cooled_today_concepts.add(concept_id)
-    selected: list[dict[str, Any]] = []
-    used_items: set[str] = set()
-    used_families: set[str] = set()
-    used_concepts: set[str] = set()
-    answer_counts: dict[str, int] = {}
-    chosen_recommendations: list[dict[str, Any]] = []
-    selected_route_first: dict[str, Any] | None = None
-    # Items the learner has already banked or already read are the last thing
-    # to hand back; the fine concept stays in rotation through fresh items.
     protected_items = recently_mastered_item_ids(attempts, today) | (
         recently_served_variant_item_ids(data_dir, today)
     )
-    prior_substitutions = (
-        substituted_quiz_concepts(data_dir) if requested_topic is None else set()
-    )
-
-    def has_usable_fine_item(recommendation: dict[str, Any]) -> bool:
-        topic = topics[recommendation["topic_id"]]
-        return any(
-            (candidate := quiz_question_for_topic(raw, topic, private_registry))
-            is not None
-            and candidate["concept_id"] == recommendation["concept_id"]
-            and candidate["item_id"] not in served_today_items
-            and candidate["item_id"] not in recommendation.get("avoid_item_ids", [])
-            for raw in pool
-        )
-
-    def choose_for(
-        recommendation: dict[str, Any],
-        allow_repeated: bool,
-        allow_cooled: bool,
-        allow_protected: bool = False,
-    ) -> bool:
-        topic = topics.get(recommendation["topic_id"])
-        if not topic:
-            return False
-        candidates = []
-        for raw in pool:
-            candidate = quiz_question_for_topic(raw, topic, private_registry)
-            if candidate is None or candidate["item_id"] in used_items:
-                continue
-            if candidate["item_id"] in served_today_items:
-                continue
-            if not allow_protected and candidate["item_id"] in protected_items:
-                continue
-            if not allow_repeated and candidate["item_id"] in attempted_items:
-                continue
-            if candidate["item_id"] in set(recommendation.get("avoid_item_ids", [])):
-                continue
-            candidates.append(candidate)
-        wanted_concept = recommendation.get("concept_id")
-        if wanted_concept:
-            exact = [
-                item for item in candidates if item.get("concept_id") == wanted_concept
-            ]
-            if not exact:
-                # A fine-grained gap is only served by its own concept; a
-                # same-topic item would turn the objective into a false claim.
-                return False
-            candidates = exact
-        if not candidates:
-            return False
-        if not allow_cooled:
-            # A broad topic-level concept may cover many distinct items in one
-            # group. Cooldowns from prior sessions still apply, while explicit
-            # fine concepts are not repeated within this group.
-            cooled = cooled_today_concepts | {
-                concept
-                for concept in used_concepts
-                if concept != topic["id"] and not concept.startswith(f"{topic['id']}:")
-            }
-            fresh = [
-                item for item in candidates if item.get("concept_id") not in cooled
-            ]
-            if not fresh:
-                # Every remaining item of this recommendation was already
-                # tested today; another recommendation gets the slot first.
-                return False
-            candidates = fresh
-        family_fresh = [
-            item
-            for item in candidates
-            if not item.get("question_family_id")
-            or item["question_family_id"] not in used_families
-        ]
-        if family_fresh:
-            candidates = family_fresh
-        chosen = min(candidates, key=lambda item: _quiz_candidate_sort_key(item, answer_counts))
-        chosen["number"] = len(selected) + 1
-        chosen["mode"] = (
-            "review" if recommendation.get("diagnostic_status") else "practice"
-        )
-        chosen["prior_wrong_reasons"] = recommendation.get("wrong_reasons") or []
-        selected.append(chosen)
-        chosen_recommendations.append(recommendation)
-        used_items.add(chosen["item_id"])
-        if chosen.get("question_family_id"):
-            used_families.add(chosen["question_family_id"])
-        if chosen.get("concept_id"):
-            used_concepts.add(chosen["concept_id"])
-        signature = "".join(chosen["correct"])
-        answer_counts[signature] = answer_counts.get(signature, 0) + 1
-        return True
-
-    # Prefer an entire fresh group on one topic. Try another recommended topic
-    # before relaxing the item and concept cooldowns; partial groups are never
-    # committed to a session. An explicit route has only one eligible topic.
+    best_count = 0
     for allow_protected in (False, True):
-        for allow_cooled in (False, True):
-            for allow_repeated in (False, True):
-                for route_topic_id in route_topics:
-                    selected.clear()
-                    used_items.clear()
-                    used_families.clear()
-                    used_concepts.clear()
-                    answer_counts.clear()
-                    chosen_recommendations.clear()
-                    route_recommendations = [
-                        item
-                        for item in recommendations
-                        if item["topic_id"] == route_topic_id
-                        and not (
-                            item.get("concept_id") in prior_substitutions
-                            and not has_usable_fine_item(item)
-                        )
-                    ]
-                    if not route_recommendations:
+        for allow_repeated in (False, True):
+            for allow_avoided in (False, True):
+                for topic_id in route_topics:
+                    topic = topics.get(topic_id)
+                    if topic is None:
                         continue
-                    if route_recommendations[0].get("concept_id"):
-                        route_recommendations.append(
-                            {
-                                **route_recommendations[0],
-                                "name": topics[route_topic_id]["name"],
-                                "concept_id": None,
-                                "diagnostic_status": None,
-                                "review_due": False,
-                                "urgent_review_due": False,
-                                "wrong_reasons": [],
-                                "reason": "同考点巩固",
-                            }
+                    recommendation = next(
+                        item for item in recommendations if item["topic_id"] == topic_id
+                    )
+                    avoided = set(recommendation.get("avoid_item_ids", []))
+                    candidates = []
+                    for raw in pool:
+                        candidate = quiz_question_for_topic(raw, topic)
+                        if candidate is None or candidate["item_id"] in served_today_items:
+                            continue
+                        if not allow_protected and candidate["item_id"] in protected_items:
+                            continue
+                        if not allow_repeated and candidate["item_id"] in attempted_items:
+                            continue
+                        if not allow_avoided and candidate["item_id"] in avoided:
+                            continue
+                        candidates.append(candidate)
+                    best_count = max(best_count, len(candidates))
+                    if len(candidates) < limit:
+                        continue
+                    selected: list[dict[str, Any]] = []
+                    answer_counts: dict[str, int] = {}
+                    while len(selected) < limit:
+                        chosen = min(
+                            candidates,
+                            key=lambda item: _quiz_candidate_sort_key(item, answer_counts),
                         )
-                    for recommendation in route_recommendations:
-                        if len(selected) >= limit:
-                            break
-                        if recommendation.get("concept_id"):
-                            choose_for(
-                                recommendation, allow_repeated, allow_cooled, allow_protected
-                            )
-                        else:
-                            while len(selected) < limit and choose_for(
-                                recommendation, allow_repeated, allow_cooled, allow_protected
-                            ):
-                                pass
-                    if len(selected) >= limit:
-                        selected_route_first = route_recommendations[0]
-                        break
-                if len(selected) >= limit:
-                    break
-            if len(selected) >= limit:
-                break
-        if len(selected) >= limit:
-            break
-    if len(selected) < limit:
-        raise TutorError(
-            f"只能找到 {len(selected)} 道符合去重和元数据要求的客观题，无法组成 {limit} 题"
-        )
-
-    first = selected_route_first
-    substitution = None
-    if (
-        first is not None
-        and first.get("concept_id")
-        and not any(item["concept_id"] == first["concept_id"] for item in selected)
-        and not chosen_recommendations[0].get("concept_id")
-    ):
-        topic = topics[first["topic_id"]]
-        mapped_fine_item_exists = any(
-            (candidate := quiz_question_for_topic(raw, topic, private_registry))
-            is not None
-            and candidate["concept_id"] == first["concept_id"]
-            for raw in pool
-        )
-        substitution = {
-            "requested_concept_id": first["concept_id"],
-            "requested_concept_label": first["name"],
-            "actual_topic_id": selected[0]["topic_id"],
-            "reason": "same_concept_unavailable",
-            "availability_message": (
-                "已收录同细考点题，但当前没有符合去重要求的独立复测题"
-                if mapped_fine_item_exists
-                else "题库中没有已映射且通过质量门禁的同细考点题"
-            ),
-        }
-    return selected, chosen_recommendations, substitution
+                        candidates.remove(chosen)
+                        chosen["number"] = len(selected) + 1
+                        chosen["mode"] = (
+                            "review" if recommendation.get("diagnostic_status") else "practice"
+                        )
+                        chosen["prior_wrong_reasons"] = recommendation.get("wrong_reasons") or []
+                        selected.append(chosen)
+                        signature = "".join(chosen["correct"])
+                        answer_counts[signature] = answer_counts.get(signature, 0) + 1
+                    return selected, [recommendation] * len(selected)
+    raise TutorError(
+        f"只能找到 {best_count} 道符合去重和元数据要求的客观题，无法组成 {limit} 题"
+    )
 
 
 def cmd_quiz_prepare(args: argparse.Namespace) -> int:
@@ -3892,9 +3570,8 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
                 "review_due": False,
                 "reason": "考生显式指定该综合知识考点",
             }]
-    selected, chosen_recommendations, substitution = select_quiz_group(
+    selected, chosen_recommendations = select_quiz_group(
         args.data_dir, today, args.limit, recommendations, curriculum, topics,
-        requested_topic=args.topic,
     )
 
     created_at = now_iso()
@@ -3907,8 +3584,6 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         "created_at": created_at,
         "questions": selected,
     }
-    if substitution:
-        manifest["substitution"] = substitution
     path = quiz_session_path(args.data_dir, quiz_id)
     atomic_write_json(path, manifest)
     public_questions = [
@@ -3989,12 +3664,6 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         objective = f"{verb}{primary['name']}（{primary['reason']}）"
         if len(covered_topics) > 1:
             objective += f"，同批覆盖 {len(covered_topics) - 1} 个考点"
-    if substitution:
-        objective += (
-            f"；{substitution['requested_concept_label']}："
-            f"{substitution['availability_message']}，"
-            "本组是同考点替代练习，并非该细考点复测"
-        )
     payload = {
         "quiz_id": quiz_id,
         "subject": args.subject,
@@ -4008,8 +3677,6 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         "objective": objective,
         "evidence_summary": evidence_summary,
     }
-    if substitution:
-        payload["substitution"] = substitution
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
@@ -4150,37 +3817,27 @@ def pick_variant_question(
     question: dict[str, Any],
     pool: list[dict[str, Any]],
     topics: dict[str, dict[str, Any]],
-    private_registry: dict[str, dict[str, Any]],
     blocked_items: set[str],
     recently_served_items: set[str] | None = None,
 ) -> dict[str, Any] | None:
-    """Pick one fresh, quality-gated question on the same concept.
+    """Pick a fresh, quality-gated follow-up on the same stable topic.
 
     The variant comes from the verified pool instead of being written on the
     spot, so the coaching round never needs to search the question bank.  An
-    item the learner already saw as a variant is skipped; a repeat is only used
-    when every candidate on that concept is spent.
+    item the learner already saw is skipped until fresh items are exhausted.
     """
 
     topic = topics.get(question.get("topic_id"))
     if not topic:
         return None
-    wanted_concept = question.get("concept_id")
-    if not wanted_concept or wanted_concept in {
-        question["topic_id"],
-        f"{question['topic_id']}:{question.get('facet')}",
-    }:
-        return None
     stale: dict[str, Any] | None = None
     for raw in pool:
-        candidate = quiz_question_for_topic(raw, topic, private_registry)
+        candidate = quiz_question_for_topic(raw, topic)
         if candidate is None:
             continue
         if candidate["item_id"] == question.get("item_id"):
             continue
         if candidate["item_id"] in blocked_items:
-            continue
-        if candidate.get("concept_id") != wanted_concept:
             continue
         if recently_served_items and candidate["item_id"] in recently_served_items:
             if stale is None:
@@ -4301,14 +3958,10 @@ def normalized_quiz_manifest(
                     source = questions[number - 1]
                     if source.get("item_id") in question_registry.PUBLIC_ITEM_CORRECTIONS:
                         entry["topic_id"] = source["topic_id"]
-                        entry["concept_id"] = source["concept_id"]
             else:
                 corrected = question_registry.canonicalize_public_event(entry)
                 if corrected is not entry:
-                    entry.update({
-                        key: corrected[key]
-                        for key in ("topic_id", "concept_id")
-                    })
+                    entry["topic_id"] = corrected["topic_id"]
             variant = entry.get("variant_question")
             if isinstance(variant, dict):
                 corrected = question_registry.canonicalize_public_event(variant)
@@ -4400,7 +4053,6 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
                 {
                     "number": index,
                     "topic_id": question["topic_id"],
-                    "concept_id": question.get("concept_id"),
                     "response_state": "invalidated",
                     "selected": None,
                     "correct": None,
@@ -4434,7 +4086,6 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
             "event_type": "practice",
             "topic_id": question["topic_id"],
             "item_id": question["item_id"],
-            "facet": question.get("facet"),
             "at": graded_at,
             "subject": manifest["subject"],
             "skill": "recognition",
@@ -4453,8 +4104,6 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
             "source_type": question["source_type"],
             "source": question.get("source"),
             "feedback_seen": False,
-            "concept_id": question.get("concept_id"),
-            "question_family_id": question.get("question_family_id"),
             "question_fingerprint": None,
             "variant_of": None,
         }
@@ -4472,7 +4121,6 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
             {
                 "number": index,
                 "topic_id": question["topic_id"],
-                "concept_id": question.get("concept_id"),
                 "response_state": event["response_state"],
                 "selected": None if conceded else "".join(selected),
                 "correct": "".join(correct),
@@ -4536,10 +4184,11 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
                 questions[result["number"] - 1],
                 variant_pool,
                 topics,
-                private_registry,
                 blocked_items,
                 recently_served_variants,
             )
+            if result["variant_question"] is not None:
+                blocked_items.add(result["variant_question"]["item_id"])
         else:
             result["variant_question"] = None
 
@@ -4668,9 +4317,7 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
     existing_by_id = {event["attempt_id"]: event for event in attempts}
     private_registry = load_private_question_registry(args.data_dir)
     graded_at = parse_datetime(args.at).isoformat(timespec="seconds")
-    # The variant payload is the public view of the question; concept, facet and
-    # family come back from the bank so the attempt lands in the same buckets a
-    # first-round answer would.
+    # Resolve the item against the current quality gate and topic mapping.
     pool = load_quiz_question_pool(curriculum)
     resolved: dict[str, dict[str, Any]] = {}
     for _, variant in served:
@@ -4679,7 +4326,7 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
         if not isinstance(item_id, str) or topic is None:
             raise TutorError(f"变式题元数据无效：{item_id}")
         for raw in pool:
-            candidate = quiz_question_for_topic(raw, topic, private_registry)
+            candidate = quiz_question_for_topic(raw, topic)
             if candidate is not None and candidate["item_id"] == item_id:
                 resolved[item_id] = candidate
                 break
@@ -4720,7 +4367,6 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
             "event_type": "practice",
             "topic_id": candidate["topic_id"],
             "item_id": candidate["item_id"],
-            "facet": candidate.get("facet"),
             "at": graded_at,
             "subject": manifest["subject"],
             "skill": "recognition",
@@ -4739,8 +4385,6 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
             "source_type": candidate["source_type"],
             "source": candidate.get("source"),
             "feedback_seen": False,
-            "concept_id": candidate.get("concept_id"),
-            "question_family_id": candidate.get("question_family_id"),
             "question_fingerprint": None,
             "variant_of": source.get("item_id"),
         }
@@ -4760,7 +4404,6 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
                 "source_number": source_number,
                 "item_id": candidate["item_id"],
                 "topic_id": candidate["topic_id"],
-                "concept_id": candidate.get("concept_id"),
                 "response_state": event["response_state"],
                 "selected": None if conceded else "".join(selected),
                 "correct": "".join(correct),
@@ -4979,11 +4622,24 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
             item for item in ready
             if any(
                 topic_id in topics
-                and quiz_question_for_topic(item, topics[topic_id], {}) is not None
+                and quiz_question_for_topic(item, topics[topic_id]) is not None
                 for topic_id in item.get("candidate_topics", [])
             )
         ]
         unmapped = len(ready) - len(routable)
+        referenced_bank_files = {
+            resource
+            for topic in curriculum["topics"]
+            for resource in topic.get("resources", [])
+            if resource.startswith("exam-bank/")
+        }
+        unreferenced_bank_files = [
+            path.relative_to(REPO_ROOT).as_posix()
+            for path in sorted((REPO_ROOT / "exam-bank").glob("*.md"))
+            if path.name != "README.md"
+            and path.relative_to(REPO_ROOT).as_posix() not in referenced_bank_files
+            and sanitize_bank.parse_exam_bank(path)
+        ]
         blocked = [item for item in pool if item not in ready]
         reason_counts: dict[str, int] = {}
         for item in blocked:
@@ -5011,7 +4667,7 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
             if audit_path.exists()
             else 0
         )
-        ok = bool(routable) and not unmapped
+        ok = bool(routable) and not unmapped and not unreferenced_bank_files
         checks.append(
             {
                 "name": "question-bank",
@@ -5020,6 +4676,8 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
                     f"可出题 {len(routable)} 道，质量门禁拦下 {len(blocked)} 道"
                     + (f"（{top_reasons}）" if top_reasons else "")
                     + f"，考点映射未入池 {unmapped} 道"
+                    + f"，未接入题库文件 {len(unreferenced_bank_files)} 个"
+                    + ("（" + "、".join(unreferenced_bank_files) + "）" if unreferenced_bank_files else "")
                     + f"，待维护核对 {open_audits} 条"
                 ),
             }
@@ -5384,7 +5042,6 @@ def build_parser() -> argparse.ArgumentParser:
     record_parser.add_argument("--max-score", type=float, required=True)
     record_parser.add_argument("--attempt-id", required=True)
     record_parser.add_argument("--item-id", required=True)
-    record_parser.add_argument("--facet")
     record_parser.add_argument("--at")
     record_parser.add_argument("--subject", choices=SUBJECTS)
     record_parser.add_argument("--wrong-reason", action="append")
@@ -5398,8 +5055,6 @@ def build_parser() -> argparse.ArgumentParser:
     record_parser.add_argument("--word-count", type=int)
     record_parser.add_argument("--complete", action="store_true")
     record_parser.add_argument("--confidence", choices=("guess", "unsure", "sure"), default="sure")
-    record_parser.add_argument("--concept-id")
-    record_parser.add_argument("--question-family-id")
     record_parser.add_argument("--question-fingerprint")
     record_parser.add_argument("--variant-of")
     record_parser.add_argument(
@@ -5430,7 +5085,7 @@ def build_parser() -> argparse.ArgumentParser:
     weakpoints_parser.set_defaults(func=cmd_weakpoints)
 
     register_parser = subparsers.add_parser(
-        "register-question", help="把自编题的细考点与题型身份登记到私人目录"
+        "register-question", help="登记私人自编题的身份与内容指纹"
     )
     register_parser.add_argument("--file", type=Path, required=True)
     register_parser.set_defaults(func=cmd_register_question)

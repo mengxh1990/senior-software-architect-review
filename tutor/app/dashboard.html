@@ -516,7 +516,7 @@
       const items = learningPlan?.recommendations || [];
       const preview = learningPlan?.practice_preview;
       const previewCard = preview ? (preview.available
-        ? `<div class="practice-preview"><strong>下一组可执行练习：${escapeHtml(preview.topic_name)}</strong><p>${preview.substitution ? `${escapeHtml(preview.substitution.requested_concept_label)} 暂无可用同细考点题；本组是同考点替代练习，并非该细考点复测，原缺口仍待纠偏。` : `按当前题目质量与去重门禁，可练 ${escapeHtml(preview.name)}。`}</p></div>`
+        ? `<div class="practice-preview"><strong>下一组可执行练习：${escapeHtml(preview.topic_name)}</strong><p>按当前题目质量与去重门禁，可练 ${escapeHtml(preview.name)}。</p></div>`
         : `<div class="practice-preview"><strong>当前无法组成完整客观题组</strong><p>${escapeHtml(preview.reason)}</p></div>`) : '';
       const note = learningPlan?.diagnosis_error ? `<div class="empty-state">逐题诊断暂不可用，已回退到通用排序：${escapeHtml(learningPlan.diagnosis_error)}</div>` : '';
       body = note + (items.length ? items.map(item => { const level = item.diagnostic_status ? LEVELS[item.diagnostic_status === 'awaiting_review' ? 1 : 3] : LEVELS[2]; return `<div class="focus-item" style="--stage:${level.color}"><span class="focus-dot"></span><div><div class="focus-name">${escapeHtml(item.name)}</div><div class="focus-meta">${escapeHtml(item.reason)}</div></div><span class="focus-level">${item.diagnostic_status === 'due_review' ? '到期复测' : item.diagnostic_status === 'pending_remediation' ? '模考缺口' : '计划项'}</span></div>`; }).join('') : (learningPlan ? '<div class="empty-state">当前没有可执行的推荐任务。</div>' : '<div class="empty-state">正在加载当前优先任务…</div>'));
@@ -538,7 +538,7 @@
     const chips = topic.skills.map(skill => `<span class="skill-chip">${SKILL_LABELS[skill] || skill}${progress.current.mastery?.[skill] ? ` · ${Math.round(Number(progress.current.mastery[skill].mastery || 0) * 100)}%` : ''}</span>`).join('');
     const masteryText = activeSubject === 'all' ? '分维度查看' : (progress.evidence ? `${masteryPercent}%` : '—');
     const masteryWidth = masteryPercent == null ? 0 : masteryPercent;
-    const diagnosis = progress.diagnosis ? `<div class="topic-meta"><span>${escapeHtml(progress.diagnosis.concept_label)}</span><span>${progress.diagnosis.status === 'awaiting_review' ? '等待跨日复测' : progress.diagnosis.status === 'due_review' ? '复测已到期' : '模考缺口待纠偏'}</span></div>` : '';
+    const diagnosis = progress.diagnosis ? `<div class="topic-meta"><span>${escapeHtml(progress.diagnosis.topic_name)}</span><span>${progress.diagnosis.status === 'awaiting_review' ? '等待跨日复测' : progress.diagnosis.status === 'due_review' ? '复测已到期' : '模考缺口待复习'}</span></div>` : '';
     return `<article class="topic-card" style="--stage:${progress.level.color}; animation-delay:${Math.min(index, 18) * 24}ms"><div class="topic-top"><span class="node-code">${escapeHtml(topic.id)}</span><span class="stage-pill">${progress.level.label}</span></div><h3>${escapeHtml(topic.name)}</h3><div class="topic-domain">${subjectNames}</div><div class="mastery-row"><span>${activeSubject === 'all' ? '能力状态' : `${SKILL_LABELS[progress.selectedSkill]}掌握估计`}</span><strong>${masteryText}</strong></div><div class="mastery-bar" aria-label="掌握估计 ${masteryWidth}%"><span style="width:${masteryWidth}%"></span></div><div class="topic-meta"><span>${meta}</span><span>${next}</span></div>${diagnosis}<div class="skill-row">${chips}</div></article>`;
   }
   function renderSyllabus() {
