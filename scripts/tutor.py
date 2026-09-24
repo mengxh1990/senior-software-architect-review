@@ -1598,6 +1598,8 @@ def effective_subject_allocations(
     active = [subject for subject in SUBJECTS if subject not in paused]
     if not active:
         return raw, raw
+    if active == ["comprehensive", "case"]:
+        return raw, {"comprehensive": 0.5, "case": 0.5, "essay": 0.0}
     total = sum(raw[subject] for subject in active)
     effective = {
         subject: (
@@ -1640,10 +1642,53 @@ def topic_mastery(state: dict[str, Any], topic_id: str, skill: str) -> float:
     return float(skill_record.get("mastery", 0))
 
 
+def case_application_review_due(state: dict[str, Any], today: date) -> bool:
+    """A due case application review outranks the ordinary subject split."""
+
+    strategy = state.get("strategy", {})
+    configured = set(strategy.get("case_tracks", []))
+    skipped = set(strategy.get("strategic_skips", {}))
+    actionable_topics: set[str] = set()
+    for track in load_curriculum().get("topics", []):
+        track_id = str(track.get("id", ""))
+        if not track_id.startswith("C") or track_id in skipped:
+            continue
+        if strategy.get("case_tracks_configured") and track_id not in configured:
+            continue
+        actionable_topics.add(track_id)
+        actionable_topics.update(
+            topic_id
+            for topic_id in track.get("covered_topic_ids", [])
+            if topic_id not in skipped
+        )
+    minimum_interval = int(
+        strategy.get("min_review_interval_days", 0) or 0
+    )
+    for topic_id, topic in state.get("topics", {}).items():
+        if topic_id not in actionable_topics:
+            continue
+        application = (topic.get("mastery") or {}).get("application")
+        if not isinstance(application, dict):
+            continue
+        review_at = application.get("next_review_at")
+        if review_at and parse_date(
+            effective_review_date(
+                review_at,
+                application.get("last_attempt_at"),
+                minimum_interval,
+                application.get("status"),
+            )
+        ) <= today:
+            return True
+    return False
+
+
 def select_target_subject(
-    state: dict[str, Any], allocations: dict[str, float]
+    state: dict[str, Any], allocations: dict[str, float], today: date
 ) -> str:
     paused = manual_trigger_subjects(state)
+    if "case" not in paused and case_application_review_due(state, today):
+        return "case"
     critical = [
         subject
         for subject in SUBJECTS
@@ -1695,7 +1740,7 @@ def next_training_action(
             "user_override_allowed": True,
         }
     _, allocations = effective_subject_allocations(state, today)
-    subject = select_target_subject(state, allocations)
+    subject = select_target_subject(state, allocations, today)
     if subject == "comprehensive":
         mode = "quiz_prepare"
         command = "quiz-prepare --subject comprehensive"
@@ -2253,9 +2298,10 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
     status = status_payload(profile, state)
     raw_allocations, allocations = effective_subject_allocations(state, today)
     paused = manual_trigger_subjects(state)
+    next_action = next_training_action(state, today)
     recommendation_args = argparse.Namespace(
         data_dir=args.data_dir,
-        subject=None,
+        subject=next_action["subject"],
         limit=max(args.limit, 5),
         today=today.isoformat(),
     )
@@ -2299,15 +2345,20 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
         )
 
     recommendations = plan.get("recommendations") or []
-    next_action = next_training_action(state, today)
     if recommendations:
         first = recommendations[0]
+        topic_id = first["topic_id"]
+        command = next_action["command"]
+        if next_action["mode"] in {"quiz_prepare", "case_prepare"}:
+            command = f"{command} --topic {topic_id}"
         next_action = {
             **next_action,
-            "topic_id": first.get("topic_id"),
+            "topic_id": topic_id,
             "topic_name": first.get("name"),
+            "skill": first.get("skill"),
             "reason": first.get("reason"),
             "estimated_minutes": first.get("estimated_minutes"),
+            "command": command,
         }
     exam_date = profile.get("exam_date")
     return {
@@ -2543,7 +2594,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
     days_to_exam = (exam_date - today).days if exam_date else None
     crunch_mode = days_to_exam is not None and 0 <= days_to_exam <= 3
     raw_allocations, allocations = effective_subject_allocations(state, today)
-    target_subject = args.subject or select_target_subject(state, allocations)
+    target_subject = args.subject or select_target_subject(state, allocations, today)
     maintenance_subject = (
         None
         if args.subject
@@ -2609,7 +2660,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
             "essay": "production",
         }[chosen_subject]
         if skill not in topic.get("skills", []):
-            skill = topic.get("skills", [skill])[0]
+            continue
         mastery = topic_mastery(state, topic["id"], skill)
         supporting_topic_ids = list(topic.get("covered_topic_ids", []))
         supporting_masteries = [
@@ -3314,6 +3365,7 @@ def infer_quiz_facet(topic: dict[str, Any], item: dict[str, Any]) -> str | None:
             ("testing", ("测试", "白盒", "黑盒", "覆盖")),
         ),
         "K06.DESIGN_DATA_VIEWS": (
+            ("documentation", ("用户文档", "系统文档", "软件文档", "文档分类")),
             ("uml_views", ("uml", "视图", "建模")),
             ("data_design", ("数据设计", "数据库", "数据模型")),
             ("high_level_design", ("概要设计", "总体设计", "模块")),
@@ -3424,9 +3476,15 @@ def quiz_question_for_topic(
     facet = infer_quiz_facet(topic, raw)
     if topic.get("facets") and facet is None:
         return None
+    registered = private_registry.get(raw["id"])
+    matching_registry = (
+        private_registry
+        if not registered or registered.get("topic_id") == topic_id
+        else {}
+    )
     metadata = question_registry.resolve_metadata(
         {"item_id": raw["id"], "topic_id": topic_id, "facet": facet},
-        private_registry,
+        matching_registry,
     )
     return {
         "item_id": raw["id"],
@@ -3465,6 +3523,16 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         raise TutorError("quiz-prepare 当前只支持综合知识客观题")
     curriculum = load_curriculum()
     topics = topic_map(curriculum)
+    if args.topic:
+        requested_topic = topics.get(args.topic)
+        if requested_topic is None:
+            raise TutorError(f"未知稳定考点 ID：{args.topic}")
+        if (
+            not args.topic.startswith("K")
+            or "comprehensive" not in requested_topic.get("subjects", [])
+            or "recognition" not in requested_topic.get("skills", [])
+        ):
+            raise TutorError(f"考点 {args.topic} 不支持综合知识识记训练")
     profile, state = load_profile_and_state(args.data_dir)
     attempts = load_attempts(state_paths(args.data_dir)["attempts"])
     today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
@@ -3477,6 +3545,15 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
     recommendations = build_recommendation_payload(recommendation_args)[
         "recommendations"
     ]
+    if args.topic:
+        recommendations = [
+            recommendation
+            for recommendation in recommendations
+            if recommendation["topic_id"] == args.topic
+        ]
+        if not recommendations:
+            raise TutorError(f"考点 {args.topic} 不在当前综合知识推荐路线中")
+    route_topics = list(dict.fromkeys(item["topic_id"] for item in recommendations))
     pool = load_quiz_question_pool(curriculum)
     private_registry = load_private_question_registry(args.data_dir)
     attempted_items = {event.get("item_id") for event in attempts}
@@ -3545,7 +3622,14 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         if not candidates:
             return False
         if not allow_cooled:
-            cooled = cooled_today_concepts | used_concepts
+            # A broad topic-level concept may cover many distinct items in one
+            # group. Cooldowns from prior sessions still apply, while explicit
+            # fine concepts are not repeated within this group.
+            cooled = cooled_today_concepts | {
+                concept
+                for concept in used_concepts
+                if concept != topic["id"] and not concept.startswith(f"{topic['id']}:")
+            }
             fresh = [
                 item for item in candidates if item.get("concept_id") not in cooled
             ]
@@ -3579,17 +3663,49 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         answer_counts[signature] = answer_counts.get(signature, 0) + 1
         return True
 
-    # Same-day freshness comes first: an item or fine concept already served
-    # today is only reused after every untouched recommendation had its turn.
+    # Prefer an entire fresh group on one topic. Try another recommended topic
+    # before relaxing the item and concept cooldowns; partial groups are never
+    # committed to a session. An explicit route has only one eligible topic.
     for allow_protected in (False, True):
         for allow_cooled in (False, True):
             for allow_repeated in (False, True):
-                for recommendation in recommendations:
+                for route_topic_id in route_topics:
+                    selected.clear()
+                    used_items.clear()
+                    used_families.clear()
+                    used_concepts.clear()
+                    answer_counts.clear()
+                    chosen_recommendations.clear()
+                    route_recommendations = [
+                        item
+                        for item in recommendations
+                        if item["topic_id"] == route_topic_id
+                    ]
+                    if route_recommendations[0].get("concept_id"):
+                        route_recommendations.append(
+                            {
+                                **route_recommendations[0],
+                                "name": topics[route_topic_id]["name"],
+                                "concept_id": None,
+                                "diagnostic_status": None,
+                                "wrong_reasons": [],
+                                "reason": "同考点巩固",
+                            }
+                        )
+                    for recommendation in route_recommendations:
+                        if len(selected) >= args.limit:
+                            break
+                        if recommendation.get("concept_id"):
+                            choose_for(
+                                recommendation, allow_repeated, allow_cooled, allow_protected
+                            )
+                        else:
+                            while len(selected) < args.limit and choose_for(
+                                recommendation, allow_repeated, allow_cooled, allow_protected
+                            ):
+                                pass
                     if len(selected) >= args.limit:
                         break
-                    choose_for(
-                        recommendation, allow_repeated, allow_cooled, allow_protected
-                    )
                 if len(selected) >= args.limit:
                     break
             if len(selected) >= args.limit:
@@ -3860,7 +3976,10 @@ def pick_variant_question(
     if not topic:
         return None
     wanted_concept = question.get("concept_id")
-    if not wanted_concept:
+    if not wanted_concept or wanted_concept in {
+        question["topic_id"],
+        f"{question['topic_id']}:{question.get('facet')}",
+    }:
         return None
     stale: dict[str, Any] | None = None
     for raw in pool:
@@ -4787,6 +4906,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     quiz_prepare_parser.add_argument(
         "--subject", choices=("comprehensive",), default="comprehensive"
+    )
+    quiz_prepare_parser.add_argument(
+        "--topic", help="锁定 progress 返回的综合知识稳定考点 ID"
     )
     quiz_prepare_parser.add_argument("--limit", type=int, default=5)
     quiz_prepare_parser.add_argument("--today")

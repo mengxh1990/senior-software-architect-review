@@ -40,6 +40,18 @@ CONCEPT_OVERRIDES = {
         "K03.uml_relationships",
         "K03.uml_relationships",
     ),
+    "past-papers/comprehensive-by-year/2022.md#26": (
+        "K03.mda_cim_pim",
+        "K03.mda_cim_pim",
+    ),
+    "past-papers/comprehensive-by-year/2018下.md#23": (
+        "K06.user_document_classification",
+        "K06.user_document_classification",
+    ),
+    "past-papers/comprehensive-by-year/2009下.md#21-21": (
+        "K06.user_document_classification",
+        "K06.user_document_classification",
+    ),
     "past-papers/comprehensive-by-year/2025上.md#23": (
         "K01.deadlock_avoidance",
         "K01.deadlock_avoidance",
@@ -57,6 +69,8 @@ ITEM_TOPIC_OVERRIDES = {
 CONCEPT_LABELS = {
     "K03.uml_diagram_count": "UML 2.x 图分类与数量",
     "K03.uml_relationships": "UML 泛化、实现与依赖关系",
+    "K03.mda_cim_pim": "MDA 的 CIM 与 PIM",
+    "K06.user_document_classification": "用户文档与系统文档分类",
     "K01.deadlock_avoidance": "银行家算法与死锁避免",
     "K18.mips_cpi": "主频、CPI 与 MIPS 计算",
     "K20.cia_triad": "信息安全 CIA 三要素",

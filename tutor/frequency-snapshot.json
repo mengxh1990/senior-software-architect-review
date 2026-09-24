@@ -13,22 +13,22 @@
       "unmapped_questions": 22
     },
     "stable": {
-      "mapped_questions": 836,
+      "mapped_questions": 837,
       "papers": 14,
-      "ratio": 0.9436,
+      "ratio": 0.9447,
       "ready_questions": 886,
-      "unmapped_questions": 50
+      "unmapped_questions": 49
     }
   },
   "mode": "runtime_ready",
   "papers": [
     {
       "cohort": "stable",
-      "coverage": 0.8696,
-      "mapped_questions": 60,
+      "coverage": 0.8841,
+      "mapped_questions": 61,
       "ready_questions": 69,
       "source_type": "real",
-      "unmapped_questions": 9,
+      "unmapped_questions": 8,
       "year": "2009下"
     },
     {
@@ -204,7 +204,7 @@
     }
   ],
   "schema_version": 1,
-  "source_digest": "9a83b389a334cd3dac7c24201b1c6397e8b0ec905bb3b1c5ba6e016562655181",
+  "source_digest": "1e2c3dceaef1bcd88d8b4a0b55dd2782ec80f176c7f15947e9dcdca49823c2b5",
   "topics": [
     {
       "recent_questions_per_paper": 3.4394,
@@ -220,9 +220,9 @@
     },
     {
       "recent_questions_per_paper": 3.3838,
-      "stable_questions_per_paper": 2.9962,
+      "stable_questions_per_paper": 3.0706,
       "topic_id": "K03.SOFTWARE_DESIGN_UML",
-      "weighted_questions_per_paper": 3.0737
+      "weighted_questions_per_paper": 3.1332
     },
     {
       "recent_questions_per_paper": 7.0797,
@@ -238,9 +238,9 @@
     },
     {
       "recent_questions_per_paper": 0.0,
-      "stable_questions_per_paper": 0.2363,
+      "stable_questions_per_paper": 0.3928,
       "topic_id": "K06.DESIGN_DATA_VIEWS",
-      "weighted_questions_per_paper": 0.1891
+      "weighted_questions_per_paper": 0.3142
     },
     {
       "recent_questions_per_paper": 1.7983,
@@ -292,9 +292,9 @@
     },
     {
       "recent_questions_per_paper": 1.2578,
-      "stable_questions_per_paper": 0.4338,
+      "stable_questions_per_paper": 0.2806,
       "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
-      "weighted_questions_per_paper": 0.5986
+      "weighted_questions_per_paper": 0.4761
     },
     {
       "recent_questions_per_paper": 0.3551,

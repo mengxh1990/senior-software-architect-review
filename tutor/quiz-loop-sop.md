@@ -48,10 +48,11 @@
 python3 scripts/tutor.py progress --json
 ```
 
-只有 `next_action.mode=quiz_prepare` 时进入本客观题流程：
+只有 `next_action.mode=quiz_prepare` 时进入本客观题流程。沿用返回的
+`next_action.command`，包括其 `--topic` 考点路由参数；同组客观题按该稳定考点组卷：
 
 ```bash
-python3 scripts/tutor.py quiz-prepare --subject comprehensive --limit 5
+python3 scripts/tutor.py quiz-prepare --subject comprehensive --topic <next_action.topic_id> --limit 5
 ```
 
 该命令在一个进程内完成逐题诊断、推荐、真题优先抽取、当天去重、细考点与

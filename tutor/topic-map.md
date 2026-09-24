@@ -7,7 +7,7 @@
 | Topic ID | 名称 | Facets |
 |---|---|---|
 | `K05.TEST_CMMI_PATTERNS` | 软件测试、CMMI 与常见设计模式 | `testing` / `cmmi` / `design_patterns` |
-| `K06.DESIGN_DATA_VIEWS` | 概要设计、数据设计与 UML 视图 | `high_level_design` / `data_design` / `uml_views` |
+| `K06.DESIGN_DATA_VIEWS` | 概要设计、数据设计、文档与 UML 视图 | `high_level_design` / `data_design` / `uml_views` / `documentation` |
 | `K12.PATTERNS_SOA_MICROSERVICES` | 设计模式、SOA 与微服务核心概念 | `design_patterns` / `soa` / `microservices` |
 | `K13.VIEWS_SOA_LAYERING` | 4+1 视图、SOA 与分层架构 | `four_plus_one` / `soa` / `layering` |
 | `K23.PROJECT_MANAGEMENT_METRICS` | 项目管理、配置管理与软件度量 | `project_management` / `software_metrics` |
@@ -21,7 +21,7 @@
 | `K03.SOFTWARE_DESIGN_UML` | 软件设计、内聚耦合与 UML 建模 | comprehensive/case/essay | 14 | 150 | ✅ | `exam-bank/05-uml.md`, `knowledge-index/05-uml.md`, `past-papers/case-types/04-uml-modeling.md` |
 | `K04.ARCH_STYLES_ABSD` | 架构风格、ABSD 与选型 | comprehensive/case/essay | 14 | 120 | ✅ | `exam-bank/10-architecture-styles.md`, `knowledge-index/10-architecture-styles.md`, `past-papers/case-types/03-style-comparison.md` (+1) |
 | `K05.TEST_CMMI_PATTERNS` | 软件测试、CMMI 与常见设计模式 | comprehensive/essay | 14 | 120 | ✅ | `exam-bank/07-software-engineering.md`, `exam-bank/13-design-patterns.md`, `cheatsheets/software-engineering-cmmi.md` |
-| `K06.DESIGN_DATA_VIEWS` | 概要设计、数据设计与 UML 视图 | comprehensive/case/essay | 12 | 120 | ✅ | `exam-bank/14-absd-views.md`, `knowledge-index/14-absd-views.md`, `cheatsheets/absd-and-adl.md` |
+| `K06.DESIGN_DATA_VIEWS` | 概要设计、数据设计、文档与 UML 视图 | comprehensive/case/essay | 12 | 120 | ✅ | `exam-bank/14-absd-views.md`, `knowledge-index/14-absd-views.md`, `cheatsheets/absd-and-adl.md` |
 | `K07.REALTIME_EMBEDDED` | 实时系统、嵌入式与调度基础 | comprehensive/case | 11 | 150 | ✅ | `exam-bank/22-embedded.md`, `knowledge-index/22-embedded.md`, `past-papers/case-types/08-embedded-components.md` |
 | `K08.SOFTWARE_PROCESS_MODELS` | 软件过程模型、敏捷与 RUP | comprehensive | 11 | 60 | ✅ | `exam-bank/07-software-engineering.md`, `notes/04-software-engineering/README.md`, `cheatsheets/software-engineering-cmmi.md` |
 | `K09.QUALITY_SCENARIOS` | 质量属性六元组与质量战术 | comprehensive/case/essay | 11 | 90 | ✅ | `exam-bank/11-quality-attributes.md`, `knowledge-index/11-quality-attributes.md`, `cheatsheets/quality-attributes.md` (+1) |

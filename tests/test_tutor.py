@@ -942,6 +942,8 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertLessEqual(len(payload["due_reviews"]), 5)
             self.assertIn("next_action", payload)
             self.assertEqual(payload["subject_allocation"]["essay"], 0.0)
+            self.assertEqual(payload["subject_allocation"]["comprehensive"], 0.5)
+            self.assertEqual(payload["subject_allocation"]["case"], 0.5)
             self.assertAlmostEqual(
                 sum(payload["subject_allocation"].values()), 1.0, places=3
             )
@@ -949,6 +951,124 @@ class TutorAcceptanceTest(unittest.TestCase):
                 [item["subject"] for item in payload["suppressed_subjects"]],
                 ["essay"],
             )
+
+    def test_progress_quiz_route_keeps_one_stable_topic_through_prepare(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(data_dir, "configure", "--subject-policy", "essay=manual_trigger")
+            for subject, score in (("comprehensive", "44"), ("case", "65")):
+                _run_cli(
+                    data_dir, "mock", "--subject", subject,
+                    "--mock-id", f"route-{subject}", "--paper-id", f"route-{subject}",
+                    "--score", score, "--max-score", "75",
+                    "--duration-minutes", "120", "--complete",
+                    "--at", "2026-09-20T08:00:00+08:00",
+                )
+            _run_cli(
+                data_dir, "record", "--topic", "K03.SOFTWARE_DESIGN_UML",
+                "--skill", "recognition", "--score", "0", "--max-score", "1",
+                "--attempt-id", "route-uml", "--at", "2026-09-20T09:00:00+08:00",
+            )
+            progress = _json_output(
+                _run_cli(data_dir, "progress", "--json", "--today", "2026-09-23")
+            )
+            action = progress["next_action"]
+            self.assertEqual("quiz_prepare", action["mode"])
+            self.assertEqual(
+                {"comprehensive": 0.5, "case": 0.5, "essay": 0.0},
+                progress["subject_allocation"],
+            )
+            self.assertEqual("recognition", action["skill"])
+            self.assertEqual("K03.SOFTWARE_DESIGN_UML", action["topic_id"])
+            self.assertIn("--topic K03.SOFTWARE_DESIGN_UML", action["command"])
+            prepared = _json_output(
+                _run_cli(data_dir, *action["command"].split(), "--limit", "5")
+            )
+            manifest = self._quiz_manifest(data_dir, prepared["quiz_id"])
+            self.assertEqual(
+                {"K03.SOFTWARE_DESIGN_UML"},
+                {question["topic_id"] for question in manifest["questions"]},
+            )
+            self.assertIn("软件设计", prepared["objective"])
+
+    def test_due_case_application_takes_priority_without_essay_route(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(data_dir, "configure", "--subject-policy", "essay=manual_trigger")
+            _run_cli(
+                data_dir, "record", "--topic", "C01.CASE_ATAM",
+                "--skill", "application", "--score", "0", "--max-score", "25",
+                "--attempt-id", "due-case", "--at", "2026-09-20T09:00:00+08:00",
+            )
+            progress = _json_output(
+                _run_cli(data_dir, "progress", "--json", "--today", "2026-09-23")
+            )
+            action = progress["next_action"]
+            self.assertAlmostEqual(progress["subject_allocation"]["essay"], 0)
+            self.assertEqual("case_prepare", action["mode"])
+            self.assertEqual("application", action["skill"])
+            self.assertEqual("C01.CASE_ATAM", action["topic_id"])
+            self.assertIn("--topic C01.CASE_ATAM", action["command"])
+            prepared = _json_output(
+                _run_cli(data_dir, *action["command"].split(), "--today", "2026-09-23")
+            )
+            self.assertEqual("C01.CASE_ATAM", prepared["route_lock"]["topic_id"])
+            self.assertEqual("application", prepared["record"]["skill"])
+
+    def test_due_pass_ready_case_application_still_routes_to_case(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(data_dir, "configure", "--subject-policy", "essay=manual_trigger")
+            for number, day in ((1, 10), (2, 12)):
+                _run_cli(
+                    data_dir, "record", "--topic", "C01.CASE_ATAM",
+                    "--skill", "application", "--score", "15", "--max-score", "25",
+                    "--attempt-id", f"case-pass-{number}",
+                    "--at", f"2026-08-{day:02d}T09:00:00+08:00",
+                )
+            status = self._status(data_dir)
+            record = _find_topic_record(status, "C01.CASE_ATAM")["mastery"]["application"]
+            self.assertEqual("pass_ready", record["status"])
+            due_day = record["next_review_at"]
+            progress = _json_output(
+                _run_cli(data_dir, "progress", "--json", "--today", due_day)
+            )
+            self.assertEqual("case_prepare", progress["next_action"]["mode"])
+            self.assertEqual("application", progress["next_action"]["skill"])
+
+    def test_due_application_only_promotes_an_actionable_case_track(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            _run_cli(data_dir, "configure", "--subject-policy", "essay=manual_trigger")
+            _run_cli(
+                data_dir, "record", "--topic", "K03.SOFTWARE_DESIGN_UML",
+                "--skill", "application", "--score", "0", "--max-score", "25",
+                "--attempt-id", "unrouted-application", "--at", "2026-09-20T09:00:00+08:00",
+            )
+            first = _json_output(
+                _run_cli(data_dir, "progress", "--json", "--today", "2026-09-23")
+            )
+            self.assertEqual("quiz_prepare", first["next_action"]["mode"])
+            _run_cli(
+                data_dir, "record", "--topic", "K09.QUALITY_SCENARIOS",
+                "--skill", "application", "--score", "0", "--max-score", "25",
+                "--attempt-id", "covered-application", "--at", "2026-09-20T09:10:00+08:00",
+            )
+            second = _json_output(
+                _run_cli(data_dir, "progress", "--json", "--today", "2026-09-23")
+            )
+            self.assertEqual("case_prepare", second["next_action"]["mode"])
+            self.assertEqual("C01.CASE_ATAM", second["next_action"]["topic_id"])
+            self.assertEqual("application", second["next_action"]["skill"])
+            _run_cli(data_dir, "configure", "--case-track", "C02.CASE_DATABASE")
+            configured = _json_output(
+                _run_cli(data_dir, "progress", "--json", "--today", "2026-09-23")
+            )
+            self.assertEqual("quiz_prepare", configured["next_action"]["mode"])
 
     def test_configured_case_route_cannot_be_bypassed_by_k_topic(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -1899,28 +2019,43 @@ class TutorAcceptanceTest(unittest.TestCase):
             for question in self._quiz_manifest(data_dir, quiz_id)["questions"]
         }
 
-    def _grade_wrong_answer_variant(
-        self,
-        data_dir: Path,
-        concept_id: str = "K16.REQUIREMENTS_MANAGEMENT",
-        at: str | None = None,
-    ) -> dict[str, Any] | None:
-        """Prepare one question pinned to ``concept_id`` and answer it wrong.
+    def _pin_real_uml_relationship_question(self, data_dir: Path, quiz_id: str) -> None:
+        """Use the actual curated UML item for fine-concept variant tests."""
 
-        Pinning the fine concept keeps the follow-up deterministic: the picker
-        only ever offers a variant on that same concept.
-        """
+        scripts_path = str(REPO_ROOT / "scripts")
+        if scripts_path not in sys.path:
+            sys.path.insert(0, scripts_path)
+        import tutor as module
 
-        prepared = self._prepare_quiz(data_dir, limit=1)
-        manifest_path = data_dir / "quiz-sessions" / f"{prepared['quiz_id']}.json"
+        curriculum = module.load_curriculum()
+        topic = module.topic_map(curriculum)["K03.SOFTWARE_DESIGN_UML"]
+        raw = next(
+            item
+            for item in module.load_quiz_question_pool(curriculum)
+            if item["id"] == "exam-bank/05-uml.md#4"
+        )
+        question = module.quiz_question_for_topic(raw, topic, {})
+        assert question and question["concept_id"] == "K03.uml_relationships"
+        manifest_path = data_dir / "quiz-sessions" / f"{quiz_id}.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        question = manifest["questions"][0]
-        question["topic_id"] = concept_id
-        question["concept_id"] = concept_id
+        manifest["questions"][0] = {**question, "number": 1, "mode": "practice"}
         manifest_path.write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
+
+    def _grade_wrong_answer_variant(
+        self,
+        data_dir: Path,
+        at: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Grade a real UML item with curated fine-concept variant evidence."""
+
+        prepared = self._prepare_quiz(data_dir, limit=1)
+        self._pin_real_uml_relationship_question(data_dir, prepared["quiz_id"])
+        manifest_path = data_dir / "quiz-sessions" / f"{prepared['quiz_id']}.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        question = manifest["questions"][0]
         correct = "".join(question["correct"])
         wrong = next(letter for letter in "ABCD" if letter != correct)
         arguments = [
@@ -1939,9 +2074,10 @@ class TutorAcceptanceTest(unittest.TestCase):
     def _grade_quiz_with_wrong_answers(
         self, data_dir: Path
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-        """Grade a whole group with all-A answers and return the variants served."""
+        """Grade a group containing a real fine-concept question."""
 
         prepared = self._prepare_quiz(data_dir)
+        self._pin_real_uml_relationship_question(data_dir, prepared["quiz_id"])
         graded = _json_output(
             _run_cli(
                 data_dir,
@@ -1949,7 +2085,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "--quiz-id",
                 prepared["quiz_id"],
                 "--answers",
-                "A,A,A,A,A",
+                "B,A,A,A,A",
             )
         )
         variants = [
@@ -1957,7 +2093,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             for result in graded["results"]
             if result.get("variant_question")
         ]
-        self.assertTrue(variants, "全 A 作答必须至少产生一道变式题")
+        self.assertTrue(variants, "明确细考点的错题应产生同细考点变式题")
         return graded, variants
 
     def test_quiz_grade_treats_explicit_x_as_conceded_evidence(self) -> None:
@@ -2247,7 +2383,6 @@ class TutorAcceptanceTest(unittest.TestCase):
                 )
             )
             self.assertEqual("unclear_stem", graded["results"][2]["invalid_reason"])
-            self.assertEqual("await_variants", graded["next_action"]["mode"])
             attempts = [
                 json.loads(line)
                 for line in (data_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines()
@@ -2287,6 +2422,70 @@ class TutorAcceptanceTest(unittest.TestCase):
                 graded["results"][0]["variant_question"],
                 "a different concept in the same topic is not a valid variant",
             )
+
+    def test_broad_topic_does_not_make_dfd_and_documents_variants(self) -> None:
+        scripts_path = str(REPO_ROOT / "scripts")
+        if scripts_path not in sys.path:
+            sys.path.insert(0, scripts_path)
+        import tutor as module
+        curriculum = module.load_curriculum()
+        topics = module.topic_map(curriculum)
+        pool = module.load_quiz_question_pool(curriculum)
+        broad = module.pick_variant_question(
+            {
+                "item_id": "past-papers/comprehensive-by-year/2025上.md#30",
+                "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
+                "concept_id": "K15.STRUCTURED_ANALYSIS_DFD",
+            },
+            pool, topics, {}, set(),
+        )
+        self.assertIsNone(broad)
+        fine = module.pick_variant_question(
+            {
+                "item_id": "exam-bank/05-uml.md#4",
+                "topic_id": "K03.SOFTWARE_DESIGN_UML",
+                "concept_id": "K03.uml_relationships",
+            },
+            pool, topics, {}, set(),
+        )
+        self.assertIsNotNone(fine)
+        self.assertIn(
+            fine["item_id"],
+            {"exam-bank/05-uml.md#5", "past-papers/comprehensive-by-year/2024下.md#38"},
+        )
+        documents = module.pick_variant_question(
+            {
+                "item_id": "past-papers/comprehensive-by-year/2018下.md#23",
+                "topic_id": "K06.DESIGN_DATA_VIEWS",
+                "concept_id": "K06.user_document_classification",
+            },
+            pool, topics, {}, set(),
+        )
+        self.assertIsNotNone(documents)
+        self.assertEqual(
+            "past-papers/comprehensive-by-year/2009下.md#21-21",
+            documents["item_id"],
+        )
+        mda_raw = next(
+            item for item in pool
+            if item["id"] == "past-papers/comprehensive-by-year/2022.md#26"
+        )
+        corrected_mda = module.quiz_question_for_topic(
+            mda_raw,
+            topics["K03.SOFTWARE_DESIGN_UML"],
+            {
+                mda_raw["id"]: {
+                    "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
+                    "concept_id": "K15.STRUCTURED_ANALYSIS_DFD",
+                    "question_family_id": "K15.STRUCTURED_ANALYSIS_DFD",
+                }
+            },
+        )
+        self.assertIsNotNone(corrected_mda)
+        self.assertEqual("K03.mda_cim_pim", corrected_mda["concept_id"])
+        self.assertIsNone(
+            module.pick_variant_question(corrected_mda, pool, topics, {}, set())
+        )
 
     def test_variant_question_does_not_repeat_within_the_cooldown_window(
         self,
@@ -2569,6 +2768,17 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertIsInstance(prepared["days_left"], int)
             self.assertGreater(prepared["days_left"], 0)
             self.assertEqual(45, prepared["daily_minutes"])
+
+    def test_quiz_prepare_without_explicit_topic_keeps_one_stable_topic(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir)
+            manifest = self._quiz_manifest(data_dir, prepared["quiz_id"])
+            self.assertEqual(
+                1,
+                len({question["topic_id"] for question in manifest["questions"]}),
+            )
 
     def test_quiz_prepare_does_not_repeat_items_from_an_ungraded_session(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

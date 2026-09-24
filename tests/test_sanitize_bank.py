@@ -1438,6 +1438,32 @@ class PastPaperParsingTests(unittest.TestCase):
             with self.subTest(item_id=item_id):
                 self.assertEqual(items[item_id]["candidate_topics"], [topic_id])
 
+    def test_mda_and_user_document_items_do_not_inherit_dfd_topic(self) -> None:
+        expected = {
+            "past-papers/comprehensive-by-year/2022.md#26": "K03.SOFTWARE_DESIGN_UML",
+            "past-papers/comprehensive-by-year/2018下.md#23": "K06.DESIGN_DATA_VIEWS",
+        }
+        for year in ("2018下", "2022"):
+            path = REPO_ROOT / "past-papers" / "comprehensive-by-year" / f"{year}.md"
+            items = {item["id"]: item for item in sanitize_bank.parse_paper(path)}
+            for item_id, topic_id in expected.items():
+                if item_id in items:
+                    self.assertEqual(items[item_id]["candidate_topics"], [topic_id])
+        self.assertEqual(
+            question_registry.default_metadata(
+                "past-papers/comprehensive-by-year/2022.md#26",
+                "K03.SOFTWARE_DESIGN_UML",
+            )["concept_id"],
+            "K03.mda_cim_pim",
+        )
+        self.assertEqual(
+            question_registry.default_metadata(
+                "past-papers/comprehensive-by-year/2018下.md#23",
+                "K06.DESIGN_DATA_VIEWS",
+            )["concept_id"],
+            "K06.user_document_classification",
+        )
+
     def test_cross_year_ip_variants_share_a_family_for_quiz_deduplication(self) -> None:
         ids = (
             "past-papers/comprehensive-by-year/2016下.md#68-68",

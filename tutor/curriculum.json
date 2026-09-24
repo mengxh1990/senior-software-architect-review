@@ -88,10 +88,10 @@
     },
     {
       "id": "K06.DESIGN_DATA_VIEWS",
-      "name": "概要设计、数据设计与 UML 视图",
+      "name": "概要设计、数据设计、文档与 UML 视图",
       "subjects": ["comprehensive", "case", "essay"],
       "skills": ["recognition", "application", "production"],
-      "facets": ["high_level_design", "data_design", "uml_views"],
+      "facets": ["high_level_design", "data_design", "uml_views", "documentation"],
       "frequency_count": 12,
       "frequency_confidence": "medium",
       "priority_weight": 0.92,
