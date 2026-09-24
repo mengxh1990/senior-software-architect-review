@@ -2393,8 +2393,34 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def runtime_progress_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Return only the routing facts needed to start one teaching round."""
+
+    next_action = payload["next_action"]
+    subject = next_action["subject"]
+    return {
+        "today": payload["today"],
+        "profile": payload["profile"],
+        "focus_subject": payload["focus_subject"],
+        "subject_allocation": payload["subject_allocation"],
+        "suppressed_subjects": payload["suppressed_subjects"],
+        "subject_status": {
+            "subject": subject,
+            **payload["subjects"][subject],
+        },
+        "next_action": next_action,
+    }
+
+
 def cmd_progress(args: argparse.Namespace) -> int:
     payload = build_progress_payload(args)
+    if args.runtime_json:
+        print(
+            json.dumps(
+                runtime_progress_payload(payload), ensure_ascii=False, indent=2, sort_keys=True
+            )
+        )
+        return 0
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
@@ -3530,7 +3556,19 @@ def select_quiz_group(
     )
 
 
-def cmd_quiz_prepare(args: argparse.Namespace) -> int:
+def build_quiz_prepare_payload(
+    args: argparse.Namespace,
+    *,
+    quiz_id: str | None = None,
+    continuation_parent: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Create or replay one private quiz session and return its public payload.
+
+    A continuation uses a deterministic quiz id.  Persisting the public payload
+    alongside its private manifest makes a retry return the same question set
+    without re-running selection after a partial parent operation.
+    """
+
     if args.subject != "comprehensive":
         raise TutorError("quiz-prepare 当前只支持综合知识客观题")
     curriculum = load_curriculum()
@@ -3545,6 +3583,18 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
             or "recognition" not in requested_topic.get("skills", [])
         ):
             raise TutorError(f"考点 {args.topic} 不支持综合知识识记训练")
+    if quiz_id is not None:
+        existing_path = quiz_session_path(args.data_dir, quiz_id)
+        if existing_path.exists():
+            if continuation_parent is None:
+                raise TutorError(f"quiz-id {quiz_id} 已存在")
+            existing = load_json(existing_path, "客观题会话")
+            if existing.get("continuation_parent") != continuation_parent:
+                raise TutorError(f"quiz-id {quiz_id} 已被其他续练会话占用")
+            public_payload = existing.get("public_payload")
+            if not isinstance(public_payload, dict):
+                raise TutorError(f"续练会话 {quiz_id} 缺少可重放题面")
+            return copy.deepcopy(public_payload)
     profile, state = load_profile_and_state(args.data_dir)
     today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
     recommendation_args = argparse.Namespace(
@@ -3575,7 +3625,14 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
     )
 
     created_at = now_iso()
-    quiz_id = "quiz-" + parse_datetime(created_at).strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:8]
+    if quiz_id is None:
+        quiz_id = (
+            "quiz-"
+            + parse_datetime(created_at).strftime("%Y%m%d-%H%M%S-")
+            + uuid.uuid4().hex[:8]
+        )
+    path = quiz_session_path(args.data_dir, quiz_id)
+
     manifest = {
         "schema_version": QUIZ_SCHEMA_VERSION,
         "quiz_id": quiz_id,
@@ -3584,8 +3641,8 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         "created_at": created_at,
         "questions": selected,
     }
-    path = quiz_session_path(args.data_dir, quiz_id)
-    atomic_write_json(path, manifest)
+    if continuation_parent is not None:
+        manifest["continuation_parent"] = copy.deepcopy(continuation_parent)
     public_questions = [
         {
             "number": item["number"],
@@ -3677,8 +3734,134 @@ def cmd_quiz_prepare(args: argparse.Namespace) -> int:
         "objective": objective,
         "evidence_summary": evidence_summary,
     }
+    if continuation_parent is not None:
+        manifest["public_payload"] = copy.deepcopy(payload)
+    atomic_write_json(path, manifest)
+    return payload
+
+
+def cmd_quiz_prepare(args: argparse.Namespace) -> int:
+    payload = build_quiz_prepare_payload(args)
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
+
+
+def prepare_next_quiz_payload(
+    data_dir: Path,
+    source_path: Path,
+    source_manifest: dict[str, Any],
+    grade_payload: dict[str, Any],
+    *,
+    phase: str,
+    limit: int,
+) -> dict[str, Any]:
+    """Prepare a deterministic continuation when grading routes to a quiz.
+
+    The parent manifest records the child id before selection starts.  If the
+    process stops after grading, the same command can resume preparation
+    without creating a second pending session or recording duplicate evidence.
+    """
+
+    if limit <= 0:
+        raise TutorError("next-limit 必须大于 0")
+    next_action = grade_payload.get("next_action")
+    payload = {
+        "grade": grade_payload,
+        "next_quiz": None,
+        "preparation_status": "not_applicable",
+    }
+    if not isinstance(next_action, dict):
+        raise TutorError("判分结果缺少 next_action")
+    if (
+        next_action.get("mode") != "quiz_prepare"
+        or next_action.get("subject") != "comprehensive"
+    ):
+        return payload
+
+    source_quiz_id = source_manifest.get("quiz_id")
+    if not isinstance(source_quiz_id, str):
+        raise TutorError("续练来源缺少 quiz_id")
+    if phase not in {"grade", "variant"}:
+        raise TutorError(f"未知续练阶段：{phase}")
+    suffix = "after-grade" if phase == "grade" else "after-variant"
+    child_quiz_id = f"{source_quiz_id}-{suffix}"
+    continuation = source_manifest.get("next_quiz")
+    if continuation is None:
+        continuation = {
+            "phase": phase,
+            "quiz_id": child_quiz_id,
+            "status": "reserved",
+            "next_action": copy.deepcopy(next_action),
+        }
+        source_manifest["next_quiz"] = continuation
+        atomic_write_json(source_path, source_manifest)
+    elif not isinstance(continuation, dict):
+        raise TutorError(f"quiz-id {source_quiz_id} 的续练元数据无效")
+    elif (
+        continuation.get("phase") != phase
+        or continuation.get("quiz_id") != child_quiz_id
+    ):
+        raise TutorError(f"quiz-id {source_quiz_id} 的续练元数据冲突")
+
+    graded_at = (
+        source_manifest.get("graded_at")
+        if phase == "grade"
+        else source_manifest.get("variant_graded_at")
+    )
+    if not isinstance(graded_at, str):
+        raise TutorError(f"quiz-id {source_quiz_id} 缺少续练时间")
+    continuation_parent = {"quiz_id": source_quiz_id, "phase": phase}
+    prepare_args = argparse.Namespace(
+        data_dir=data_dir,
+        subject="comprehensive",
+        topic=next_action.get("topic_id"),
+        limit=limit,
+        today=parse_datetime(graded_at).date().isoformat(),
+    )
+    next_quiz = build_quiz_prepare_payload(
+        prepare_args,
+        quiz_id=child_quiz_id,
+        continuation_parent=continuation_parent,
+    )
+    continuation["status"] = "ready"
+    atomic_write_json(source_path, source_manifest)
+    payload["next_quiz"] = next_quiz
+    payload["preparation_status"] = "ready"
+    return payload
+
+
+def runtime_grade_payload(grade_payload: dict[str, Any]) -> dict[str, Any]:
+    """Project a grading result to the fields used in one coaching response."""
+
+    fields = (
+        "quiz_id",
+        "score",
+        "max_score",
+        "counted_questions",
+        "invalidated_count",
+        "conceded_count",
+        "results",
+        "recorded_attempts",
+        "idempotent",
+        "subject_status",
+        "next_action",
+    )
+    return {
+        field: copy.deepcopy(grade_payload[field])
+        for field in fields
+        if field in grade_payload
+    }
+
+
+def runtime_prepared_grade_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    grade_payload = payload.get("grade")
+    if not isinstance(grade_payload, dict):
+        raise TutorError("续练结果缺少判分数据")
+    return {
+        **runtime_grade_payload(grade_payload),
+        "preparation_status": payload.get("preparation_status"),
+        "next_quiz": copy.deepcopy(payload.get("next_quiz")),
+    }
 
 
 def parse_quiz_answers(value: str) -> list[list[str]]:
@@ -4020,7 +4203,28 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
             "recorded_attempts": 0,
             "idempotent": True,
         }
-        print(json.dumps(replay, ensure_ascii=False, indent=2, sort_keys=True))
+        if args.prepare_next:
+            advanced = prepare_next_quiz_payload(
+                args.data_dir,
+                path,
+                manifest,
+                replay,
+                phase="grade",
+                limit=args.next_limit,
+            )
+            output = (
+                runtime_prepared_grade_payload(advanced)
+                if getattr(args, "runtime_json", False)
+                else advanced
+            )
+            print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
+        else:
+            output = (
+                runtime_grade_payload(replay)
+                if getattr(args, "runtime_json", False)
+                else replay
+            )
+            print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
 
     curriculum = load_curriculum()
@@ -4247,7 +4451,28 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
         write_attempts(attempts_path, [*attempts, *missing_events])
         save_state_bundle(args.data_dir, profile, next_state, backup=True)
     atomic_write_json(path, completed)
-    print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+    if args.prepare_next:
+        advanced = prepare_next_quiz_payload(
+            args.data_dir,
+            path,
+            completed,
+            payload,
+            phase="grade",
+            limit=args.next_limit,
+        )
+        output = (
+            runtime_prepared_grade_payload(advanced)
+            if getattr(args, "runtime_json", False)
+            else advanced
+        )
+        print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
+    else:
+        output = (
+            runtime_grade_payload(payload)
+            if getattr(args, "runtime_json", False)
+            else payload
+        )
+        print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
 
@@ -4305,7 +4530,28 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
             "recorded_attempts": 0,
             "idempotent": True,
         }
-        print(json.dumps(replay, ensure_ascii=False, indent=2, sort_keys=True))
+        if args.prepare_next:
+            advanced = prepare_next_quiz_payload(
+                args.data_dir,
+                path,
+                manifest,
+                replay,
+                phase="variant",
+                limit=args.next_limit,
+            )
+            output = (
+                runtime_prepared_grade_payload(advanced)
+                if getattr(args, "runtime_json", False)
+                else advanced
+            )
+            print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
+        else:
+            output = (
+                runtime_grade_payload(replay)
+                if getattr(args, "runtime_json", False)
+                else replay
+            )
+            print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
 
     questions = manifest["questions"]
@@ -4466,7 +4712,28 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
         write_attempts(attempts_path, [*attempts, *missing_events])
         save_state_bundle(args.data_dir, profile, next_state, backup=True)
     atomic_write_json(path, completed)
-    print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+    if args.prepare_next:
+        advanced = prepare_next_quiz_payload(
+            args.data_dir,
+            path,
+            completed,
+            payload,
+            phase="variant",
+            limit=args.next_limit,
+        )
+        output = (
+            runtime_prepared_grade_payload(advanced)
+            if getattr(args, "runtime_json", False)
+            else advanced
+        )
+        print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
+    else:
+        output = (
+            runtime_grade_payload(payload)
+            if getattr(args, "runtime_json", False)
+            else payload
+        )
+        print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
 
@@ -4940,7 +5207,13 @@ def build_parser() -> argparse.ArgumentParser:
     progress_parser.add_argument("--limit", type=int, default=5)
     progress_parser.add_argument("--days", type=int, default=21)
     progress_parser.add_argument("--today")
-    progress_parser.add_argument("--json", action="store_true")
+    progress_output = progress_parser.add_mutually_exclusive_group()
+    progress_output.add_argument("--json", action="store_true")
+    progress_output.add_argument(
+        "--runtime-json",
+        action="store_true",
+        help="只输出当前训练回合所需的路由与目标科目状态",
+    )
     progress_parser.set_defaults(func=cmd_progress)
 
     recommend_parser = subparsers.add_parser("recommend", help="推荐下一项高收益任务")
@@ -4999,6 +5272,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     quiz_grade_parser.add_argument("--duration-seconds", type=int)
     quiz_grade_parser.add_argument("--at")
+    quiz_grade_parser.add_argument(
+        "--prepare-next",
+        action="store_true",
+        help="判分后按 next_action 在同一命令内准备下一组综合知识题",
+    )
+    quiz_grade_parser.add_argument(
+        "--next-limit",
+        type=int,
+        default=5,
+        help="--prepare-next 创建的下一组题目数量（默认：5）",
+    )
+    quiz_grade_parser.add_argument(
+        "--runtime-json",
+        action="store_true",
+        help="输出判分与续练题面所需的紧凑 JSON",
+    )
     quiz_grade_parser.set_defaults(func=cmd_quiz_grade)
 
     quiz_variant_parser = subparsers.add_parser(
@@ -5017,6 +5306,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="仅记录考生明确说明的变式错因，写成 题号=原因",
     )
     quiz_variant_parser.add_argument("--at")
+    quiz_variant_parser.add_argument(
+        "--prepare-next",
+        action="store_true",
+        help="变式判分后按 next_action 在同一命令内准备下一组综合知识题",
+    )
+    quiz_variant_parser.add_argument(
+        "--next-limit",
+        type=int,
+        default=5,
+        help="--prepare-next 创建的下一组题目数量（默认：5）",
+    )
+    quiz_variant_parser.add_argument(
+        "--runtime-json",
+        action="store_true",
+        help="输出判分与续练题面所需的紧凑 JSON",
+    )
     quiz_variant_parser.set_defaults(func=cmd_quiz_variant_grade)
 
     configure_parser = subparsers.add_parser(

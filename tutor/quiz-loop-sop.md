@@ -21,31 +21,32 @@
 ## 前置检查
 
 每个新任务首次进入循环前必须过；同一任务后续答题轮不得重复执行：
-- CWD 在本仓库根，`python3 scripts/tutor.py --help` 正常
+- CWD 在本仓库根，`python3 scripts/tutor.py --help` 正常；它与 `doctor` 无依赖，必须放在同一并行工具批次执行
 - 已读 [`PROGRESS_PROTOCOL.md`](./PROGRESS_PROTOCOL.md) 与
   [`.claude/agents/senior-architect-pass-coach.md`](../.claude/agents/senior-architect-pass-coach.md)
 - `.study/` 存在（若无，先按 coach 人格建档）
-- 已跑过 `python3 scripts/tutor.py doctor`，全部检查 PASS
+- 已跑过 `python3 scripts/tutor.py doctor`，全部检查 PASS；两项预检都成功后才进入 `progress`
 
 ## 回合预算与结束条件
 
-- “今天学什么／安排训练”先调用一次只读 `progress --json`，再按其 `next_action` 调用对应训练入口；综合出题回合只调用一次 `quiz-prepare`，判分回合只调用一次 `quiz-grade`。只有命令失败且直接阻塞本轮时，才允许增加一次修复或诊断调用。
-- **运行时白名单**：统一路由阶段只允许 `progress`，综合出题回合只允许 `quiz-prepare`，判分回合只允许 `quiz-grade`，变式回合只允许 `quiz-variant-grade`。不得用 `cat` / `rg` / `sed` 读取源码、题库、`quiz-sessions/*.json`、`state.json` 或知识库来"确认"答案，也不得手工改 manifest、伪造选项或要求考生补答"不会"的题。命令非零退出且直接阻塞本轮时，最多做一次只读诊断；仍失败就如实报告阻塞，改开维护任务。
+- “今天学什么／安排训练”先调用一次只读 `progress --runtime-json`，再按其 `next_action` 调用对应训练入口；综合出题回合只调用一次 `quiz-prepare`，判分回合只调用一次带 `--prepare-next --runtime-json` 的 `quiz-grade`。只有命令失败且直接阻塞本轮时，才允许增加一次修复或诊断调用。
+- **运行时白名单**：统一路由阶段只允许 `progress --runtime-json`，综合出题回合只允许 `quiz-prepare`，判分回合只允许 `quiz-grade --prepare-next --runtime-json`，变式回合只允许 `quiz-variant-grade --prepare-next --runtime-json`。不得用 `cat` / `rg` / `sed` 读取源码、题库、`quiz-sessions/*.json`、`state.json` 或知识库来"确认"答案，也不得手工改 manifest、伪造选项或要求考生补答"不会"的题。命令非零退出且直接阻塞本轮时，最多做一次只读诊断；仍失败就如实报告阻塞，改开维护任务。
 - **上下文预算**：非题面输出保持简短，不把完整题库、候选池或状态全集带进教学线程；题目本身不受此限制。为了"确认"重复运行确定性命令也算违规。每个日历日用新任务从 `.study/` 恢复；同一任务一旦发生源码/题库排查，后续教学转到新任务，避免维护上下文跨日累积。
+- **确定性调用**：答案格式、错因标记和命令已明确时，直接在同一响应中发起工具调用；平台要求 commentary 时只发送一句简短状态，不单独生成“收到／准备判分”等中间回复。
 - `quiz-prepare` 每轮只调用一次，返回的即为已过质量门禁的题：直接展示，不得再自行复核、筛选、丢弃或为该题重跑命令。作答或判分时才发现残缺（题干被解析污染、缺图缺表、答案不唯一）的题，用 `--invalidate` 排除，本回合结束后另开维护任务。
 - 题目质量在进入本循环前已由门禁判定：`quiz-prepare` 只会给出 `ready_for_quiz` 的题。若某题在作答后才发现残缺（例如依赖的表其实没给出），用 `--invalidate` 把它排除出本组，不要临场补内容；在本回合结束后，按 `item_id + 原因` 去重，新开独立维护任务尝试以权威原卷做最小修复。只有题干、必要材料和唯一答案均可可靠恢复时才能重新放行，否则维持拦截。
 - 同一轮同时要求"看薄弱点 + 安排训练"时，使用一次 `progress --json` 获取三科状态、薄弱点和统一路由，再按 `next_action` 出题；两段之间不插入探索性调用。`weakpoints` 只用于明确要求某科详细排名的只读请求。
 - 第一次调用必须批量收集推荐、到期错题、候选题、题目元数据和去重信息，不得按题逐次搜索。
 - 非阻塞的诊断状态异常、元数据瑕疵或维护建议不得在训练回合内追查源码；记录后另开仓库维护任务处理。
-- `quiz-grade` 成功返回即表示判分、原子记档和状态更新完成。收到整组答案后只调用一次 `quiz-grade`，判分前后都不得追加 `status` 或 `diagnose`；给出必要反馈后立即结束本轮。
-- **路由锁定**：优先服从 `quiz-grade` / `quiz-variant-grade` 返回的 `next_action`。`await_variants` 只收变式答案；`quiz_prepare` 直接进入下一组；`case_prepare` 直接调用一次 `case-prepare`。除非用户明确改题型或命令失败，否则同一回合不得重新比较"继续综合还是切案例"。
+- `quiz-grade --prepare-next` 成功返回即表示判分、原子记档和状态更新完成；当路由为 `quiz_prepare` 时，返回值还会包含已创建的 `next_quiz`。收到整组答案后只调用一次该命令，判分前后都不得追加 `status` 或 `diagnose`；给出必要反馈后立即结束本轮。
+- **路由锁定**：优先服从 `quiz-grade` / `quiz-variant-grade` 返回的 `next_action`。`await_variants` 只收变式答案；`quiz_prepare` 直接展示同一返回值中的 `next_quiz`；`case_prepare` 直接调用一次 `case-prepare`。除非用户明确改题型或命令失败，否则同一回合不得重新比较"继续综合还是切案例"。
 
 ## Step 1 · 一次准备整组题
 
 开始新训练任务时先获取统一路由：
 
 ```bash
-python3 scripts/tutor.py progress --json
+python3 scripts/tutor.py progress --runtime-json
 ```
 
 只有 `next_action.mode=quiz_prepare` 时进入本客观题流程。沿用返回的
@@ -225,7 +226,8 @@ python3 scripts/paper_practice.py --list
 python3 scripts/tutor.py quiz-grade \
   --quiz-id <quiz-id> \
   --answers 'C,A,D,BD,B' \
-  --confidences 'sure,sure,sure,sure,sure'
+  --confidences 'sure,sure,sure,sure,sure' \
+  --prepare-next --runtime-json
 ```
 
 答案输入只有三种合法状态，不需要额外问答：
@@ -260,8 +262,8 @@ python3 scripts/tutor.py quiz-grade --quiz-id <id> --answers 'C,B,A,X,B' \
 
 `--invalidate` 的题不生成 attempt、不计入掌握度，结果里写明"题目无效，本题不计分"；`--audit` 只标记 `needs_audit` 并把说明写入 `.study/quiz-audit-queue.jsonl`，供独立维护任务处理。
 
-`quiz-grade` 会先校验整组答案，再用一个锁和一次日志替换提交全部事件，最后更新
-状态、面板和测验清单。任何一题校验失败时整组不写入；重复提交同一测验保持幂等。
+`quiz-grade --prepare-next` 会先校验整组答案，再用一个锁和一次日志替换提交全部事件，最后更新
+状态、面板和测验清单；当下一步是综合知识客观题时，会在同一命令中创建或复用确定性的续练会话。任何一题校验失败时整组不写入；重复提交同一测验保持幂等。
 
 ### 判分返回值就是讲解的全部素材
 
@@ -302,8 +304,8 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 | 论文限时成文 ≥ 2500 字 + 估分 | ✅ | production | mock | 1 篇达到安全线（以 PROGRESS_PROTOCOL 为准） |
 | 学员纯聊天没作答 | ❌ | — | — | — |
 
-正常客观题循环不得在 `quiz-grade` 后追加 `status` 或 `diagnose`；其 JSON 返回值
-已经包含本轮得分、逐题结果、错因和下次复习时间。
+正常客观题循环不得在 `quiz-grade --prepare-next` 后追加 `status`、`diagnose` 或 `quiz-prepare`；其 JSON 返回值
+已经包含本轮得分、逐题结果、错因、下次复习时间以及需要时的 `next_quiz`。
 
 ## Step 5 · 反馈与换科
 
@@ -329,7 +331,8 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 ```bash
 python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
   --answers 'B,C' --confidences 'sure,unsure' \
-  --wrong-reason '2=recall_failure'
+  --wrong-reason '2=recall_failure' \
+  --prepare-next --runtime-json
 ```
 
 变式题的作答会写成正式 `recognition` attempt，`variant_of` 指回产生它的原题：
@@ -337,10 +340,10 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 只有到期且确定答对才推进到下一间隔。答对且确定的题进入题目冷却。
 不填 `--confidences` 时按 `unsure` 记录，避免未声明把握度的变式冒充确定掌握。
 命令返回值含逐题 `is_correct` / `wrong_reasons` / `next_review_at` 和唯一的
-`next_action`，直接用它做反馈和下一步路由。
+`next_action`；当该路由为 `quiz_prepare` 时，直接使用返回的 `next_quiz` 展示下一组题。
 
-反馈完直接进入下一轮 `quiz-prepare`（推荐与选题已含在命令内，不再单独调用
-`recommend`）；连续答对 2 组后主动提"换科"。
+反馈完若返回 `next_quiz`，直接展示它（推荐与选题已在判分命令内完成，不再单独调用
+`recommend` 或 `quiz-prepare`）；连续答对 2 组后主动提"换科"。
 
 ## 异常决策表（照做，不现场推理）
 
@@ -349,7 +352,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 | 考生回答"不会" | 该题传 `X`，0 分 + `knowledge_gap` | 是 | 否 |
 | 考生漏写一题且未说明 | 一次性指出缺少题号，请补答 | 否 | 否 |
 | 考生要求"其他题先判"且该题明确不会 | 该题用 `X` 完成本组 | 是 | 否 |
-| 考生答完变式题 | 整组用 `quiz-variant-grade` 记录一次，再给反馈 | 是 | 否 |
+| 考生答完变式题 | 整组用 `quiz-variant-grade --prepare-next` 记录一次，再给反馈 | 是 | 否 |
 | 题目缺关键图表 | `--invalidate 题号=missing_required_table/figure`，该题不记证据；回合结束后新开去重的修复任务，无法可靠修复则保持拦截 | 是 | 否 |
 | 题干不清或残缺 | `--invalidate 题号=unclear_stem`；兼容别名 `incomplete_stem`，工具会规范化 | 是 | 否 |
 | 答案键反直觉 | 信任已验证题库，`--audit` 标记 `needs_audit` | 是 | 否 |
@@ -401,7 +404,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 
 | 工具 | 位置 | 作用 |
 |---|---|---|
-| CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / progress / weakpoints / recommend / quiz-prepare / quiz-grade / quiz-variant-grade / record / configure / doctor |
+| CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / progress / weakpoints / recommend / quiz-prepare / quiz-grade（支持 `--prepare-next`）/ quiz-variant-grade（支持 `--prepare-next`）/ record / configure / doctor |
 | 脱敏器 | [`scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) | 题库维护、抽查与人工修复用；支持 `--topic` / `--tag` / `--year` / `--list`，不在答题循环内调用 |
 | 质量排除表 | [`scripts/quiz_quality_exclusions.json`](../scripts/quiz_quality_exclusions.json) | 人工确认的坏题黑名单；`doctor` 报告拦截数量，`quiz-prepare` 机械跳过 |
 | 考点表生成 | [`scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) | 由 `curriculum.json` 生成 `topic-map.md` |
