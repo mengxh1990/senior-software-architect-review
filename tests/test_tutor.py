@@ -2371,9 +2371,9 @@ class TutorAcceptanceTest(unittest.TestCase):
                 self.assertEqual(1, event["score"])
                 self.assertTrue(event["variant_of"], "变式作答必须指回来源题")
                 self.assertEqual(
-                    "unsure",
+                    "sure",
                     event["confidence"],
-                    "未声明把握度的变式不得冒充确定掌握",
+                    "未声明把握度的变式默认按确定记录",
                 )
 
             replay = _json_output(

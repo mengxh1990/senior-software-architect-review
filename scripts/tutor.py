@@ -3895,15 +3895,10 @@ def parse_quiz_confidences(value: str | None, count: int) -> list[str]:
 
 
 def parse_variant_confidences(value: str | None, count: int) -> list[str]:
-    """Confidence for a follow-up variant, which is usually not stated.
-
-    Defaulting to ``unsure`` keeps an unstated variant from being banked as
-    certain mastery.  The item is still retired by the served-variant cooldown,
-    so repeat protection does not depend on this default.
-    """
+    """Use the normal quiz default for variants unless confidence is stated."""
 
     if not value:
-        return ["unsure"] * count
+        return ["sure"] * count
     return parse_quiz_confidences(value, count)
 
 

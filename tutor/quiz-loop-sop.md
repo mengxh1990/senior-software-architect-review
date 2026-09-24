@@ -338,7 +338,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 变式题的作答会写成正式 `recognition` attempt，`variant_of` 指回产生它的原题：
 答错或明确不会的变式进入 1/3/7/14/30 复习阶梯；当天纠偏答对仍保留次日复测，
 只有到期且确定答对才推进到下一间隔。答对且确定的题进入题目冷却。
-不填 `--confidences` 时按 `unsure` 记录，避免未声明把握度的变式冒充确定掌握。
+不填 `--confidences` 时按 `sure` 记录，与普通客观题默认值一致；显式标注 `unsure` / `guess` 时按标注记录。明确不会写 `X`，仍记为 `conceded` 且 `confidence=null`。
 命令返回值含逐题 `is_correct` / `wrong_reasons` / `next_review_at` 和唯一的
 `next_action`；当该路由为 `quiz_prepare` 时，直接使用返回的 `next_quiz` 展示下一组题。
 

@@ -96,7 +96,7 @@ unseen → learning → fragile → pass_ready
 - 题目本身无效（缺关键图表、答案不在选项中、题干被解析污染）时不写事件：判分时用 `--invalidate` 排除该题，只对有效题记档；题库疑点用 `--audit` 写入 `.study/quiz-audit-queue.jsonl`，由独立维护任务处理。
 - `item_id` 必填并稳定标识一道独立题目；不得用新的 `attempt_id` 兜底。复做同一 `item_id` 可以验证遗忘，但不能冒充多个独立掌握证据。
 - 自编题先登记题干、选项、稳定大考点 `topic_id` 和内容指纹；同内容换 ID 不得作为新证据。后续练习用 `variant_of` 关联来源题。
-- 变式题的作答同样是有效证据：由 `quiz-variant-grade` 写成 `recognition` attempt，`attempt_id` 为 `<quiz-id>-v-<序号>`，`variant_of` 指回产生它的原题；未声明把握度时记为 `unsure`，不得冒充确定掌握。
+- 变式题的作答同样是有效证据：由 `quiz-variant-grade` 写成 `recognition` attempt，`attempt_id` 为 `<quiz-id>-v-<序号>`，`variant_of` 指回产生它的原题；未声明把握度时默认记为 `sure`，明确标注 `unsure` 或 `guess` 时按标注记录。明确表示不会仍按 `conceded` 处理，`confidence` 为 `null`。
 - `source_type` 只能明确标记为 `official_outline`、`real`、`recalled_real`、`self_authored` 或 `simulation`，不得把模拟题称为真题。
 - 用户输入无效、尚未回答或只阅读讲解时，不写掌握证据。
 - 案例和论文记录得分点与 AI 估分，不能冒充官方成绩。
