@@ -12,6 +12,7 @@ import re
 from typing import Any
 
 import question_registry
+import sanitize_bank
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGLISH_SOURCE_PATH = REPO_ROOT / "exam-bank" / "23-english-reading.md"
@@ -57,53 +58,22 @@ def _questions() -> dict[str, dict[str, Any]]:
     """
     topic_files = sorted({item_id.rsplit("-", 1)[0] for item_id, _ in _ITEMS})
     questions: dict[str, dict[str, Any]] = {}
-    header_pattern = re.compile(r"(?m)^### (\d+)\.\s*(.+)$")
-    option_pattern = re.compile(r"^(?:✅\s*)?(?:\*\*)?([A-F])[.．]\s*(.+?)(?:\*\*)?$")
-    answer_pattern = re.compile(r"^\*\*答案?\*\*[：:]\s*([A-F])")
-    explanation_pattern = re.compile(r"^\*\*解析\*\*[：:]\s*(.+)")
-
     for topic_file in topic_files:
         source_path = REPO_ROOT / "exam-bank" / f"{topic_file}.md"
-        raw = source_path.read_text(encoding="utf-8")
-        first_heading = next((line[2:] for line in raw.splitlines() if line.startswith("# ")), topic_file)
+        first_heading = next((line[2:] for line in source_path.read_text(encoding="utf-8").splitlines()
+                              if line.startswith("# ")), topic_file)
         topic_name = re.sub(r"\s*·.*$", "", first_heading).strip()
-        headers = list(header_pattern.finditer(raw))
-        for index, header in enumerate(headers):
-            number = int(header.group(1))
+        for item in sanitize_bank.parse_exam_bank(source_path):
+            if len(item.get("correct", [])) != 1:
+                continue
+            number = int(item["id"].rsplit("#", 1)[1])
             question_id = f"{topic_file}-{number:02d}"
-            block_end = headers[index + 1].start() if index + 1 < len(headers) else len(raw)
-            block = raw[header.end():block_end]
-            options: list[dict[str, str]] = []
-            answer = ""
-            explanation = ""
-            for raw_line in block.splitlines():
-                line = raw_line.strip()
-                option_match = option_pattern.match(line)
-                if option_match:
-                    options.append(
-                        {
-                            "key": option_match.group(1),
-                            "text": option_match.group(2).removesuffix("**").strip(),
-                        }
-                    )
-                    continue
-                answer_match = answer_pattern.match(line)
-                if answer_match:
-                    answer = answer_match.group(1)
-                    continue
-                explanation_match = explanation_pattern.match(line)
-                if explanation_match:
-                    explanation = explanation_match.group(1).strip()
-            if len(options) >= 2 and answer:
-                questions[question_id] = {
-                    "id": question_id,
-                    "topic_file": topic_file,
-                    "topic_name": topic_name,
-                    "stem": header.group(2).strip(),
-                    "options": options,
-                    "answer": answer,
-                    "explanation": explanation,
-                }
+            questions[question_id] = {
+                "id": question_id, "topic_file": topic_file, "topic_name": topic_name,
+                "stem": item["stem"], "options": [{"key": option["label"], "text": option["text"]}
+                                                for option in item["options"]],
+                "answer": item["correct"][0], "explanation": item.get("explanation", ""),
+            }
     return questions
 
 
@@ -123,7 +93,7 @@ def private_items() -> list[dict[str, Any]]:
             {
                 "number": number,
                 "question": question,
-                "topic_id": topic_id,
+                "topic_id": question_registry.topic_override(source_item_id) or topic_id,
                 "item_id": source_item_id,
                 "question_fingerprint": question_registry.content_fingerprint(
                     question["stem"], [option["text"] for option in question["options"]]

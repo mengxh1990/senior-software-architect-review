@@ -169,7 +169,8 @@ python3 scripts/tutor.py --data-dir .study record \
   --topic P01.ESSAY_ARCHITECTURE --skill production \
   --score 52 --max-score 75 --attempt-id essay-2026-08-10-001 \
   --item-id essay-prompt-architecture-001 --mode full_timed \
-  --duration-seconds 7200 --word-count 2700 --complete
+  --duration-seconds 7200 --word-count 2700 --complete \
+  --assessment-file .study/essay-assessment.json
 
 # 记录一科限时模考
 python3 scripts/tutor.py --data-dir .study mock \
@@ -209,3 +210,14 @@ python3 scripts/build_frequency_snapshot.py --check
 ```bash
 python3 -m unittest discover -s tests -v
 ```
+
+## 策略修复后的使用约定
+
+- `progress` 会返回预算、诊断覆盖、测量到期任务和可执行下一步；没有题或全部暂停也能只读查看。
+- 默认小组最多 5 题，资源不足可以缩短；`quiz-prepare --mixed` 用于跨考点检验。
+- 不确定/猜对、同内容不同 ID、片段案例、同卷复测或超时不能冒充独立稳定证据。`lower_bound_score` 是启发式余量，不是统计置信下界。
+- 完整案例/论文使用私人评分 JSON：`response_text` 原答，`rubric` 对象内包含 `version` 及 `points` 数组；每点包含 `score`、`max_score`、`evidence`，合计等于记录分数。完整案例用 `--assessment-scope case --complete --assessment-file ...`；完整论文字数从原答计算。
+- 案例细考点的 `assessed_topics` 只记录实际覆盖的评分点，不自动把整个赛道分数复制到细考点。
+- `quiz-variant-grade` 同样支持 `--invalidate` 和 `--audit`。确定坏题自动隔离；核验后用 `release-question --item-id ... --evidence '核验来源与依据'` 放行当前版本。
+- 代码升级可先运行 `repair --dry-run` 检查差异，再运行 `repair --recompute-derived` 备份并重算；原作答日志不变。
+- 考频快照的 runtime_ready 仅表示统计覆盖达到门槛；当前运行时仍使用 curriculum_curated 固定权重，未自动切换到快照权重。

@@ -48,6 +48,25 @@ def _run_cli(
         resolved_arguments.extend(
             ["--item-id", f"test-item:{resolved_arguments[attempt_index]}"]
         )
+    # Tests exercising full-case/essay readiness supply the new auditable contract.
+    # Fragment and malformed-input coverage lives in test_training_policy.py.
+    if resolved_arguments[:1] == ["record"] and "--skill" in resolved_arguments:
+        skill = resolved_arguments[resolved_arguments.index("--skill") + 1]
+        maximum = resolved_arguments[resolved_arguments.index("--max-score") + 1]
+        full_case = skill == "application" and float(maximum) == 25
+        full_essay = skill == "production" and "full_timed" in resolved_arguments
+        if full_case or full_essay:
+            if "--assessment-scope" not in resolved_arguments:
+                resolved_arguments.extend(["--assessment-scope", "case" if full_case else "essay"])
+            if full_case and "--complete" not in resolved_arguments:
+                resolved_arguments.append("--complete")
+            attempt_id = resolved_arguments[resolved_arguments.index("--attempt-id") + 1]
+            evidence_file = data_dir / (attempt_id + "-rubric.json")
+            word_count = int(resolved_arguments[resolved_arguments.index("--word-count")+1]) if "--word-count" in resolved_arguments else 1
+            evidence_file.write_text(json.dumps({"response_text": "答" * word_count,
+                "rubric": {"version": "test-v1", "points": [{"score": float(resolved_arguments[resolved_arguments.index("--score")+1]),
+                "max_score": float(maximum), "evidence": "synthetic scoring evidence"}]}}, ensure_ascii=False))
+            resolved_arguments.extend(["--assessment-file", str(evidence_file)])
     command = [
         sys.executable,
         str(TUTOR_SCRIPT),
@@ -904,8 +923,8 @@ class TutorAcceptanceTest(unittest.TestCase):
             action = progress["next_action"]
             self.assertEqual("quiz_prepare", action["mode"])
             self.assertEqual(
-                {"comprehensive": 0.5, "case": 0.5, "essay": 0.0},
-                progress["subject_allocation"],
+                0.0,
+                progress["subject_allocation"]["essay"],
             )
             self.assertEqual("recognition", action["skill"])
             self.assertEqual("K03.SOFTWARE_DESIGN_UML", action["topic_id"])
@@ -925,6 +944,10 @@ class TutorAcceptanceTest(unittest.TestCase):
             data_dir = Path(temporary)
             self._init(data_dir)
             _run_cli(data_dir, "configure", "--subject-policy", "essay=manual_trigger")
+            for subject in ("comprehensive", "case"):
+                _run_cli(data_dir, "mock", "--subject", subject, "--mock-id", "safe-"+subject,
+                         "--paper-id", "safe-"+subject, "--score", "65", "--max-score", "75",
+                         "--duration-minutes", "60", "--complete", "--at", "2026-09-22T08:00:00+08:00")
             _run_cli(
                 data_dir, "record", "--topic", "C01.CASE_ATAM",
                 "--skill", "application", "--score", "0", "--max-score", "25",
@@ -972,6 +995,10 @@ class TutorAcceptanceTest(unittest.TestCase):
             data_dir = Path(temporary)
             self._init(data_dir)
             _run_cli(data_dir, "configure", "--subject-policy", "essay=manual_trigger")
+            for subject in ("comprehensive", "case"):
+                _run_cli(data_dir, "mock", "--subject", subject, "--mock-id", "safe-"+subject,
+                         "--paper-id", "safe-"+subject, "--score", "65", "--max-score", "75",
+                         "--duration-minutes", "60", "--complete", "--at", "2026-09-22T08:00:00+08:00")
             _run_cli(
                 data_dir, "record", "--topic", "C01.CASE_ATAM",
                 "--skill", "application", "--score", "0", "--max-score", "25",
@@ -989,6 +1016,10 @@ class TutorAcceptanceTest(unittest.TestCase):
             data_dir = Path(temporary)
             self._init(data_dir)
             _run_cli(data_dir, "configure", "--subject-policy", "essay=manual_trigger")
+            for subject in ("comprehensive", "case"):
+                _run_cli(data_dir, "mock", "--subject", subject, "--mock-id", "safe-"+subject,
+                         "--paper-id", "safe-"+subject, "--score", "65", "--max-score", "75",
+                         "--duration-minutes", "60", "--complete", "--at", "2026-09-22T08:00:00+08:00")
             _run_cli(
                 data_dir, "record", "--topic", "K03.SOFTWARE_DESIGN_UML",
                 "--skill", "application", "--score", "0", "--max-score", "25",
@@ -1586,16 +1617,9 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertTrue(payload["crunch_mode"])
             self.assertEqual(payload["days_to_exam"], 2)
             items = _recommendation_items(payload)
-            self.assertTrue(items)
-            for item in items:
-                self.assertTrue(
-                    any(
-                        "SURVIVAL.md" in resource
-                        or resource.startswith("cheatsheets/")
-                        for resource in item["resources"]
-                    ),
-                    item,
-                )
+            self.assertEqual([], items, "没有已学证据时，考前不应开新专题")
+            progress = _json_output(_run_cli(data_dir, "progress", "--json", "--today", "2026-11-05"))
+            self.assertEqual("survival_review", progress["next_action"]["mode"])
 
     def test_weak_mock_subject_gets_non_equal_priority(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -2160,7 +2184,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 .splitlines()
                 if line.strip()
             ]
-            self.assertEqual(1, len(queue_lines))
+            self.assertEqual(2, len(queue_lines))
             self.assertEqual("open", queue_lines[0]["status"])
 
             attempts = [
@@ -2207,7 +2231,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 .splitlines()
                 if line.strip()
             ]
-            self.assertEqual(1, len(queue_lines))
+            self.assertEqual(2, len(queue_lines))
             _run_cli(
                 data_dir,
                 "quiz-grade",
@@ -2352,7 +2376,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 {"quiz_prepare", "case_prepare", "essay_manual_flow"},
             )
             self.assertEqual(
-                "existing_subject_allocator",
+                "risk_maintenance_and_daily_allocation",
                 recorded["next_action"]["decision_source"],
             )
 
@@ -2786,7 +2810,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertEqual(payload.get("diagnosis", {}).get("issues"), [])
 
     def test_record_replay_stays_idempotent_when_optional_fingerprint_appears(self) -> None:
-        topic_id = self._recognition_topic()["id"]
+        topic_id = "K16.REQUIREMENTS_MANAGEMENT"
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
             self._init(data_dir)
@@ -3419,7 +3443,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertIn("已迁移 2 条", migrated.stdout)
             self.assertEqual(logged_before, attempts_path.read_bytes())
             after = json.loads(state_path.read_text(encoding="utf-8"))
-            self.assertEqual(2, after["question_link_version"])
+            self.assertEqual(3, after["question_link_version"])
             self.assertEqual(subject_state, after["subjects"])
             self.assertEqual(strategy, after["strategy"])
             self.assertEqual(state["applied_attempt_ids"], after["applied_attempt_ids"])

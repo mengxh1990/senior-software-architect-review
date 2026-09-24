@@ -162,6 +162,16 @@ def require_training_ready(data_dir: Path) -> tuple[dict[str, Any], dict[str, An
     return profile, state
 
 
+def require_mock_quality(data_dir: Path) -> None:
+    pool = tutor.load_quiz_question_pool(tutor.load_curriculum())
+    by_id = {item["id"]: item for item in pool}
+    blocked = tutor.quarantined_item_ids(data_dir, pool)
+    invalid = [item["item_id"] for item in private_items() if item["item_id"] in blocked
+               or by_id.get(item["item_id"], {}).get("quality_status") != "ready"]
+    if invalid:
+        raise tutor.TutorError("当前模拟卷含隔离或不可用题，请先核验修复：" + "、".join(invalid))
+
+
 def persist_events(
     data_dir: Path,
     practice_events: list[dict[str, Any]],
@@ -203,6 +213,14 @@ def persist_events(
             tutor.validate_record_event(event, curriculum)
         candidates = [*practice_events]
         if include_mock:
+            old_mock = by_id.get(mock_event["attempt_id"])
+            seen = {identity for event in logged
+                    if not str(event.get("attempt_id", "")).startswith(mock_event["attempt_id"])
+                    for identity in (event.get("item_id"), tutor.enrich_record_event(event).get("question_fingerprint"))
+                    if identity}
+            mock_event["prior_exposure_count"] = (old_mock.get("prior_exposure_count", 0) if old_mock else
+                sum((item.get("question_fingerprint") or item["item_id"]) in seen or item["item_id"] in seen
+                    for item in practice_events))
             tutor.validate_mock_event(mock_event)
             candidates.append(mock_event)
 
@@ -465,6 +483,7 @@ class ExamHandler(SimpleHTTPRequestHandler):
             with tutor.data_lock(self.data_dir):
                 if tutor.state_paths(self.data_dir)["state"].exists():
                     require_training_ready(self.data_dir)
+                require_mock_quality(self.data_dir)
             json_response(self, {"ok": True, "data": public_payload()})
         except tutor.TutorError as error:
             json_response(self, {"ok": False, "error": str(error)}, 409)

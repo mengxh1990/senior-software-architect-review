@@ -411,6 +411,24 @@ REVIEWED_CONTENT_FIXES = {
 }
 
 
+# Existing reviewed repairs: bb3ea99 restores the assignment table (also asserted
+# in test_sanitize_bank); b897fb3 restores superscript exponents in directory sizes.
+# Keep exact field expectations instead of changing the normalization baseline.
+REVIEWED_CONTENT_FIXES.update({'past-papers/comprehensive-by-year/2018下.md': {(69, 69): {'stem': '某企业准备将四个工人甲、乙、丙、丁分配在 A、B、C、D '
+                                                                   '四个岗位。每个工人由于技术水平不同，在不同岗位上每天完成任务所需的工时见下表。适当安排岗位，可使四个工人以最短的总工时（69）全部完成每天的任务。\n'
+                                                                   '\n'
+                                                                   '| 工人 | A | B | C | D |\n'
+                                                                   '|---|---:|---:|---:|---:|\n'
+                                                                   '| 甲 | 7 | 5 | 2 | 3 |\n'
+                                                                   '| 乙 | 9 | 4 | 3 | 7 |\n'
+                                                                   '| 丙 | 5 | 4 | 7 | 5 |\n'
+                                                                   '| 丁 | 4 | 6 | 5 | 6 |'}},
+ 'past-papers/comprehensive-by-year/2026上.md': {(30, 30): {'options': [{'label': 'A', 'text': '2¹²⁸'},
+                                                                       {'label': 'B', 'text': '2³²'},
+                                                                       {'label': 'C', 'text': '2⁶⁴'},
+                                                                       {'label': 'D', 'text': '2¹⁶'}]}}})
+
+
 def load_sanitizer() -> Any:
     spec = importlib.util.spec_from_file_location("sanitize_bank", SANITIZER_PATH)
     if not spec or not spec.loader:

@@ -198,6 +198,30 @@ class ExamServerTest(unittest.TestCase):
         )
         self.assertEqual(len(attempts), 76)
 
+    def test_prior_practice_keeps_mock_score_without_raising_measurement_confidence(self) -> None:
+        item = exam_server.private_items()[0]
+        subprocess.run([sys.executable, str(REPO_ROOT / "scripts" / "tutor.py"),
+            "--data-dir", str(self.data_dir), "record", "--topic", item["topic_id"],
+            "--skill", "recognition", "--score", "1", "--max-score", "1",
+            "--attempt-id", "prior-practice", "--item-id", item["item_id"]],
+            cwd=REPO_ROOT, check=True, capture_output=True)
+        _, payload = self.request("/api/mock-submit", payload={
+            "session_id": f"web-{exam_server.PAPER_ID}-exposed01", "answers": self.correct_answers(),
+            "duration_seconds": 3600})
+        self.assertEqual(75, payload["data"]["score"])
+        subject = payload["data"]["record"]["status"]["subjects"]["comprehensive"]
+        self.assertEqual("cold_start", subject["evidence_level"])
+        self.assertIn("previously_exposed_items", subject["mock_scores"][0]["ineligible_reasons"])
+
+    def test_quarantined_item_blocks_new_mock_paper(self) -> None:
+        item = exam_server.private_items()[0]
+        path = self.data_dir / "quiz-audit-queue.jsonl"
+        path.write_text(json.dumps({"quiz_id": "invalid-fixture", "number": 1,
+            "item_id": item["item_id"], "status": "quarantined"}) + "\n")
+        with self.assertRaises(urllib.error.HTTPError) as denied:
+            self.request("/api/mock-paper")
+        self.assertEqual(409, denied.exception.code)
+
     def test_mock_submit_withholds_answers_when_recording_fails(self) -> None:
         answers = self.correct_answers()
         state_path = exam_server.tutor.state_paths(self.data_dir)["state"]

@@ -10,6 +10,7 @@ from typing import Any, Iterable
 
 
 SCHEMA_VERSION = 1
+BANK_PRIMARY_TOPICS = json.loads((Path(__file__).with_name("exam_bank_topics.json")).read_text(encoding="utf-8"))["items"]
 
 # A source item may have a broad or incorrect heading. Only these verified
 # exceptions override its public topic mapping.
@@ -62,7 +63,8 @@ PUBLIC_ITEM_CORRECTIONS = {
 def topic_override(item_id: str) -> str | None:
     """Return the verified topic for a mislabeled public item, if any."""
 
-    return PUBLIC_ITEM_CORRECTIONS.get(item_id) or ITEM_TOPIC_OVERRIDES.get(item_id)
+    return (BANK_PRIMARY_TOPICS.get(item_id) or PUBLIC_ITEM_CORRECTIONS.get(item_id)
+            or ITEM_TOPIC_OVERRIDES.get(item_id))
 
 
 def canonicalize_public_event(event: dict[str, Any]) -> dict[str, Any]:

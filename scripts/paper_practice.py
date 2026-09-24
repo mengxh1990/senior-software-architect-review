@@ -9,9 +9,8 @@ kind of flow ``sanitize_bank.py`` gives the objective questions:
 * pick by 题型/主题 tag, by year, or list what is available;
 * for 案例, split the question from its 参考答案 and only hand the answer over
   when ``--reveal`` is passed (the learner writes first);
-* flag (but still serve) questions whose figures were removed during the
-  ad/watermark cleanup, so the coach can describe the figure or point at the
-  original PDF; ``--skip-missing-figures`` drops them instead;
+* skip questions whose figures were removed by default;
+  ``--allow-missing-figures`` requires the learner to explicitly accept missing materials;
 * replace ``![](../assets/...)`` links with ``【图 N】`` markers so no file path
   is ever shown to the learner.
 
@@ -52,7 +51,7 @@ TAG_LINE_RE = re.compile(r"^>[ \t]*\*\*(?:题型|主题)\*\*[:：][^\n]*$", re.M
 APPENDIX_DIVIDER_RE = re.compile(r"^#{1,3}[ \t]*参考答案[^\n]*$", re.MULTILINE)
 IMAGE_LINK_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
 REMOVED_FIGURE_MARK = "原图含机构广告或水印，已移除"
-MISSING_FIGURE_NOTE = "原题含插图，该图在广告/水印清理时被移除；出题时请用文字描述图意，或提示学员对照原始 PDF"
+MISSING_FIGURE_NOTE = "原题必要插图缺失，默认不出题；明确接受缺图练习时请对照权威原卷，不得补造图意"
 RECALL_YEARS = {"2023下", "2024上", "2024下", "2025上", "2025下", "2026上"}
 
 
@@ -302,10 +301,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--reveal", action="store_true", help="作答后取参考答案")
     parser.add_argument("--include-readonly", action="store_true")
+    parser.add_argument("--allow-missing-figures", action="store_true", help="明确接受缺图题时使用")
     parser.add_argument(
         "--skip-missing-figures",
         action="store_true",
-        help="跳过插图被移除的案例题（默认照常出题，仅给出 figure_note 提示）",
+        help="跳过插图被移除的案例题（默认已跳过，保留兼容）",
     )
     parser.add_argument("--list", action="store_true")
     args = parser.parse_args(argv)
@@ -326,7 +326,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         year=args.year,
         numeral=args.numeral,
         blind_only=not args.include_readonly,
-        skip_missing_figures=args.skip_missing_figures,
+        skip_missing_figures=args.skip_missing_figures or not args.allow_missing_figures,
     )
     if args.limit is not None:
         chosen = chosen[: args.limit]
@@ -337,6 +337,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     for item in chosen:
         if not args.reveal:
             item.pop("answer", None)
+        elif not item.get("answer") and item.get("answer_source"):
+            reference = next((source for source in items if source["id"] == item["answer_source"]), None)
+            if reference:
+                item["answer"] = reference.get("answer") or reference.get("stem")
+                item["answer_format"] = "reference_source_excerpt"
+                item["answer_note"] = "关联研读版原文，可能含题干；按小问提取采分点，不冒充官方唯一措辞"
+            else:
+                item["answer_note"] = "未找到关联答案材料，不能伪造评分依据"
         item["coach_note"] = (
             "作答前只呈现 stem；【图 N】对应 figures 中的插图，不要贴文件路径；"
             "学员作答后再用 --reveal 取参考答案并按评分点估分"

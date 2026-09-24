@@ -498,7 +498,7 @@
     const lower = score.lower_bound_score;
     const latest = score.latest_mock_score;
     const color = scoreColor(key);
-    return `<article class="score-card" style="--score-color:${color}"><div class="score-card-head"><div><div class="score-subject">${SUBJECT_LABELS[key]}</div><div class="score-note">保守下界 / 最近完整成绩</div></div><span class="score-badge">${scoreStatus(lower)}</span></div><div class="score-number">${lower == null ? '—' : formatNumber(lower)}<small> / 75</small></div><div class="score-footer"><span>最近：<strong>${latest == null ? '—' : formatNumber(latest)}</strong></span><span>证据：<strong>${score.evidence_count || 0} 条</strong></span></div></article>`;
+    return `<article class="score-card" style="--score-color:${color}"><div class="score-card-head"><div><div class="score-subject">${SUBJECT_LABELS[key]}</div><div class="score-note">启发式下界 / 最近有效模考</div></div><span class="score-badge">${score.needs_remeasurement ? '需复测' : scoreStatus(lower)}</span></div><div class="score-number">${lower == null ? '—' : formatNumber(lower)}<small> / 75</small></div><div class="score-footer"><span>最近：<strong>${latest == null ? '—' : formatNumber(latest)}</strong></span><span>证据：<strong>${score.evidence_count || 0} 条</strong></span></div></article>`;
   }
   function renderScores() { return `<section class="score-grid">${SUBJECT_ORDER.map(renderScoreCard).join('')}</section>`; }
   function renderStageSummary() {

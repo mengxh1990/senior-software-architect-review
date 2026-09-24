@@ -149,7 +149,7 @@ python3 scripts/sanitize_bank.py --list
 - `--source-type` 按考期来源选择：2009–2022 用 `real`，回忆版考期（2023 下、2024 上/下、2025 上/下、2026 上）用 `recalled_real`；
 - 真题保留试卷原始的答案分布，**不要**套用"自编题正确答案需分散到不同选项"的规则；
 - 2019 下、2020、2023 下的整理版本只覆盖部分题目（26 / 12 / 1 个可用题块），抽不到时退回 `exam-bank/` 或自编题；
-- 题干里的插图引用形如 `![p1_000.png](../assets/2013下/p1_000.webp)`，**呈现时不要贴图片路径**，用文字描述图意或直接说明"原题含图"。
+- 当前客观题是文本契约，依赖插图但不可呈现的题由门禁拦截，不得用“原题含图”代替必要图示。
 
 ### Step 2c · 案例与论文真题（按题型 / 主题抽题）
 
@@ -186,10 +186,10 @@ python3 scripts/paper_practice.py --list
 | `practice_mode=blind` | 可以盲练：题干已与参考答案分离 |
 | `practice_mode=read_only` | 题干与参考答案混排（多见于 2009–2018 答案详解转录版），**只能当研读材料，不要出给学员** |
 | `practice_mode=answer_key` | 卷末答案区，工具已排除，不要当题目 |
-| `missing_figure=true` | 该题插图在广告/水印清理时被移除，**仍然可以出题**：按 `figure_note` 用文字描述图意，或提示学员对照原始 PDF；只想出插图完整的题时加 `--skip-missing-figures` |
+| `missing_figure=true` | 默认跳过，不得臆造图意；只有考生明确接受缺图题时使用 `--allow-missing-figures`，并说明缺失材料 |
 | `stem` 里的 `【图 N】` | 对应 `figures` 里的插图，呈现时**不要贴文件路径** |
 | `source_type` | 直接作为 `record --source-type`（正式卷 `real` / 回忆版 `recalled_real`） |
-| `answer_source` | 原卷题没有内嵌答案，作答后到这个路径对应的研读版文件取参考答案 |
+| `answer_source` | 原卷答案来源；`--reveal` 自动附上关联研读材料，标记为 reference_source_excerpt，教师按小问提取采分点 |
 
 用法要点：
 
@@ -199,18 +199,18 @@ python3 scripts/paper_practice.py --list
 
 ## Step 3 · 批量出题
 
-默认一次展示 5 题，学员统一作答后再统一判分和记档；冲刺时可按学员要求改为
+默认最多展示 5 题，题源不足时可返回 1–4 题短组；不要为凑数越过更紧急的考点。学员统一作答后再统一判分和记档；冲刺时可按学员要求改为
 10 题。每组在同一稳定大考点内优先选择未做题，不重复当天已展示的题目。
 
 如果运行环境支持点选工具：
 
-- 每次调用 ≤ 4 题（工具上限）
+- 按当前环境可用点选工具的实际题数上限分屏；工具不可用时用文本作答，不假定总是支持 4 题
 - `label` 只放选项字母：`"A"` / `"B"` / `"C"` / `"D"`（`label` 有 12 字符限制）
 - `question` 放完整题干（含"下列错误的是"这类否定词）
 - `options[].description` 放该选项的**完整文本**
 - `header` 放很短的题目标签，如 `"Q1 瀑布模型"`
 
-11 题拆成 4+4+3，最后一屏可以补一道"整体把握度"自评问题
+例如工具支持每屏 4 题时，11 题可拆成 4+4+3；最后一屏可以补一道"整体把握度"自评问题
 （`稳 / 不确定 / 蒙`）。
 
 **反面示例（不要这样写）**：
@@ -275,7 +275,7 @@ python3 scripts/tutor.py quiz-grade --quiz-id <id> --answers 'C,B,A,X,B' \
 | `wrong_reasons` / `wrong_reason_status` | 只保存考生明确说明的错因；未说明的普通答错为 `unclassified`，`conceded` 固定为 `knowledge_gap` |
 | `explanation` | 已清洗的解析，是微课的事实素材；答对且确定时可能为 `null` |
 | `memory_hook` | 登记过的记忆钩子；为 `null` 时用一句话概括即可，不得检索 |
-| `variant_question` | 同一稳定大考点下通过质量门禁的后续练习题（含 `stem` / `options` / `answer`）；不将它表述为原题知识点的精确变式 |
+| `variant_question` | 同一主考点的补练题；整组最多 2 道并受预算约束。不宣称精确变式，展示时隐藏 answer/explanation |
 | `next_review_at` | 该考点的下次复习日 |
 
 顶层另有 `score` / `max_score` / `conceded_count` / `invalidated_count`，用于一句话汇报本组结果。
@@ -298,7 +298,7 @@ python3 scripts/tutor.py register-question --file .study/new-question.json
 | 客观题（含真题）、闭卷、答对、`sure` | ✅ | recognition | diagnostic/practice | 是（累积 6 条证据 + 跨日 2 次） |
 | 答对但 `guess` | ✅ | recognition | diagnostic | 否，只算 fragile |
 | 答错 | ✅ | recognition | diagnostic | 否，进 1/3/7/14/30 复习阶梯 |
-| 案例独立作答 + 逐项估分 | ✅ | application | practice/mock | 需 2 次 15/25 等价分 |
+| 完整案例独立作答 + 原答及逐项评分记录 | ✅ | application | practice/mock | 需 2 次 15/25、不同内容、间隔 48 小时；片段不能升级 |
 | 案例只看讲解未作答 | ⚠️ 只写 note | application | practice | 否 |
 | 论文口述骨架 | ✅ | application | practice | 否 |
 | 论文限时成文 ≥ 2500 字 + 估分 | ✅ | production | mock | 1 篇达到安全线（以 PROGRESS_PROTOCOL 为准） |
@@ -342,8 +342,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 命令返回值含逐题 `is_correct` / `wrong_reasons` / `next_review_at` 和唯一的
 `next_action`；当该路由为 `quiz_prepare` 时，直接使用返回的 `next_quiz` 展示下一组题。
 
-反馈完若返回 `next_quiz`，直接展示它（推荐与选题已在判分命令内完成，不再单独调用
-`recommend` 或 `quiz-prepare`）；连续答对 2 组后主动提"换科"。
+反馈完若返回 `next_quiz`，直接展示它。换科、维护、诊断、混合检验和预算由 `next_action` 决定，不再用“连对两组”覆盖路由。
 
 ## 异常决策表（照做，不现场推理）
 
@@ -357,6 +356,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 | 题干不清或残缺 | `--invalidate 题号=unclear_stem`；兼容别名 `incomplete_stem`，工具会规范化 | 是 | 否 |
 | 答案键反直觉 | 信任已验证题库，`--audit` 标记 `needs_audit` | 是 | 否 |
 | 解析缺失或过短 | 给最小解释，不临时查资料 | 是 | 否 |
+| `preparation_status=failed` | 本轮已判分，先交付成绩和解析，说明续练不可用；不得称为本轮判分失败 | 是 | 否 |
 | `quiz-grade` 非零退出 | 最多一次只读诊断；仍失败则报告阻塞 | 否 | 仅此一次 |
 | 发现历史 pending quiz | 忽略，不影响当前 quiz，维护任务单独清理 | 是 | 否 |
 | 同一题同一天再出现 | 照常出题（去重已由 `quiz-prepare` 处理），不手工挑题 | 是 | 否 |
@@ -378,14 +378,14 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 | topic-map 与 curriculum 不一致 | 有人改了 curriculum 没重跑生成脚本 | `python3 scripts/gen_topic_map.py` |
 | 学员答案里选项字母对不上 | label 用了字母以外内容 | 回 Step 3 校验 label 只放 A/B/C/D |
 | status 仍显示 `unmeasured` | 单题小测不能升 measured | 完整 75 分制整卷模考才升级 |
-| 学员嫌打字慢改点选 | 走过一次就立刻切 AskUserQuestion | 后续每屏都点选，不要回退 |
+| 学员要求点选 | 使用当前环境实际可用的点选工具 | 工具不可用时说明限制，继续文本作答 |
 | 学员直接要答案 | PROGRESS_PROTOCOL 禁止直接给答案 | 走 scaffolding：给方法 + 让 TA 填空 |
 
 ## Verification（每轮循环收尾自检）
 
 答完一组、准备下一组前，快速过一遍：
 
-- [ ] 每题都 `record` 了，`status` 里 attempt 数增加
+- [ ] 判分返回值确认有效题已记档、无效题不计分；无需额外调用 record/status
 - [ ] 蒙对/不确定的题 `--confidence` 标了 `unsure` / `guess`
 - [ ] 自编题已登记稳定大考点、题目 ID 和内容指纹
 - [ ] 未重复当天已展示的题目
@@ -398,7 +398,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 - [ ] "不会"的题用了 `X`，没有伪造选项或让考生补答
 - [ ] 讲解只用了 `quiz-grade` 的返回值，没有读 manifest / 题库 / 知识库
 
-全部打勾才进入下一轮 `quiz-prepare`。
+全部检查通过后展示已返回的 `next_quiz`，或执行 `next_action`；不得重复创建同一轮。
 
 ## 相关工具
 
@@ -411,3 +411,18 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 | 教师人格 | [`.claude/agents/senior-architect-pass-coach.md`](../.claude/agents/senior-architect-pass-coach.md) | 覆盖诊断 / 案例 / 论文全流程决策 |
 | 记档协议 | [`PROGRESS_PROTOCOL.md`](./PROGRESS_PROTOCOL.md) | 证据分级、掌握度定义、私隐边界 |
 | 考点表 | [`topic-map.md`](./topic-map.md) | 自动生成，切勿手改 |
+
+## 新运行时返回值
+
+- `session_complete`：当日预算用完，收尾，不再准备题；估计用时须注明，考生明确要求继续可覆盖。
+- `await_explicit_request`：启用科目为空，等待明确训练请求。
+- `resources_unavailable`：进度正常可读，但没有满足门禁的题；说明原因，不循环重试。
+- `targeted_fragment`：剩余预算不足完整主观题，仅练短答/骨架，并按片段记档。
+- `survival_review`：只复习已学错题与答题骨架，不开新专题。
+- `mock_manual_flow`：有足够整块时间且测量到期，按科目模考流程执行；综合用本地考试页，案例完整 3 题，论文完整限时成文。
+- `task_kind=mixed_check`：沿用返回的 `quiz-prepare --mixed` 命令，不附加单考点限制，不外推整卷分数。
+- `preparation_status=failed`：仍展示本轮 score/results；next_quiz 为空表示没有续练可展示。环境恢复后可重放原判分命令，保持幂等。
+
+变式支持与普通题相同的 `--invalidate` / `--audit`；题目在等待作答期间已从门禁池移除时自动排除，其他有效答案正常记档。变式解析直接从返回值获得。
+
+主观题原答和评分写入 `.study/` 的 JSON，包含 `response_text`、`rubric.version`、`rubric.points[]`（每点 score/max_score/evidence）。完整案例记档额外传 `--assessment-scope case --complete --max-score 25 --assessment-file ...`；论文完整限时传 `--mode full_timed --assessment-file ...`。如题目针对某个 K 考点的到期任务，在 JSON 的 `assessed_topics[]` 中记录实际考查的 topic_id/score/max_score/evidence；不得将整题分数无差别复制到所有关联考点。
