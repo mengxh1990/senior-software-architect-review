@@ -188,7 +188,7 @@ FIGURE_TERM_PREFIXES = (
     "包",
 )
 TABLE_REF_RE = re.compile(
-    r"(?:如下|见下|以下|下面|下|上|该|本|此)\s*表|表\s*中\s*(?:给|标|所|[，,])|见表|此表"
+    r"(?:如下|见下|以下|下面|下|上|该|本|此)\s*表|表\s*中\s*(?:给|标|所|[，,])|见表|此表|工时表"
 )
 MARKDOWN_TABLE_RE = re.compile(r"^\s*\|.*\|\s*$", re.MULTILINE)
 ANSWER_LEAK_RE = re.compile(r"✅|(?:\*\*)?(?:答案|解析|考点)(?:\*\*)?\s*[:：]|【(?:答案|解析)】")

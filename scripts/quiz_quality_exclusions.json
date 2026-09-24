@@ -3,11 +3,6 @@
   "description": "人工确认过、禁止进入答题会话的题目。每条必须写明 item_id 与可追踪原因；quiz-prepare 会机械跳过这些题，doctor 会报告数量。",
   "exclusions": [
     {
-      "item_id": "past-papers/comprehensive-by-year/2021.md#1",
-      "reason": "missing_required_table",
-      "note": "页式地址变换题：原卷页表在转录时丢失，解析中的页号→物理块号映射题干未给出，考生无法作答。"
-    },
-    {
       "item_id": "past-papers/comprehensive-by-year/2010下.md#51-51",
       "reason": "ambiguous_answer_key",
       "note": "解析明确说明题干同时适合隐式调用、虚拟机等多种架构风格，并先认可答案 C、后建议答案 A，无法作为唯一答案题进入训练。"

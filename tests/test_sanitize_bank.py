@@ -575,6 +575,24 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertIn("answer_not_in_options", verdict["quality_issues"])
         self.assertTrue(verdict["requires_figure"])
 
+    def test_quality_gate_recognizes_truncated_work_hours_table_reference(self) -> None:
+        verdict = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/x.md#assignment",
+                "stem": "四工人分四岗位（不同工时表），最短总工时为：",
+                "options": [
+                    {"label": "A", "text": "13"},
+                    {"label": "B", "text": "14"},
+                    {"label": "C", "text": "15"},
+                    {"label": "D", "text": "16"},
+                ],
+                "correct": ["B"],
+                "explanation": None,
+            }
+        )
+        self.assertEqual("invalid", verdict["quality_status"])
+        self.assertIn("missing_required_table", verdict["quality_issues"])
+
     def test_quality_gate_requires_complete_option_set_and_context(self) -> None:
         incomplete = sanitize_bank.assess_quality(
             {
@@ -874,9 +892,10 @@ class PastPaperParsingTests(unittest.TestCase):
             )
             self.assertFalse(item.get("question_count", 1) > 1)
         by_id = {item["id"]: item for item in usable}
-        excluded = by_id["past-papers/comprehensive-by-year/2021.md#1"]
-        self.assertEqual("invalid", excluded["quality_status"])
-        self.assertIn("excluded:missing_required_table", excluded["quality_issues"])
+        repaired = by_id["past-papers/comprehensive-by-year/2021.md#1"]
+        self.assertEqual("ready", repaired["quality_status"])
+        self.assertTrue(repaired["requires_table"])
+        self.assertIn("| 页号 | 物理块号 |", repaired["stem"])
 
     def test_known_answer_explanation_conflicts_are_excluded(self) -> None:
         items = {}
@@ -1140,6 +1159,19 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual(["A"], item["correct"])
         self.assertIn("| 产品 | 设计（天） | 制造（天） | 检验（天） |", item["stem"])
         self.assertIn("| 丁 | 8 | 10 | 15 |", item["stem"])
+
+    def test_shipped_2018_assignment_question_embeds_required_table(self) -> None:
+        items = {
+            item["id"]: item
+            for item in sanitize_bank.parse_paper(
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2018下.md"
+            )
+        }
+        item = items["past-papers/comprehensive-by-year/2018下.md#69"]
+        self.assertEqual("ready", item["quality_status"])
+        self.assertTrue(item["requires_table"])
+        self.assertIn("| 工人 | A | B | C | D |", item["stem"])
+        self.assertIn("| 丁 | 4 | 6 | 5 | 6 |", item["stem"])
 
     def test_html_and_markdown_table_questions_are_renderable(self) -> None:
         items = {
