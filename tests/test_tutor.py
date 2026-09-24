@@ -2785,7 +2785,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertTrue(payload.get("diagnosis_error"))
             self.assertEqual(payload.get("diagnosis", {}).get("issues"), [])
 
-    def test_record_replay_stays_idempotent_when_enrichment_keys_appear(self) -> None:
+    def test_record_replay_stays_idempotent_when_optional_fingerprint_appears(self) -> None:
         topic_id = self._recognition_topic()["id"]
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
@@ -2811,29 +2811,27 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "--attempt-id",
                 "legacy-replay-001",
             )
-            # A replay that now carries the derived metadata (as if recorded
-            # by the newer terminal) is the same answer, not a conflict.
+            # A replay that now carries an optional content fingerprint is
+            # the same answer, not a conflict.
             enriched = _run_cli(
                 data_dir,
                 *common,
                 "--attempt-id",
                 "legacy-replay-001",
-                "--concept-id",
-                f"{topic_id}.legacy",
-                "--question-family-id",
-                f"{topic_id}.legacy",
+                "--question-fingerprint",
+                "a" * 64,
             )
             self.assertIn("幂等跳过", enriched.stdout)
 
-            # The reverse direction: a stored enriched event replayed without
-            # the optional flags must also stay idempotent.
+            # A stored fingerprint replayed without the optional flag must
+            # also stay idempotent.
             _run_cli(
                 data_dir,
                 *common,
                 "--attempt-id",
                 "enriched-replay-001",
-                "--concept-id",
-                f"{topic_id}.enriched",
+                "--question-fingerprint",
+                "b" * 64,
             )
             plain = _run_cli(
                 data_dir,

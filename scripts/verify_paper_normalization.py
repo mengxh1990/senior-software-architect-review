@@ -276,6 +276,38 @@ def _preserved_lines(block: str) -> List[str]:
 # is not layout drift.  Store the exact approved value so the exception cannot
 # silently absorb a later, different edit to the same field.
 REVIEWED_CONTENT_FIXES = {
+    # 6d934d6 reviewed three conflicting answer keys against their stems and
+    # replaced the accompanying explanations. Pin both fields exactly so any
+    # subsequent change still fails the lossless source check.
+    "past-papers/comprehensive-by-year/2015下.md": {
+        (20, 20): {
+            "correct": ["B"],
+            "explanation": (
+                "电子政务的常用分类包括政府对政府（G2G）、政府对公务员（G2E）、政府对企业（G2B）和政府对公民（G2C）。"
+                "选项 B 写作 Government To Customer，与标准的 Government To Citizen 不一致，故不属于该分类。"
+            ),
+        },
+    },
+    "past-papers/comprehensive-by-year/2022.md": {
+        (4, 4): {
+            "correct": ["C"],
+            "explanation": (
+                "先从 20 号柱面移至最近的 21 号柱面，依次处理 ④、⑥；再处理 22 号柱面的 ⑨；"
+                "随后处理 18 号柱面的 ⑤、⑦、①；最后处理 16 号柱面的 ②、⑧、③。"
+                "因此响应序列为 ④⑥⑨⑤⑦①②⑧③，选 C。"
+            ),
+        },
+    },
+    "past-papers/comprehensive-by-year/2025下.md": {
+        (1, 1): {
+            "correct": ["A"],
+            "explanation": (
+                "根据约束条件枚举可知，A22 只能为 6：此时 A12=3、A23=7、A33=8，且 A11、A21、A31 "
+                "可分别为 2、4、5 或 4、2、1，均满足全部约束。A22 取 1、2、3、4、8 时都会导致"
+                "重复值或无法满足“一倍关系”，故选 A。"
+            ),
+        },
+    },
     # 2016 下 / 2017 下的这 8 道题在随卷答案详解里只有答案字母、解析为空，
     # 门禁因此长期拦截。补写的是模型解析（正文以【AI 补写】标注），题干、
     # 选项、答案和考点逐字未动，故在此登记批准值。
