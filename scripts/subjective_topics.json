@@ -1,0 +1,4163 @@
+{
+  "schema_version": 1,
+  "taxonomy_version": 1,
+  "description": "已复核的主观题身份、模块范围、小问及完整性。",
+  "items": {
+    "past-papers/case-by-year/2009下-原卷.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 16,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        }
+      ],
+      "content_fingerprint": "849fe46d8f4642a31415e286a95d2ac39fa554bf653d93afc67566423f19a403",
+      "canonical_item_id": "past-papers/case-by-year/2009下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS"
+      ]
+    },
+    "past-papers/case-by-year/2009下-原卷.md#试题二": {
+      "topic_id": "C14.CASE_DFD",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 11,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 6,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        }
+      ],
+      "content_fingerprint": "acbcf3f5a4d545889dfd1da98f0e245de629fac8049fae46380a1dd330f81e08",
+      "canonical_item_id": "past-papers/case-by-year/2009下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K15.STRUCTURED_ANALYSIS_DFD"
+      ]
+    },
+    "past-papers/case-by-year/2009下-原卷.md#试题四": {
+      "topic_id": "C05.CASE_ARCH_STYLES",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 5,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 12,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        }
+      ],
+      "content_fingerprint": "afeaf6d1bb4e57963948957fa5eb327ae3ce38f9c3cb79433e2831b5ee365f40",
+      "canonical_item_id": "past-papers/case-by-year/2009下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/case-by-year/2009下-原卷.md#试题五": {
+      "topic_id": "C07.CASE_SECURITY",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 8,
+          "topic_ids": [
+            "K20.SECURITY_FOUNDATIONS"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "85429b2277456365540dfc45bf2afd4fc41e582efbd5c50f07e9283d88254baa",
+      "canonical_item_id": "past-papers/case-by-year/2009下.md#试题五",
+      "complete": true,
+      "covered_topic_ids": [
+        "K20.SECURITY_FOUNDATIONS"
+      ]
+    },
+    "past-papers/case-by-year/2009下.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 16,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        }
+      ],
+      "content_fingerprint": "a578f8827943a0e8124c878fe24bad4439c00461f0daa9b763ca9fcb69060f50",
+      "canonical_item_id": "past-papers/case-by-year/2009下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS"
+      ]
+    },
+    "past-papers/case-by-year/2009下.md#试题二": {
+      "topic_id": "C14.CASE_DFD",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 11,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 6,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        }
+      ],
+      "content_fingerprint": "15cd6b8277b160a4db6f4ea73c19e580c81095188d134f67134c0c1c2bbfb9a5",
+      "canonical_item_id": "past-papers/case-by-year/2009下.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K15.STRUCTURED_ANALYSIS_DFD"
+      ]
+    },
+    "past-papers/case-by-year/2009下.md#试题四": {
+      "topic_id": "C05.CASE_ARCH_STYLES",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 5,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 12,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        }
+      ],
+      "content_fingerprint": "be14391f5795a05227ca891731b5f3eec8e996f40d3526eb4ca964ae9b6655e5",
+      "canonical_item_id": "past-papers/case-by-year/2009下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/case-by-year/2009下.md#试题五": {
+      "topic_id": "C07.CASE_SECURITY",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 8,
+          "topic_ids": [
+            "K20.SECURITY_FOUNDATIONS"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": [
+            "K20.SECURITY_FOUNDATIONS"
+          ]
+        }
+      ],
+      "content_fingerprint": "8bed24a4e10fa2324c33fa8f3c1e3b13e7379732cfb1bcdde690083c7c1fd3ee",
+      "canonical_item_id": "past-papers/case-by-year/2009下.md#试题五",
+      "complete": false,
+      "covered_topic_ids": [
+        "K20.SECURITY_FOUNDATIONS"
+      ]
+    },
+    "past-papers/case-by-year/2010下-原卷.md#试题一": {
+      "topic_id": "C05.CASE_ARCH_STYLES",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 8,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 13,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 4,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "4a2245df532d6d8c5ed0f0c6d3646f389242e4d08fbe96d9128d6042efcf969a",
+      "canonical_item_id": "past-papers/case-by-year/2010下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/case-by-year/2010下-原卷.md#试题二": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 8,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 13,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 4,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        }
+      ],
+      "content_fingerprint": "8e3aeff0b776b6f92bd87ff31918c070ceab40020d6dcba75b869157befaf1a1",
+      "canonical_item_id": "past-papers/case-by-year/2010下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2010下-原卷.md#试题四": {
+      "topic_id": "C10.CASE_SOA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 8,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML",
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 12,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 5,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "92c4fb2b86f80a4948d3fc00683415dd00114d74f9fdbb56624882eebc79bc61",
+      "canonical_item_id": "past-papers/case-by-year/2010下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML",
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/case-by-year/2010下-原卷.md#试题五": {
+      "topic_id": "C13.CASE_RELIABILITY",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 4,
+          "topic_ids": [
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 13,
+          "topic_ids": [
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": [
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "b9372a0240799aac256b69aff458f7788491193c97880f217b27f36cbca5bff8",
+      "canonical_item_id": "past-papers/case-by-year/2010下.md#试题五",
+      "complete": true,
+      "covered_topic_ids": [
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/case-by-year/2010下.md#试题一": {
+      "topic_id": "C05.CASE_ARCH_STYLES",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 7,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 12,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 6,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "d613ba847074ec5000345800d39111428e56a9201030a894d5c49b2f2c49b927",
+      "canonical_item_id": "past-papers/case-by-year/2010下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/case-by-year/2010下.md#试题二": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 8,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 13,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 4,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        }
+      ],
+      "content_fingerprint": "86e0d389297fb5f5278d6c189d001269f102663562ea39f0ecfb8472d684882a",
+      "canonical_item_id": "past-papers/case-by-year/2010下.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2010下.md#试题四": {
+      "topic_id": "C10.CASE_SOA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 8,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML",
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 12,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 5,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "3c204159b16dfc8ebd32461b4369643c3f7e89af4e727d9dc0bacc7cc23eaa19",
+      "canonical_item_id": "past-papers/case-by-year/2010下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML",
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/case-by-year/2010下.md#试题五": {
+      "topic_id": "C13.CASE_RELIABILITY",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 4,
+          "topic_ids": [
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 13,
+          "topic_ids": [
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": [
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "38f716de66a753f202c7904c0c8f36297c5644d50253d4fd87a3ed3d67742af8",
+      "canonical_item_id": "past-papers/case-by-year/2010下.md#试题五",
+      "complete": false,
+      "covered_topic_ids": [
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/case-by-year/2011下-原卷.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        }
+      ],
+      "content_fingerprint": "9efe059be7dd0a14b4bd4b91c921ba4b25c0d87f5d411a38e4a821d568d0b9ed",
+      "canonical_item_id": "past-papers/case-by-year/2011下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2011下-原卷.md#试题二": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "bbbf7bda07de05692338bd4d3987b6655e4d8656a338bb027a5ee0dd801e3779",
+      "canonical_item_id": "past-papers/case-by-year/2011下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2011下-原卷.md#试题四": {
+      "topic_id": "C10.CASE_SOA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "9a45c43c4f28cf13b44a6104d3950f9d7b387c167321009119e118d8f262fa40",
+      "canonical_item_id": "past-papers/case-by-year/2011下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/case-by-year/2011下-原卷.md#试题五": {
+      "topic_id": "C07.CASE_SECURITY",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K20.SECURITY_FOUNDATIONS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K20.SECURITY_FOUNDATIONS"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "ec603174edda99e276efb2f73affceda1e7be5440a115a59f3a5d13e032226ca",
+      "canonical_item_id": "past-papers/case-by-year/2011下.md#试题五",
+      "complete": true,
+      "covered_topic_ids": [
+        "K20.SECURITY_FOUNDATIONS"
+      ]
+    },
+    "past-papers/case-by-year/2011下.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        }
+      ],
+      "content_fingerprint": "a8bbd8a5168e72c1b97a1960364407d609f547224599057ea1b56573d399614a",
+      "canonical_item_id": "past-papers/case-by-year/2011下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2011下.md#试题二": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "13bde7fa3cb68049ee69d44092897ca4e2f861d930a47fd92bc50ae1666e5ba1",
+      "canonical_item_id": "past-papers/case-by-year/2011下.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2011下.md#试题四": {
+      "topic_id": "C10.CASE_SOA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "e6cdbcb8b6f8ffa29f58ef75e2f54d753b21fa90c11c7d22e9281be7ee2832e3",
+      "canonical_item_id": "past-papers/case-by-year/2011下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/case-by-year/2011下.md#试题五": {
+      "topic_id": "C07.CASE_SECURITY",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K20.SECURITY_FOUNDATIONS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K20.SECURITY_FOUNDATIONS"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "8e67edc568eb6d9b3898f9ab59df043bae71fc6d278371720620358a32c682d1",
+      "canonical_item_id": "past-papers/case-by-year/2011下.md#试题五",
+      "complete": false,
+      "covered_topic_ids": [
+        "K20.SECURITY_FOUNDATIONS"
+      ]
+    },
+    "past-papers/case-by-year/2012下-原卷.md#试题一": {
+      "topic_id": "C05.CASE_ARCH_STYLES",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "9883631d79f98fac81aad3cf91dfad1ed89dd4aec3159a68fefe1472ec098822",
+      "canonical_item_id": "past-papers/case-by-year/2012下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/case-by-year/2012下-原卷.md#试题四": {
+      "topic_id": "C15.CASE_PATTERNS",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "cfc56c5d82735fcb81ba8dbc234c276df443f2e051690379dcc62fa602ecb1e8",
+      "canonical_item_id": "past-papers/case-by-year/2012下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K29.DESIGN_PATTERNS"
+      ]
+    },
+    "past-papers/case-by-year/2012下-原卷.md#试题五": {
+      "topic_id": "C09.CASE_BIG_DATA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        }
+      ],
+      "content_fingerprint": "6c9a3e6bb48e62be5bb26ad2c1b4bdde6a19bb07c69d337e6de54ecc3b2f946d",
+      "canonical_item_id": "past-papers/case-by-year/2012下.md#试题五",
+      "complete": true,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2012下.md#试题一": {
+      "topic_id": "C05.CASE_ARCH_STYLES",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "40621b917b46b0f678e46c82ad493c592db7bb73c92126d82906172cbcdd0703",
+      "canonical_item_id": "past-papers/case-by-year/2012下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/case-by-year/2012下.md#试题四": {
+      "topic_id": "C15.CASE_PATTERNS",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K29.DESIGN_PATTERNS"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K29.DESIGN_PATTERNS"
+          ]
+        }
+      ],
+      "content_fingerprint": "b665ecbb46505b40972f589b66c890f24be5a5f00baae64c7968a3b266b170a2",
+      "canonical_item_id": "past-papers/case-by-year/2012下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K29.DESIGN_PATTERNS"
+      ]
+    },
+    "past-papers/case-by-year/2012下.md#试题五": {
+      "topic_id": "C09.CASE_BIG_DATA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        }
+      ],
+      "content_fingerprint": "e4719ac47299143ddbcdc9030aefb5db589e0d5855c8ec8de2ba5d76ff45f9e9",
+      "canonical_item_id": "past-papers/case-by-year/2012下.md#试题五",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2013下-原卷.md#试题一": {
+      "topic_id": "C10.CASE_SOA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "99772ee46370c29ad1e55d4c31dfdfaad3fa16d6f3c5597bc52a6d28931b1c48",
+      "canonical_item_id": "past-papers/case-by-year/2013下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/case-by-year/2013下-原卷.md#试题四": {
+      "topic_id": "C05.CASE_ARCH_STYLES",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "d4475a0ad87595dd3c5a7179b6162c1635910ba50f4e2708a8d5c022a232aa64",
+      "canonical_item_id": "past-papers/case-by-year/2013下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/case-by-year/2013下-原卷.md#试题五": {
+      "topic_id": "C07.CASE_SECURITY",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K20.SECURITY_FOUNDATIONS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K20.SECURITY_FOUNDATIONS"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "359b17a9cc207e5669e0d4028f91d29cbc0cb0924279acc925152b5de7cd0772",
+      "canonical_item_id": "past-papers/case-by-year/2013下.md#试题五",
+      "complete": true,
+      "covered_topic_ids": [
+        "K20.SECURITY_FOUNDATIONS"
+      ]
+    },
+    "past-papers/case-by-year/2013下.md#试题一": {
+      "topic_id": "C10.CASE_SOA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "f31398b27eac8bf151629392332203ffd1b2456344a0a263803cbbd6cbc9e8bc",
+      "canonical_item_id": "past-papers/case-by-year/2013下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/case-by-year/2013下.md#试题四": {
+      "topic_id": "C05.CASE_ARCH_STYLES",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "e7cd14fc12e6123b89b82dd8e3310bf2826ce4abe3437c7dbc7c7695205299f9",
+      "canonical_item_id": "past-papers/case-by-year/2013下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/case-by-year/2013下.md#试题五": {
+      "topic_id": "C07.CASE_SECURITY",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K20.SECURITY_FOUNDATIONS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K20.SECURITY_FOUNDATIONS"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "a3083bf72b7d59b997a23da1ac5ce6b9ac2966d82d929fdf08fa60343ee9c305",
+      "canonical_item_id": "past-papers/case-by-year/2013下.md#试题五",
+      "complete": false,
+      "covered_topic_ids": [
+        "K20.SECURITY_FOUNDATIONS"
+      ]
+    },
+    "past-papers/case-by-year/2014下-原卷.md#试题一": {
+      "topic_id": "C05.CASE_ARCH_STYLES",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "1ae092d0c45f6aadc56ee9ebe180813760cfa7172cf348744820e6427f69381f",
+      "canonical_item_id": "past-papers/case-by-year/2014下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML",
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/case-by-year/2014下-原卷.md#试题二": {
+      "topic_id": "C14.CASE_DFD",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "c0ff563876847aba7d4c42d457a75a9b54f718680db06b787976b0023f8a7205",
+      "canonical_item_id": "past-papers/case-by-year/2014下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K15.STRUCTURED_ANALYSIS_DFD"
+      ]
+    },
+    "past-papers/case-by-year/2014下-原卷.md#试题四": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        }
+      ],
+      "content_fingerprint": "3952803cd0cc6a0a141f8f0145a61147827355a97d9fd1b6a4e0b90cb4345f87",
+      "canonical_item_id": "past-papers/case-by-year/2014下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2014下.md#试题一": {
+      "topic_id": "C05.CASE_ARCH_STYLES",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "bc8338550698764166386f60931f6686a7065174bb77789aa28b1bf104160602",
+      "canonical_item_id": "past-papers/case-by-year/2014下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML",
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/case-by-year/2014下.md#试题二": {
+      "topic_id": "C14.CASE_DFD",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "b30bdd988680d36cd9dd72ef043da4dd692ed2241c240fb47fca921737f459c4",
+      "canonical_item_id": "past-papers/case-by-year/2014下.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K15.STRUCTURED_ANALYSIS_DFD"
+      ]
+    },
+    "past-papers/case-by-year/2014下.md#试题四": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        }
+      ],
+      "content_fingerprint": "0587087141116d5b89cc332f02d75e17e93f1be39291ea7c1b0aba6ed2219d00",
+      "canonical_item_id": "past-papers/case-by-year/2014下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2015下-原卷.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        }
+      ],
+      "content_fingerprint": "7e9ee5cf76eaff0614eca0b36a7a14720ba7c4f84967327be7f5685010978d70",
+      "canonical_item_id": "past-papers/case-by-year/2015下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2015下-原卷.md#试题二": {
+      "topic_id": "C06.CASE_UML",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        }
+      ],
+      "content_fingerprint": "2021916d5f0c4529357b348165bdd5ba0aa18f48f29b08281827015eff245c68",
+      "canonical_item_id": "past-papers/case-by-year/2015下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML"
+      ]
+    },
+    "past-papers/case-by-year/2015下-原卷.md#试题三": {
+      "topic_id": "C13.CASE_RELIABILITY",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "5e74132b622d65abaf72a37f1aa6e7b43090816016253efef44564ebcc7452f5",
+      "canonical_item_id": "past-papers/case-by-year/2015下.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/case-by-year/2015下.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        }
+      ],
+      "content_fingerprint": "fee28f8f331b7e5465810ec49a21781840dac86d941e4ee7c7d0500791eebb83",
+      "canonical_item_id": "past-papers/case-by-year/2015下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2015下.md#试题二": {
+      "topic_id": "C06.CASE_UML",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        }
+      ],
+      "content_fingerprint": "0bc1aa22719012646a77f93a1bbd37fc53643481ae05a1e8a516ba01358cd992",
+      "canonical_item_id": "past-papers/case-by-year/2015下.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML"
+      ]
+    },
+    "past-papers/case-by-year/2015下.md#试题三": {
+      "topic_id": "C13.CASE_RELIABILITY",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "561858d1a89957a9785b8728283e092123b9718b977b6c4e894a9242f439ed3b",
+      "canonical_item_id": "past-papers/case-by-year/2015下.md#试题三",
+      "complete": false,
+      "covered_topic_ids": [
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/case-by-year/2016下-原卷.md#试题一": {
+      "topic_id": "C05.CASE_ARCH_STYLES",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 10,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 7,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "8c7a08587550ea95b32c9a18f3a800cb367e5e8320c97042ca0273331afa8dee",
+      "canonical_item_id": "past-papers/case-by-year/2016下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD",
+        "K09.QUALITY_SCENARIOS"
+      ]
+    },
+    "past-papers/case-by-year/2016下-原卷.md#试题二": {
+      "topic_id": "C06.CASE_UML",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 7,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 7,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 11,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        }
+      ],
+      "content_fingerprint": "4b25f3b70d120e7693e195b28d7e181e117c281dda500826cd22d1942767f97d",
+      "canonical_item_id": "past-papers/case-by-year/2016下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML"
+      ]
+    },
+    "past-papers/case-by-year/2016下-原卷.md#试题三": {
+      "topic_id": "C08.CASE_EMBEDDED",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 7,
+          "topic_ids": [
+            "K07.REALTIME_EMBEDDED"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 8,
+          "topic_ids": [
+            "K07.REALTIME_EMBEDDED"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 10,
+          "topic_ids": [
+            "K07.REALTIME_EMBEDDED",
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "c85305585f0cf5cbe60b49d0a39b29cbb69e1e80c51cf1aece8fb1ef2e4a66e2",
+      "canonical_item_id": "past-papers/case-by-year/2016下.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K07.REALTIME_EMBEDDED",
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/case-by-year/2016下.md#试题一": {
+      "topic_id": "C05.CASE_ARCH_STYLES",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 10,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 7,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "894a1472630e42ab9d084b05eedb324906a677501a181669fa6edd1d40f2e3b6",
+      "canonical_item_id": "past-papers/case-by-year/2016下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD",
+        "K09.QUALITY_SCENARIOS"
+      ]
+    },
+    "past-papers/case-by-year/2016下.md#试题二": {
+      "topic_id": "C06.CASE_UML",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 7,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 7,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 11,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        }
+      ],
+      "content_fingerprint": "2a1b2b69d594db52fe1eefa85cf8af9a36d4914613af936f3aa3913e2d272d61",
+      "canonical_item_id": "past-papers/case-by-year/2016下.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML"
+      ]
+    },
+    "past-papers/case-by-year/2016下.md#试题三": {
+      "topic_id": "C08.CASE_EMBEDDED",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 7,
+          "topic_ids": [
+            "K07.REALTIME_EMBEDDED",
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 8,
+          "topic_ids": [
+            "K07.REALTIME_EMBEDDED"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 10,
+          "topic_ids": [
+            "K07.REALTIME_EMBEDDED",
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "493a27cb0d00a363ad44d20a694151a1965d03534e1cfae319d251b2a0321073",
+      "canonical_item_id": "past-papers/case-by-year/2016下.md#试题三",
+      "complete": false,
+      "covered_topic_ids": [
+        "K07.REALTIME_EMBEDDED",
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/case-by-year/2017下-原卷.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 12,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 13,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        }
+      ],
+      "content_fingerprint": "91055998b2b5fc7330420123d68653b62e42db1e018344b0ed84851524c846f6",
+      "canonical_item_id": "past-papers/case-by-year/2017下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2017下-原卷.md#试题四": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 9,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 7,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        }
+      ],
+      "content_fingerprint": "a7f2445227f459ac5b5adecef202609fa04b2a45057e5f7bd67e242dbce883ab",
+      "canonical_item_id": "past-papers/case-by-year/2017下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2017下-原卷.md#试题五": {
+      "topic_id": "C09.CASE_BIG_DATA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 5,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 16,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 4,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "7eb46d40a7c5126c2dd2baf1066f0ed0530c7d0503b492fdaa1f6c05b4af8636",
+      "canonical_item_id": "past-papers/case-by-year/2017下.md#试题五",
+      "complete": true,
+      "covered_topic_ids": [
+        "K02.NETWORK_PROTOCOLS",
+        "K09.QUALITY_SCENARIOS",
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2017下.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 12,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 13,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        }
+      ],
+      "content_fingerprint": "0c34131658a83ba84aa4633443fc3f7d8af711857d35b6569ff55a522baa7c84",
+      "canonical_item_id": "past-papers/case-by-year/2017下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2017下.md#试题四": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 9,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 7,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        }
+      ],
+      "content_fingerprint": "46d5e0168ca8535a2fd41980db57ed3e451d5814bb6eb44c3356706e7357b8cc",
+      "canonical_item_id": "past-papers/case-by-year/2017下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2017下.md#试题五": {
+      "topic_id": "C09.CASE_BIG_DATA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 5,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 16,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 4,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        }
+      ],
+      "content_fingerprint": "e8465d36166c99cece613e7f3cac28679349202a308aebb27edfb8920b1e3be3",
+      "canonical_item_id": "past-papers/case-by-year/2017下.md#试题五",
+      "complete": false,
+      "covered_topic_ids": [
+        "K02.NETWORK_PROTOCOLS",
+        "K09.QUALITY_SCENARIOS",
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2018下.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 8,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 8,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 9,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "aea9b3a6e31fede45ee0b6c7a00bceafec7de3e1f012851279077264ac2f3c40",
+      "canonical_item_id": "past-papers/case-by-year/2018下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2018下.md#试题二": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 12,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 5,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "92ba7596f6b2f352123bbe407f0b6705d18fe18bbf6d9a0b13d66032aa6706ae",
+      "canonical_item_id": "past-papers/case-by-year/2018下.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2018下.md#试题三": {
+      "topic_id": "C08.CASE_EMBEDDED",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 14,
+          "topic_ids": [
+            "K07.REALTIME_EMBEDDED"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 11,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "f0d54522ec55ec341b6c1d0351f7d23f196a01fc203e64c310e335bfab4d35e0",
+      "canonical_item_id": "past-papers/case-by-year/2018下.md#试题三",
+      "complete": false,
+      "covered_topic_ids": [
+        "K07.REALTIME_EMBEDDED",
+        "K11.COMPONENTS_4PLUS1"
+      ]
+    },
+    "past-papers/case-by-year/2018下.md#试题四": {
+      "topic_id": "C11.CASE_EVOLUTION",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 8,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "3de965cfae1453274d353f9a2c7a2ef8dc1f6a6ca645d148bf3b2d0f89445c5e",
+      "canonical_item_id": "past-papers/case-by-year/2018下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K26.ARCH_EVOLUTION"
+      ]
+    },
+    "past-papers/case-by-year/2018下.md#试题五": {
+      "topic_id": "C10.CASE_SOA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 7,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 12,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 6,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K13.VIEWS_SOA_LAYERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "aa49157f54088a28228b81d6451fd914306b6941ae6a0b98b365ebf9de9f0392",
+      "canonical_item_id": "past-papers/case-by-year/2018下.md#试题五",
+      "complete": false,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/case-by-year/2019下.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 13,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 12,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS",
+            "K19.ATAM_TACTICS"
+          ]
+        }
+      ],
+      "content_fingerprint": "e608967ad73ef01642a2152dcddeacfd733f98a243db22b4e46fa24e205993c2",
+      "canonical_item_id": "past-papers/case-by-year/2019下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD",
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2019下.md#试题二": {
+      "topic_id": "C14.CASE_DFD",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 8,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 8,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 9,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        }
+      ],
+      "content_fingerprint": "6907163116516f90620c233deab2146749104e5669fcb90bea76ff78621867c7",
+      "canonical_item_id": "past-papers/case-by-year/2019下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K15.STRUCTURED_ANALYSIS_DFD"
+      ]
+    },
+    "past-papers/case-by-year/2019下.md#试题三": {
+      "topic_id": "C08.CASE_EMBEDDED",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 10,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 6,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "573222de707c2bfa11c3c372da30b74a3148ad5ac65929da277d79fb3b232a6a",
+      "canonical_item_id": "past-papers/case-by-year/2019下.md#试题三",
+      "complete": false,
+      "covered_topic_ids": [
+        "K07.REALTIME_EMBEDDED",
+        "K11.COMPONENTS_4PLUS1"
+      ]
+    },
+    "past-papers/case-by-year/2019下.md#试题四": {
+      "topic_id": "C03.CASE_MESSAGING_CACHE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 11,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 8,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "7b87ce081d35121ee3097ccc6745fa8b0633d672ce3fd14f169450d9a4e0c0b6",
+      "canonical_item_id": "past-papers/case-by-year/2019下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K10.DATABASE_MODELING",
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/case-by-year/2019下.md#试题五": {
+      "topic_id": "C09.CASE_BIG_DATA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 4,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 14,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 7,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "3cbc4075145acd2f1c6da8701a9f66d948c4a1500098ddb7d9b0eeb8271670a3",
+      "canonical_item_id": "past-papers/case-by-year/2019下.md#试题五",
+      "complete": true,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING",
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/case-by-year/2020.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 13,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 12,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD",
+            "K09.QUALITY_SCENARIOS"
+          ]
+        }
+      ],
+      "content_fingerprint": "f167c4f510c3c8db595323d69dffc91508385f19c67e1c322f13989a991fceb3",
+      "canonical_item_id": "past-papers/case-by-year/2020.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD",
+        "K09.QUALITY_SCENARIOS"
+      ]
+    },
+    "past-papers/case-by-year/2020.md#试题二": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "89b34a9799ccac3744b0d639b97fa311a86a1bd5debbf2d0119231d71f676b1d",
+      "canonical_item_id": "past-papers/case-by-year/2020.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2020.md#试题四": {
+      "topic_id": "C09.CASE_BIG_DATA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE"
+          ]
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE"
+          ]
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "bcf2ad4e7af682facb103a4c327578e42f272f43120c803ea57019b912a90688",
+      "canonical_item_id": "past-papers/case-by-year/2020.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING",
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/case-by-year/2021.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS",
+            "K19.ATAM_TACTICS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 16,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        }
+      ],
+      "content_fingerprint": "0bcc5563c076877aa65c28945f4d2eb0f40b3a2932df1f8f70efec6385327872",
+      "canonical_item_id": "past-papers/case-by-year/2021.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2021.md#试题二": {
+      "topic_id": "C06.CASE_UML",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 6,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 10,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 9,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "e18c2dda058fa832e5c3656f9808ff1c4f892c49372328b9d14002b7464d9cce",
+      "canonical_item_id": "past-papers/case-by-year/2021.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML"
+      ]
+    },
+    "past-papers/case-by-year/2021.md#试题三": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 7,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "8f81f55a482b70b7b39d47b0bd5d38a8c6f4a4a6302055e444f38faaace0d1ad",
+      "canonical_item_id": "past-papers/case-by-year/2021.md#试题三",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2021.md#试题四": {
+      "topic_id": "C09.CASE_BIG_DATA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 9,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 7,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "90b04e0f04ab5c5274b9c786b1570da20de0c6f5007f4510ef4ec810af117928",
+      "canonical_item_id": "past-papers/case-by-year/2021.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/case-by-year/2021.md#试题五": {
+      "topic_id": "C08.CASE_EMBEDDED",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 8,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 12,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 5,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "d476e26d586d4d80e997dd4b86812b718249cdb4efd0a53f94c68937cfed48c7",
+      "canonical_item_id": "past-papers/case-by-year/2021.md#试题五",
+      "complete": false,
+      "covered_topic_ids": [
+        "K07.REALTIME_EMBEDDED",
+        "K11.COMPONENTS_4PLUS1"
+      ]
+    },
+    "past-papers/case-by-year/2022.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 12,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS",
+            "K19.ATAM_TACTICS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 13,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        }
+      ],
+      "content_fingerprint": "51d5fea314680c60e22aea99270781e49459d3f1b2723cfd9d52767829c66fdf",
+      "canonical_item_id": "past-papers/case-by-year/2022.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD",
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2022.md#试题二": {
+      "topic_id": "C14.CASE_DFD",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 9,
+          "topic_ids": [
+            "K10.DATABASE_MODELING",
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 7,
+          "topic_ids": [
+            "K15.STRUCTURED_ANALYSIS_DFD"
+          ]
+        }
+      ],
+      "content_fingerprint": "2dc459902ea76e79af1fb4a79bfbc9b1fb73d286226ae4e335ef78bcf26ee604",
+      "canonical_item_id": "past-papers/case-by-year/2022.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING",
+        "K15.STRUCTURED_ANALYSIS_DFD"
+      ]
+    },
+    "past-papers/case-by-year/2022.md#试题三": {
+      "topic_id": "C13.CASE_RELIABILITY",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 8,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS",
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 8,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS",
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 9,
+          "topic_ids": [
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "d860f3d88f32071e84d2b659defa300c4c0f4fd5cd508aae874cba255bb7d763",
+      "canonical_item_id": "past-papers/case-by-year/2022.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K07.REALTIME_EMBEDDED",
+        "K09.QUALITY_SCENARIOS",
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/case-by-year/2022.md#试题四": {
+      "topic_id": "C03.CASE_MESSAGING_CACHE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 9,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 7,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE"
+          ]
+        }
+      ],
+      "content_fingerprint": "d7f9bb7d97f277d9ae53d6c0f0fbefe57380575101747b53eba962147be0bcc6",
+      "canonical_item_id": "past-papers/case-by-year/2022.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/case-by-year/2022.md#试题五": {
+      "topic_id": "C16.CASE_IOT_EDGE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 5,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE",
+            "K27.EMERGING_TECH"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 14,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE",
+            "K27.EMERGING_TECH"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 6,
+          "topic_ids": [
+            "K27.EMERGING_TECH"
+          ]
+        }
+      ],
+      "content_fingerprint": "6c158c857e76eb9d974549c23e08496b9bbd725d55f6536adfce34c4d7b07c07",
+      "canonical_item_id": "past-papers/case-by-year/2022.md#试题五",
+      "complete": true,
+      "covered_topic_ids": [
+        "K21.MESSAGING_CACHE",
+        "K27.EMERGING_TECH"
+      ]
+    },
+    "past-papers/case-by-year/2023下.md#试题一": {
+      "topic_id": "C09.CASE_BIG_DATA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 8,
+          "topic_ids": [
+            "K31.BIG_DATA_ARCHITECTURE"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 9,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE",
+            "K31.BIG_DATA_ARCHITECTURE"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": [
+            "K31.BIG_DATA_ARCHITECTURE"
+          ]
+        }
+      ],
+      "content_fingerprint": "16759bf667bde9ead5d84552c114fa5ef51065f14e6fa97382bc9444f5b5ed9e",
+      "canonical_item_id": "past-papers/case-by-year/2023下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K21.MESSAGING_CACHE",
+        "K31.BIG_DATA_ARCHITECTURE"
+      ]
+    },
+    "past-papers/case-by-year/2023下.md#试题二": {
+      "topic_id": "C06.CASE_UML",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "4435e57359e59c143f67301a91b53b29543c1396278c0793fdf1d27afac850ec",
+      "canonical_item_id": "past-papers/case-by-year/2023下.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML"
+      ]
+    },
+    "past-papers/case-by-year/2023下.md#试题三": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [],
+      "content_fingerprint": "234011eb7caff3237f0244f55bbca218f61c3c9dc63bdab4a629e14678223e96",
+      "canonical_item_id": "past-papers/case-by-year/2023下.md#试题三",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING",
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/case-by-year/2023下.md#试题四": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [],
+      "content_fingerprint": "1359a4d919cf075f903e08381735024ff80c9ac4c33d9eed12bc7cf16503aa56",
+      "canonical_item_id": "past-papers/case-by-year/2023下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING",
+        "K20.SECURITY_FOUNDATIONS"
+      ]
+    },
+    "past-papers/case-by-year/2023下.md#试题五": {
+      "topic_id": "C16.CASE_IOT_EDGE",
+      "subquestions": [],
+      "content_fingerprint": "b78aa0fc8d16151c11ae45f7f15459997cc9cb2bf52cb5f2f7a68f6746a753c6",
+      "canonical_item_id": "past-papers/case-by-year/2023下.md#试题五",
+      "complete": false,
+      "covered_topic_ids": [
+        "K27.EMERGING_TECH"
+      ]
+    },
+    "past-papers/case-by-year/2024上.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 7,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 6,
+          "topic_ids": [
+            "K19.ATAM_TACTICS"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 12,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        }
+      ],
+      "content_fingerprint": "f64aee0f8c436dd4c7cdb9de9c4cd6e8223f19f848866ac16e70fb781d11b610",
+      "canonical_item_id": "past-papers/case-by-year/2024上.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K12.PATTERNS_SOA_MICROSERVICES",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2024上.md#试题二": {
+      "topic_id": "C06.CASE_UML",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        }
+      ],
+      "content_fingerprint": "04ebf25c02c1bebf75c395ffb104936eeead0c7c3e376bcf336fe2510ad2aba7",
+      "canonical_item_id": "past-papers/case-by-year/2024上.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML"
+      ]
+    },
+    "past-papers/case-by-year/2024上.md#试题三": {
+      "topic_id": "C03.CASE_MESSAGING_CACHE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 6,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 10,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE"
+          ]
+        }
+      ],
+      "content_fingerprint": "ce37aea6367902c916410f939701cc75cedd3216fc2b7784b7697ca864322c4c",
+      "canonical_item_id": "past-papers/case-by-year/2024上.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/case-by-year/2024上.md#试题四": {
+      "topic_id": "C08.CASE_EMBEDDED",
+      "subquestions": [],
+      "content_fingerprint": "c738666ffb2667425007d19888fa824fbc159961a225a6a7576afa737495aed2",
+      "canonical_item_id": "past-papers/case-by-year/2024上.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K07.REALTIME_EMBEDDED"
+      ]
+    },
+    "past-papers/case-by-year/2024上.md#试题五": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 11,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 10,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 4,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "bd75c5dc9e0ae0fccf1febceab7a646e87b3361c4bdb6c023d1d1ed8621eb447",
+      "canonical_item_id": "past-papers/case-by-year/2024上.md#试题五",
+      "complete": true,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING",
+        "K31.BIG_DATA_ARCHITECTURE"
+      ]
+    },
+    "past-papers/case-by-year/2024下.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        }
+      ],
+      "content_fingerprint": "be82fe8d6f43fe4425fd9e13fcc2f9d2ec437a4d129704cb68325c2983e981a8",
+      "canonical_item_id": "past-papers/case-by-year/2024下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS"
+      ]
+    },
+    "past-papers/case-by-year/2024下.md#试题二": {
+      "topic_id": "C03.CASE_MESSAGING_CACHE",
+      "subquestions": [],
+      "content_fingerprint": "557c41cdef626db760aa3834d643b3d6285196f27325400e2b13667a5da985aa",
+      "canonical_item_id": "past-papers/case-by-year/2024下.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/case-by-year/2024下.md#试题三": {
+      "topic_id": "C08.CASE_EMBEDDED",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 12,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 8,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "83de002c9439f84b09b65c5c350ef5dced9280c0641bb2c4e75643404c860528",
+      "canonical_item_id": "past-papers/case-by-year/2024下.md#试题三",
+      "complete": false,
+      "covered_topic_ids": [
+        "K07.REALTIME_EMBEDDED"
+      ]
+    },
+    "past-papers/case-by-year/2024下.md#试题四": {
+      "topic_id": "C09.CASE_BIG_DATA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 6,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 12,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 7,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "533bea49ff05160661e07bf3fadd57454d9a1464fa32067aae1ea6ee249e3aa5",
+      "canonical_item_id": "past-papers/case-by-year/2024下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING",
+        "K13.VIEWS_SOA_LAYERING",
+        "K31.BIG_DATA_ARCHITECTURE"
+      ]
+    },
+    "past-papers/case-by-year/2024下.md#试题五": {
+      "topic_id": "C06.CASE_UML",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 10,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 9,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "27076566775bf77be8a378bcd99b79aff2fac3007841973134be015ed5fa0e2a",
+      "canonical_item_id": "past-papers/case-by-year/2024下.md#试题五",
+      "complete": false,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML",
+        "K20.SECURITY_FOUNDATIONS"
+      ]
+    },
+    "past-papers/case-by-year/2025上.md#试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 12,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        }
+      ],
+      "content_fingerprint": "d6c2dffe9e84081ec07e9745982b50ec08c6f0d3aaee07fdf376aff51c269e61",
+      "canonical_item_id": "past-papers/case-by-year/2025上.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD",
+        "K09.QUALITY_SCENARIOS"
+      ]
+    },
+    "past-papers/case-by-year/2025上.md#试题二": {
+      "topic_id": "C09.CASE_BIG_DATA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K27.EMERGING_TECH"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K27.EMERGING_TECH"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K18.COMPUTER_ARCH_STORAGE"
+          ]
+        }
+      ],
+      "content_fingerprint": "ffafd074aa385c90d22cfe06a61bfb1e73338f5985c37ae48cd1b2a0b8a07e10",
+      "canonical_item_id": "past-papers/case-by-year/2025上.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K18.COMPUTER_ARCH_STORAGE",
+        "K27.EMERGING_TECH"
+      ]
+    },
+    "past-papers/case-by-year/2025上.md#试题三": {
+      "topic_id": "C03.CASE_MESSAGING_CACHE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "dcf6e198619bf5e913d275f7f47c63ec2f547e910f9f6b33b1b90f99c0d4cd5e",
+      "canonical_item_id": "past-papers/case-by-year/2025上.md#试题三",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING",
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/case-by-year/2025上.md#试题四": {
+      "topic_id": "C16.CASE_IOT_EDGE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 6,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 7,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 12,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "e0547129b817d9d2d19d0bb1c5573b30317ab0c6b3a5ee3e735e364e2e764c89",
+      "canonical_item_id": "past-papers/case-by-year/2025上.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K27.EMERGING_TECH"
+      ]
+    },
+    "past-papers/case-by-year/2025上.md#试题五": {
+      "topic_id": "C17.CASE_BLOCKCHAIN",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 12,
+          "topic_ids": [
+            "K27.EMERGING_TECH"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 9,
+          "topic_ids": [
+            "K27.EMERGING_TECH"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 4,
+          "topic_ids": [
+            "K27.EMERGING_TECH"
+          ]
+        }
+      ],
+      "content_fingerprint": "df02546359639331296f703ac92111a04ac6ac5727b7974a8c19af96b4cc6d04",
+      "canonical_item_id": "past-papers/case-by-year/2025上.md#试题五",
+      "complete": true,
+      "covered_topic_ids": [
+        "K27.EMERGING_TECH"
+      ]
+    },
+    "past-papers/case-by-year/2025下.md#批次1-试题一": {
+      "topic_id": "C08.CASE_EMBEDDED",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K07.REALTIME_EMBEDDED",
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K07.REALTIME_EMBEDDED"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K07.REALTIME_EMBEDDED",
+            "K25.RELIABILITY_ENGINEERING"
+          ]
+        }
+      ],
+      "content_fingerprint": "ab8049bbabf3a41ac652ceacf3e42969995e5bd718e4520656d3b769116df7aa",
+      "canonical_item_id": "past-papers/case-by-year/2025下.md#批次1-试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K07.REALTIME_EMBEDDED",
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/case-by-year/2025下.md#批次1-试题二": {
+      "topic_id": "C08.CASE_EMBEDDED",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 9,
+          "topic_ids": [
+            "K16.REQUIREMENTS_MANAGEMENT"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 10,
+          "topic_ids": [
+            "K07.REALTIME_EMBEDDED"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 6,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML",
+            "K07.REALTIME_EMBEDDED"
+          ]
+        }
+      ],
+      "content_fingerprint": "1126ffbe94ac93b5304c048857d6ee370c143f0f2cf30148863b40149414980c",
+      "canonical_item_id": "past-papers/case-by-year/2025下.md#批次1-试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML",
+        "K07.REALTIME_EMBEDDED",
+        "K16.REQUIREMENTS_MANAGEMENT"
+      ]
+    },
+    "past-papers/case-by-year/2025下.md#批次1-试题三": {
+      "topic_id": "C12.CASE_DEVOPS",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K08.SOFTWARE_PROCESS_MODELS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "1a4f49a316eca7a47e96f9274dd907740973316c746e0237530734cac649ef39",
+      "canonical_item_id": "past-papers/case-by-year/2025下.md#批次1-试题三",
+      "complete": false,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD",
+        "K08.SOFTWARE_PROCESS_MODELS"
+      ]
+    },
+    "past-papers/case-by-year/2025下.md#批次1-试题四": {
+      "topic_id": "C03.CASE_MESSAGING_CACHE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 10,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 7,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 8,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE"
+          ]
+        }
+      ],
+      "content_fingerprint": "c2162d7afd69d3156d71735d7cbfaf6356ac12aa1702348f81933eb5cbfcb493",
+      "canonical_item_id": "past-papers/case-by-year/2025下.md#批次1-试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/case-by-year/2025下.md#批次1-试题五": {
+      "topic_id": "C06.CASE_UML",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": null,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": null,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": null,
+          "topic_ids": [
+            "K03.SOFTWARE_DESIGN_UML"
+          ]
+        }
+      ],
+      "content_fingerprint": "052fbc9bd63d3acee4020a8b86300465222fb21d5cc4f87b910b7746136208e4",
+      "canonical_item_id": "past-papers/case-by-year/2025下.md#批次1-试题五",
+      "complete": false,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML"
+      ]
+    },
+    "past-papers/case-by-year/2025下.md#批次2-试题一": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 14,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 11,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "4474a17c30a8ffb56258b4eaedd2d02c9aaca98d8b226279c3ec438cce164bcd",
+      "canonical_item_id": "past-papers/case-by-year/2025下.md#批次2-试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/case-by-year/2025下.md#批次2-试题二": {
+      "topic_id": "C04.CASE_MICROSERVICE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 13,
+          "topic_ids": [
+            "K12.PATTERNS_SOA_MICROSERVICES"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 12,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "dadf8866fb07f3d70f6c22c06fe51b89c0bd4249b62f8cfbbc98d4547e93d6e3",
+      "canonical_item_id": "past-papers/case-by-year/2025下.md#批次2-试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K12.PATTERNS_SOA_MICROSERVICES",
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/case-by-year/2025下.md#批次2-试题三": {
+      "topic_id": "C03.CASE_MESSAGING_CACHE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 8,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 8,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 9,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "78256bc7ba1b9510de50943a56da9e80bf1772c4c683ca1a7b039393ff83677e",
+      "canonical_item_id": "past-papers/case-by-year/2025下.md#批次2-试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/case-by-year/2026上.md#试题一": {
+      "topic_id": "C16.CASE_IOT_EDGE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 7,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 8,
+          "topic_ids": [
+            "K10.DATABASE_MODELING",
+            "K21.MESSAGING_CACHE"
+          ]
+        }
+      ],
+      "content_fingerprint": "3b6be0c7deb2306b3070e043ea28948547507886c5cc22f5ad078d7ce341c82c",
+      "canonical_item_id": "past-papers/case-by-year/2026上.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING",
+        "K21.MESSAGING_CACHE",
+        "K27.EMERGING_TECH"
+      ]
+    },
+    "past-papers/case-by-year/2026上.md#试题二": {
+      "topic_id": "C09.CASE_BIG_DATA",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 6,
+          "topic_ids": []
+        },
+        {
+          "id": "2",
+          "max_score": 10,
+          "topic_ids": [
+            "K27.EMERGING_TECH"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 9,
+          "topic_ids": [
+            "K27.EMERGING_TECH"
+          ]
+        }
+      ],
+      "content_fingerprint": "541d5ddc8536e820316a4a4c6d3ef4249509732fd25353c8317f60f1b08c53c2",
+      "canonical_item_id": "past-papers/case-by-year/2026上.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K27.EMERGING_TECH"
+      ]
+    },
+    "past-papers/case-by-year/2026上.md#试题三": {
+      "topic_id": "C02.CASE_DATABASE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 8,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 11,
+          "topic_ids": [
+            "K10.DATABASE_MODELING"
+          ]
+        },
+        {
+          "id": "3",
+          "max_score": 6,
+          "topic_ids": [
+            "K21.MESSAGING_CACHE"
+          ]
+        }
+      ],
+      "content_fingerprint": "fcd3a92b0aeb351c5df39e751144276019c32ca29894d3a576157c535d9731b5",
+      "canonical_item_id": "past-papers/case-by-year/2026上.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING",
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/case-by-year/2026上.md#试题四": {
+      "topic_id": "C16.CASE_IOT_EDGE",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 4,
+          "topic_ids": [
+            "K27.EMERGING_TECH"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 11,
+          "topic_ids": []
+        },
+        {
+          "id": "3",
+          "max_score": 10,
+          "topic_ids": []
+        }
+      ],
+      "content_fingerprint": "f1b729a26ed40a2f620ea701d6fe06f0169bfd83e57b46b9bf1bfa9d79f98995",
+      "canonical_item_id": "past-papers/case-by-year/2026上.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K27.EMERGING_TECH"
+      ]
+    },
+    "past-papers/case-by-year/2026上.md#试题五": {
+      "topic_id": "C01.CASE_ATAM",
+      "subquestions": [
+        {
+          "id": "1",
+          "max_score": 14,
+          "topic_ids": [
+            "K09.QUALITY_SCENARIOS"
+          ]
+        },
+        {
+          "id": "2",
+          "max_score": 11,
+          "topic_ids": [
+            "K04.ARCH_STYLES_ABSD"
+          ]
+        }
+      ],
+      "content_fingerprint": "925bd5bc3223d3d41202b2c2c53a2b9bc2a99550a8bebabc3b7e9600f7cd5dd8",
+      "canonical_item_id": "past-papers/case-by-year/2026上.md#试题五",
+      "complete": false,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD",
+        "K09.QUALITY_SCENARIOS"
+      ]
+    },
+    "past-papers/essay-by-year/2009下.md#试题一": {
+      "topic_id": "P01.ESSAY_ARCHITECTURE",
+      "subquestions": [],
+      "content_fingerprint": "29cbe46cd0ffa2b5763dfe83782c7cdbf69cba3861d6d5423b09e60210c420b6",
+      "canonical_item_id": "past-papers/essay-by-year/2009下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/essay-by-year/2009下.md#试题二": {
+      "topic_id": "P16.ESSAY_MODELING",
+      "subquestions": [],
+      "content_fingerprint": "55b88dc4ced5f99a72b92811297f53667e4ceded8fb392f4fbce30aa3e38952a",
+      "canonical_item_id": "past-papers/essay-by-year/2009下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML",
+        "K15.STRUCTURED_ANALYSIS_DFD"
+      ]
+    },
+    "past-papers/essay-by-year/2009下.md#试题四": {
+      "topic_id": "P03.ESSAY_RELIABILITY",
+      "subquestions": [],
+      "content_fingerprint": "bafafd5f1413b14d2e1e4b13744932ba681e9c88cd40d434199cdf5a20be0e10",
+      "canonical_item_id": "past-papers/essay-by-year/2009下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/essay-by-year/2010下.md#试题一": {
+      "topic_id": "P10.ESSAY_EVOLUTION",
+      "subquestions": [],
+      "content_fingerprint": "70ff3ee46823b05cc05ba55bae3e056faf5d2aaa3181d36c9e4700ecdd5ae647",
+      "canonical_item_id": "past-papers/essay-by-year/2010下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K26.ARCH_EVOLUTION"
+      ]
+    },
+    "past-papers/essay-by-year/2010下.md#试题三": {
+      "topic_id": "P21.ESSAY_CACHE",
+      "subquestions": [],
+      "content_fingerprint": "202e8a71aa3b1480544c5665f37d8857c440c855837e131f5eaf6a32f0f070a4",
+      "canonical_item_id": "past-papers/essay-by-year/2010下.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/essay-by-year/2010下.md#试题四": {
+      "topic_id": "P03.ESSAY_RELIABILITY",
+      "subquestions": [],
+      "content_fingerprint": "22d1999e6608a385b6fd57d2e89e7619337984e3466b3157ff0b4e22d0c1f0ed",
+      "canonical_item_id": "past-papers/essay-by-year/2010下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/essay-by-year/2011下.md#试题一": {
+      "topic_id": "P16.ESSAY_MODELING",
+      "subquestions": [],
+      "content_fingerprint": "6d3dd914ddfc61bee84f2d14c03f015dc4d7a0ffbbaddf607ed393470ed2de93",
+      "canonical_item_id": "past-papers/essay-by-year/2011下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML"
+      ]
+    },
+    "past-papers/essay-by-year/2011下.md#试题二": {
+      "topic_id": "P05.ESSAY_EAI",
+      "subquestions": [],
+      "content_fingerprint": "6dab4d252dbd16e4ee4e437285b53eff125e73baf17bd00057301e8987e77f4b",
+      "canonical_item_id": "past-papers/essay-by-year/2011下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/essay-by-year/2012下.md#试题一": {
+      "topic_id": "P01.ESSAY_ARCHITECTURE",
+      "subquestions": [],
+      "content_fingerprint": "ed24241602f6c81f206a219cf0e40121feef1fbfa4902878593d59836bbf4777",
+      "canonical_item_id": "past-papers/essay-by-year/2012下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/essay-by-year/2012下.md#试题二": {
+      "topic_id": "P20.ESSAY_DATA_ACCESS",
+      "subquestions": [],
+      "content_fingerprint": "33ca0ac6987f80485603d130f8f90426c0797eb2c458fa3149e4678c404ae9e9",
+      "canonical_item_id": "past-papers/essay-by-year/2012下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/essay-by-year/2013下.md#试题一": {
+      "topic_id": "P01.ESSAY_ARCHITECTURE",
+      "subquestions": [],
+      "content_fingerprint": "5cab32e9048f9af75a5f945eae82b8a511544816443487c1771f808629bace37",
+      "canonical_item_id": "past-papers/essay-by-year/2013下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K06.DESIGN_DATA_VIEWS"
+      ]
+    },
+    "past-papers/essay-by-year/2013下.md#试题二": {
+      "topic_id": "P01.ESSAY_ARCHITECTURE",
+      "subquestions": [],
+      "content_fingerprint": "5dd9a7343c10861af0c14693866aa83395c853455b24be76c613f844932eab5c",
+      "canonical_item_id": "past-papers/essay-by-year/2013下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/essay-by-year/2013下.md#试题三": {
+      "topic_id": "P03.ESSAY_RELIABILITY",
+      "subquestions": [],
+      "content_fingerprint": "a54e34c5057231e7a31aa4b71326c46000f26e68282aa9de5e1cbc90b5555562",
+      "canonical_item_id": "past-papers/essay-by-year/2013下.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/essay-by-year/2013下.md#试题四": {
+      "topic_id": "P02.ESSAY_BIG_DATA",
+      "subquestions": [],
+      "content_fingerprint": "9a7326f2a1483d7aeb37a77c33eb0389edde1e516fce68b15f4ce6a9c6b3702c",
+      "canonical_item_id": "past-papers/essay-by-year/2013下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K31.BIG_DATA_ARCHITECTURE"
+      ]
+    },
+    "past-papers/essay-by-year/2014下.md#试题二": {
+      "topic_id": "P01.ESSAY_ARCHITECTURE",
+      "subquestions": [],
+      "content_fingerprint": "33287fabfb3fb2e81b8d638b135ec9119a6e81b72df7bb0295c79ecfbf617246",
+      "canonical_item_id": "past-papers/essay-by-year/2014下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K16.REQUIREMENTS_MANAGEMENT"
+      ]
+    },
+    "past-papers/essay-by-year/2014下.md#试题三": {
+      "topic_id": "P03.ESSAY_RELIABILITY",
+      "subquestions": [],
+      "content_fingerprint": "e4b82d5bbf642f92abd15f6960dae8686ba8d73c3beff10a2ed923b18bb001ed",
+      "canonical_item_id": "past-papers/essay-by-year/2014下.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/essay-by-year/2014下.md#试题四": {
+      "topic_id": "P07.ESSAY_SECURITY",
+      "subquestions": [],
+      "content_fingerprint": "befdfefcab999755d4ac82c6d2b807f6eda34bae291f44682d6a9779f4b4e28a",
+      "canonical_item_id": "past-papers/essay-by-year/2014下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K20.SECURITY_FOUNDATIONS"
+      ]
+    },
+    "past-papers/essay-by-year/2015下.md#试题二": {
+      "topic_id": "P01.ESSAY_ARCHITECTURE",
+      "subquestions": [],
+      "content_fingerprint": "0baaaa79a10c8a8a6cbeddb4fcad1e0e77b48f790a573a7b807e9430ecf342bf",
+      "canonical_item_id": "past-papers/essay-by-year/2015下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/essay-by-year/2015下.md#试题三": {
+      "topic_id": "P08.ESSAY_SOA",
+      "subquestions": [],
+      "content_fingerprint": "34cd04eacce527830198875905b8af271259545a0d6ae1286a3b69d7fafc0d59",
+      "canonical_item_id": "past-papers/essay-by-year/2015下.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/essay-by-year/2015下.md#试题四": {
+      "topic_id": "P05.ESSAY_EAI",
+      "subquestions": [],
+      "content_fingerprint": "8725b5f9264a649dffb12bff755749b49bb12f09705ac4917c8fa0e45511843b",
+      "canonical_item_id": "past-papers/essay-by-year/2015下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/essay-by-year/2016下.md#试题一": {
+      "topic_id": "P06.ESSAY_ATAM",
+      "subquestions": [],
+      "content_fingerprint": "e03ab51b9d71bc8d02c14194a24b448d3e927376cc322bed87143049857ac268",
+      "canonical_item_id": "past-papers/essay-by-year/2016下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/essay-by-year/2016下.md#试题二": {
+      "topic_id": "P11.ESSAY_PATTERNS",
+      "subquestions": [],
+      "content_fingerprint": "b512e54600f64ab148e691eb1ea540a7c9ef0bc2ed280c0b50b95b6eff52c1d7",
+      "canonical_item_id": "past-papers/essay-by-year/2016下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K29.DESIGN_PATTERNS"
+      ]
+    },
+    "past-papers/essay-by-year/2016下.md#试题三": {
+      "topic_id": "P20.ESSAY_DATA_ACCESS",
+      "subquestions": [],
+      "content_fingerprint": "162eca1558ef07f6c2aace818a175745c78167b22314642022838b7050d2bee7",
+      "canonical_item_id": "past-papers/essay-by-year/2016下.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/essay-by-year/2016下.md#试题四": {
+      "topic_id": "P04.ESSAY_MICROSERVICE",
+      "subquestions": [],
+      "content_fingerprint": "11591d637b0b2be9b5001eee48a5052f98572cb32bb17b8e27440c1611867a0c",
+      "canonical_item_id": "past-papers/essay-by-year/2016下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K12.PATTERNS_SOA_MICROSERVICES"
+      ]
+    },
+    "past-papers/essay-by-year/2017下.md#试题一": {
+      "topic_id": "P01.ESSAY_ARCHITECTURE",
+      "subquestions": [],
+      "content_fingerprint": "99002164e62989405e4af83ae721903c5638610a2a04f915c3604e74e426c7fe",
+      "canonical_item_id": "past-papers/essay-by-year/2017下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/essay-by-year/2017下.md#试题二": {
+      "topic_id": "P16.ESSAY_MODELING",
+      "subquestions": [],
+      "content_fingerprint": "cca9721f4d024ae980c70d974d9879e53906fbac3ac6d6593f2da63b4051075f",
+      "canonical_item_id": "past-papers/essay-by-year/2017下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML",
+        "K15.STRUCTURED_ANALYSIS_DFD"
+      ]
+    },
+    "past-papers/essay-by-year/2017下.md#试题三": {
+      "topic_id": "P13.ESSAY_DEVOPS",
+      "subquestions": [],
+      "content_fingerprint": "36c843a65c86aefb8d2a09ef587de8a5a924dc8afe395b15945fa3a3ecd00741",
+      "canonical_item_id": "past-papers/essay-by-year/2017下.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K12.PATTERNS_SOA_MICROSERVICES"
+      ]
+    },
+    "past-papers/essay-by-year/2017下.md#试题四": {
+      "topic_id": "P12.ESSAY_TESTING",
+      "subquestions": [],
+      "content_fingerprint": "87eebe23998c652f906744fdd781cb96dc139af205c9b833fada84bce967eba4",
+      "canonical_item_id": "past-papers/essay-by-year/2017下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K05.TEST_CMMI_PATTERNS"
+      ]
+    },
+    "past-papers/essay-by-year/2018下.md#试题一": {
+      "topic_id": "P17.ESSAY_PROCESS",
+      "subquestions": [],
+      "content_fingerprint": "db208e8de88a454c69fe663a9bd321a4e02999348e4e61dffb4ae2ad5ea23cdd",
+      "canonical_item_id": "past-papers/essay-by-year/2018下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K08.SOFTWARE_PROCESS_MODELS"
+      ]
+    },
+    "past-papers/essay-by-year/2018下.md#试题二": {
+      "topic_id": "P10.ESSAY_EVOLUTION",
+      "subquestions": [],
+      "content_fingerprint": "a420adfd9096a67fa495821caa3ca722022df305f9e4db6152ea1ed2c32c3b18",
+      "canonical_item_id": "past-papers/essay-by-year/2018下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K26.ARCH_EVOLUTION"
+      ]
+    },
+    "past-papers/essay-by-year/2018下.md#试题三": {
+      "topic_id": "P08.ESSAY_SOA",
+      "subquestions": [],
+      "content_fingerprint": "b88cc99ac45a78342562444f0afae5d866edb740d5179cce945522aa175342bb",
+      "canonical_item_id": "past-papers/essay-by-year/2018下.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/essay-by-year/2018下.md#试题四": {
+      "topic_id": "P02.ESSAY_BIG_DATA",
+      "subquestions": [],
+      "content_fingerprint": "08b3090433f4d715de246ee6e225326fbed4b9a66f91a4f139fab9aeb065a461",
+      "canonical_item_id": "past-papers/essay-by-year/2018下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/essay-by-year/2019下.md#试题一": {
+      "topic_id": "P18.ESSAY_PERFORMANCE",
+      "subquestions": [],
+      "content_fingerprint": "5071c8495ebb633a2769cdbf2da656b1e04f2bd2fa5a284dc4ac4b328c19eb78",
+      "canonical_item_id": "past-papers/essay-by-year/2019下.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS"
+      ]
+    },
+    "past-papers/essay-by-year/2019下.md#试题二": {
+      "topic_id": "P02.ESSAY_BIG_DATA",
+      "subquestions": [],
+      "content_fingerprint": "f217f78600cc7149ae1b996d9dc39114a285cb33b00945749b78c0094116b5fe",
+      "canonical_item_id": "past-papers/essay-by-year/2019下.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K31.BIG_DATA_ARCHITECTURE"
+      ]
+    },
+    "past-papers/essay-by-year/2019下.md#试题三": {
+      "topic_id": "P06.ESSAY_ATAM",
+      "subquestions": [],
+      "content_fingerprint": "3f1c7546f82ff3b3b6aedde0815f34527f548ea9825628ac4c1bce39b98dfe95",
+      "canonical_item_id": "past-papers/essay-by-year/2019下.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K19.ATAM_TACTICS"
+      ]
+    },
+    "past-papers/essay-by-year/2019下.md#试题四": {
+      "topic_id": "P16.ESSAY_MODELING",
+      "subquestions": [],
+      "content_fingerprint": "b345434e220be1883f39fe968f96f9b74ee4c7642db515cb63d88d9d00a0be3e",
+      "canonical_item_id": "past-papers/essay-by-year/2019下.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML",
+        "K06.DESIGN_DATA_VIEWS",
+        "K15.STRUCTURED_ANALYSIS_DFD"
+      ]
+    },
+    "past-papers/essay-by-year/2020.md#试题一": {
+      "topic_id": "P02.ESSAY_BIG_DATA",
+      "subquestions": [],
+      "content_fingerprint": "e522331fe1057761b04d11c00d3a7ec7da481886c5727a14410a542b621f0eaa",
+      "canonical_item_id": "past-papers/essay-by-year/2020.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/essay-by-year/2020.md#试题二": {
+      "topic_id": "P04.ESSAY_MICROSERVICE",
+      "subquestions": [],
+      "content_fingerprint": "0167d3478dc42a7b3e2cbd4056fd9c4d78ad63c1e411bfe5a78cc7f76144c2c5",
+      "canonical_item_id": "past-papers/essay-by-year/2020.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K12.PATTERNS_SOA_MICROSERVICES"
+      ]
+    },
+    "past-papers/essay-by-year/2020.md#试题三": {
+      "topic_id": "P12.ESSAY_TESTING",
+      "subquestions": [],
+      "content_fingerprint": "71a086efdcabcbd46247f78f6257f8e0141872090e2185342cc546657180ebd3",
+      "canonical_item_id": "past-papers/essay-by-year/2020.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K05.TEST_CMMI_PATTERNS"
+      ]
+    },
+    "past-papers/essay-by-year/2020.md#试题四": {
+      "topic_id": "P05.ESSAY_EAI",
+      "subquestions": [],
+      "content_fingerprint": "55d4d9e9cb1479da058fc13fd813d2a0209fb3440a05258d2bb110766be3a514",
+      "canonical_item_id": "past-papers/essay-by-year/2020.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/essay-by-year/2021.md#试题一": {
+      "topic_id": "P23.ESSAY_AOP",
+      "subquestions": [],
+      "content_fingerprint": "a1ac7d243cf6337ba54ab2ae26066b70a2368246004fa912acd651b5c7d281fa",
+      "canonical_item_id": "past-papers/essay-by-year/2021.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML",
+        "K29.DESIGN_PATTERNS"
+      ]
+    },
+    "past-papers/essay-by-year/2021.md#试题二": {
+      "topic_id": "P07.ESSAY_SECURITY",
+      "subquestions": [],
+      "content_fingerprint": "b18277c73083437929a015c24af0d3f1a8706ef58d35efbe474cca9512e10ac9",
+      "canonical_item_id": "past-papers/essay-by-year/2021.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K20.SECURITY_FOUNDATIONS"
+      ]
+    },
+    "past-papers/essay-by-year/2021.md#试题三": {
+      "topic_id": "P05.ESSAY_EAI",
+      "subquestions": [],
+      "content_fingerprint": "621711436cc461569477c44f226a6fc9ad35a5e5e491c5bf5488a4d81cce2107",
+      "canonical_item_id": "past-papers/essay-by-year/2021.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/essay-by-year/2021.md#试题四": {
+      "topic_id": "P04.ESSAY_MICROSERVICE",
+      "subquestions": [],
+      "content_fingerprint": "fd1f3068c958f2cec795ef0022e165a4bd0a94bee09cfc5870943a0d78c91485",
+      "canonical_item_id": "past-papers/essay-by-year/2021.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K12.PATTERNS_SOA_MICROSERVICES"
+      ]
+    },
+    "past-papers/essay-by-year/2022.md#试题一": {
+      "topic_id": "P09.ESSAY_COMPONENTS",
+      "subquestions": [],
+      "content_fingerprint": "a7f3fa51115cda805a68e2dae9ffd7053ad6b2d7bb9b47933a901d9264a291fe",
+      "canonical_item_id": "past-papers/essay-by-year/2022.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K11.COMPONENTS_4PLUS1"
+      ]
+    },
+    "past-papers/essay-by-year/2022.md#试题二": {
+      "topic_id": "P10.ESSAY_EVOLUTION",
+      "subquestions": [],
+      "content_fingerprint": "814c389517df3d1cfbd32aa0e42807e4705af809035a10f43ee1b024ff52945b",
+      "canonical_item_id": "past-papers/essay-by-year/2022.md#试题二",
+      "complete": true,
+      "covered_topic_ids": [
+        "K26.ARCH_EVOLUTION"
+      ]
+    },
+    "past-papers/essay-by-year/2022.md#试题三": {
+      "topic_id": "P14.ESSAY_BLOCKCHAIN",
+      "subquestions": [],
+      "content_fingerprint": "4ef5df3173b47c942bf7d7bdb38adab77cb492b2c05cdadcec46eb1efbca7d9c",
+      "canonical_item_id": "past-papers/essay-by-year/2022.md#试题三",
+      "complete": true,
+      "covered_topic_ids": [
+        "K27.EMERGING_TECH"
+      ]
+    },
+    "past-papers/essay-by-year/2022.md#试题四": {
+      "topic_id": "P02.ESSAY_BIG_DATA",
+      "subquestions": [],
+      "content_fingerprint": "726c28f5e4207674c14901a998d9b198e5d6f41c09ba5c295770012f4a843523",
+      "canonical_item_id": "past-papers/essay-by-year/2022.md#试题四",
+      "complete": true,
+      "covered_topic_ids": [
+        "K31.BIG_DATA_ARCHITECTURE"
+      ]
+    },
+    "past-papers/essay-by-year/2023下.md#试题一": {
+      "topic_id": "P03.ESSAY_RELIABILITY",
+      "subquestions": [],
+      "content_fingerprint": "4db5f590f46fc2356b24098d323c45c086b1e635656d202f01ef7fadd401182f",
+      "canonical_item_id": "past-papers/essay-by-year/2023下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K25.RELIABILITY_ENGINEERING"
+      ]
+    },
+    "past-papers/essay-by-year/2023下.md#试题二": {
+      "topic_id": "P16.ESSAY_MODELING",
+      "subquestions": [],
+      "content_fingerprint": "eb89ba2d691b368685432f230e44f9fa58a7691e4a4cfa893928102283131f5f",
+      "canonical_item_id": "past-papers/essay-by-year/2023下.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML"
+      ]
+    },
+    "past-papers/essay-by-year/2023下.md#试题三": {
+      "topic_id": "P05.ESSAY_EAI",
+      "subquestions": [],
+      "content_fingerprint": "916007d2e5dd8fa2eb70322074dc527eb4ba8bf1c90128f3a767a9ef78986e2c",
+      "canonical_item_id": "past-papers/essay-by-year/2023下.md#试题三",
+      "complete": false,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING",
+        "K31.BIG_DATA_ARCHITECTURE"
+      ]
+    },
+    "past-papers/essay-by-year/2023下.md#试题四": {
+      "topic_id": "P15.ESSAY_EDGE_CLOUD",
+      "subquestions": [],
+      "content_fingerprint": "436a7f835a82d335aadf6948d02ee413bc7a56ba976e2dd66cf5acc1677999cf",
+      "canonical_item_id": "past-papers/essay-by-year/2023下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K27.EMERGING_TECH"
+      ]
+    },
+    "past-papers/essay-by-year/2024下.md#试题一": {
+      "topic_id": "P10.ESSAY_EVOLUTION",
+      "subquestions": [],
+      "content_fingerprint": "5473078c788169e48239e1edc85ef4c0f8e4f7fa4345df47ac43d84235f313ba",
+      "canonical_item_id": "past-papers/essay-by-year/2024下.md#试题一",
+      "complete": false,
+      "covered_topic_ids": [
+        "K26.ARCH_EVOLUTION"
+      ]
+    },
+    "past-papers/essay-by-year/2024下.md#试题二": {
+      "topic_id": "P08.ESSAY_SOA",
+      "subquestions": [],
+      "content_fingerprint": "3d6275a1c667169056b00cf4490855fbb92f2362416c5a26d00c5cc28f0020c9",
+      "canonical_item_id": "past-papers/essay-by-year/2024下.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
+    },
+    "past-papers/essay-by-year/2024下.md#试题三": {
+      "topic_id": "P05.ESSAY_EAI",
+      "subquestions": [],
+      "content_fingerprint": "bca9ad8fee8e75484e198e8cac93b73289af5f68302e20ad61cf6f4b63257afc",
+      "canonical_item_id": "past-papers/essay-by-year/2024下.md#试题三",
+      "complete": false,
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING",
+        "K31.BIG_DATA_ARCHITECTURE"
+      ]
+    },
+    "past-papers/essay-by-year/2024下.md#试题四": {
+      "topic_id": "P19.ESSAY_DISTRIBUTED_TX",
+      "subquestions": [],
+      "content_fingerprint": "3093c875d8b606f841d9185a5545023ee585d9715e1012d22c7c42816ba5bd5d",
+      "canonical_item_id": "past-papers/essay-by-year/2024下.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K21.MESSAGING_CACHE"
+      ]
+    },
+    "past-papers/essay-by-year/2025上.md#试题一": {
+      "topic_id": "P12.ESSAY_TESTING",
+      "subquestions": [],
+      "content_fingerprint": "c16f04dfc915c3de94272f72b03bec0afdad28015b3f74e5036ce02da9c7697e",
+      "canonical_item_id": "past-papers/essay-by-year/2025上.md#试题一",
+      "complete": true,
+      "covered_topic_ids": [
+        "K05.TEST_CMMI_PATTERNS"
+      ]
+    },
+    "past-papers/essay-by-year/2025上.md#试题二": {
+      "topic_id": "P02.ESSAY_BIG_DATA",
+      "subquestions": [],
+      "content_fingerprint": "c190430ddbd346593f5a5946eff594ce5ebf0b40e75f7385a81068ace46b6da7",
+      "canonical_item_id": "past-papers/essay-by-year/2025上.md#试题二",
+      "complete": false,
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ]
+    },
+    "past-papers/essay-by-year/2025上.md#试题三": {
+      "topic_id": "P22.ESSAY_EVENT_DRIVEN",
+      "subquestions": [],
+      "content_fingerprint": "b69f9999ebd5dfd21a6b8f8a696c1919aa351248999308c43cfadbc91fe4bdbb",
+      "canonical_item_id": "past-papers/essay-by-year/2025上.md#试题三",
+      "complete": false,
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ]
+    },
+    "past-papers/essay-by-year/2025上.md#试题四": {
+      "topic_id": "P18.ESSAY_PERFORMANCE",
+      "subquestions": [],
+      "content_fingerprint": "0a720b5950cb3bb6e736e3ac45d7d26ba878a1b6f40cc4575c6fce49fa906056",
+      "canonical_item_id": "past-papers/essay-by-year/2025上.md#试题四",
+      "complete": false,
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS"
+      ]
+    }
+  }
+}

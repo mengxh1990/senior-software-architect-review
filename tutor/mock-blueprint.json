@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "version": 3,
+  "description": "覆盖全部K模块的75题诊断蓝图；题量为教学设计，不声称官方命题比例。英语保持同一篇5小题。",
+  "question_count": 75,
+  "topics": [
+    {
+      "topic_id": "K01.OS_MEMORY_KERNEL",
+      "count": 2
+    },
+    {
+      "topic_id": "K02.NETWORK_PROTOCOLS",
+      "count": 2
+    },
+    {
+      "topic_id": "K03.SOFTWARE_DESIGN_UML",
+      "count": 3
+    },
+    {
+      "topic_id": "K04.ARCH_STYLES_ABSD",
+      "count": 4
+    },
+    {
+      "topic_id": "K05.TEST_CMMI_PATTERNS",
+      "count": 3
+    },
+    {
+      "topic_id": "K06.DESIGN_DATA_VIEWS",
+      "count": 2
+    },
+    {
+      "topic_id": "K07.REALTIME_EMBEDDED",
+      "count": 2
+    },
+    {
+      "topic_id": "K08.SOFTWARE_PROCESS_MODELS",
+      "count": 2
+    },
+    {
+      "topic_id": "K09.QUALITY_SCENARIOS",
+      "count": 4
+    },
+    {
+      "topic_id": "K10.DATABASE_MODELING",
+      "count": 5
+    },
+    {
+      "topic_id": "K11.COMPONENTS_4PLUS1",
+      "count": 1
+    },
+    {
+      "topic_id": "K12.PATTERNS_SOA_MICROSERVICES",
+      "count": 3
+    },
+    {
+      "topic_id": "K13.VIEWS_SOA_LAYERING",
+      "count": 2
+    },
+    {
+      "topic_id": "K14.OS_SCHEDULING_FILES",
+      "count": 1
+    },
+    {
+      "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
+      "count": 1
+    },
+    {
+      "topic_id": "K16.REQUIREMENTS_MANAGEMENT",
+      "count": 2
+    },
+    {
+      "topic_id": "K17.IP_COPYRIGHT",
+      "count": 3
+    },
+    {
+      "topic_id": "K18.COMPUTER_ARCH_STORAGE",
+      "count": 2
+    },
+    {
+      "topic_id": "K19.ATAM_TACTICS",
+      "count": 3
+    },
+    {
+      "topic_id": "K20.SECURITY_FOUNDATIONS",
+      "count": 3
+    },
+    {
+      "topic_id": "K21.MESSAGING_CACHE",
+      "count": 3
+    },
+    {
+      "topic_id": "K22.ENGLISH_READING",
+      "count": 5
+    },
+    {
+      "topic_id": "K23.PROJECT_MANAGEMENT_METRICS",
+      "count": 3
+    },
+    {
+      "topic_id": "K24.INFORMATION_SYSTEMS",
+      "count": 1
+    },
+    {
+      "topic_id": "K25.RELIABILITY_ENGINEERING",
+      "count": 2
+    },
+    {
+      "topic_id": "K26.ARCH_EVOLUTION",
+      "count": 1
+    },
+    {
+      "topic_id": "K27.EMERGING_TECH",
+      "count": 2
+    },
+    {
+      "topic_id": "K28.MATH_OPERATIONS",
+      "count": 2
+    },
+    {
+      "topic_id": "K29.DESIGN_PATTERNS",
+      "count": 3
+    },
+    {
+      "topic_id": "K30.LANGUAGES_COMPILERS",
+      "count": 1
+    },
+    {
+      "topic_id": "K31.BIG_DATA_ARCHITECTURE",
+      "count": 2
+    }
+  ]
+}

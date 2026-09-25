@@ -136,14 +136,10 @@ class RealTagMapTests(unittest.TestCase):
         self.assertTrue(TAG_MAP_PATH.exists(), "标签表必须随仓库提交")
         tag_map = json.loads(TAG_MAP_PATH.read_text(encoding="utf-8"))
         self.assertEqual(tagging.validate_tag_map(tag_map), [])
-        self.assertEqual(len(tag_map), 9)
-        self.assertIn(
-            {"range": [69, 69], "tag": "§12", "label": "应用数学—数学模型"},
-            tag_map["2012下"],
-        )
+        self.assertEqual(tag_map, {}, "旧题组映射已退出训练")
 
     def test_tagged_papers_carry_headers_and_tags(self) -> None:
-        for year in ("2009下", "2013下", "2017下"):
+        for year in ("2018下", "2019下", "2022"):
             text = (REPO_ROOT / "past-papers" / "comprehensive-by-year" / f"{year}.md").read_text(encoding="utf-8")
             with self.subTest(year=year):
                 self.assertIn("## 第 1", text)

@@ -402,6 +402,10 @@
       .hero h1 { font-size: clamp(27px, 8vw, 36px); }
       .hero-note { min-height: 136px; }
     }
+    .module-evidence { margin-top: 12px; font-size: 12px; line-height: 1.7; }
+    .module-evidence summary { cursor: pointer; }
+    .module-evidence ul { max-height: 260px; overflow: auto; padding-left: 18px; }
+    .module-evidence li { margin: 9px 0; }
   </style>
 </head>
 <body>
@@ -410,17 +414,17 @@
   'use strict';
 
   const LEVELS = [
-    { key: 'green', label: '稳定掌握', note: '已达到稳定证据', color: '#23845c' },
+    { key: 'green', label: '测量达标', note: '按当前测量范围达标，不代表所有细点掌握', color: '#23845c' },
     { key: 'mint', label: '接近稳定', note: '表现不错，仍需跨日复测', color: '#76b982' },
-    { key: 'pale', label: '学习中', note: '已有证据，还需要补题', color: '#d8a946' },
+    { key: 'pale', label: '证据不足', note: '尚不足以判断稳定程度', color: '#d8a946' },
     { key: 'yellow', label: '薄弱待复习', note: '近期表现不够稳定', color: '#e9ba43' },
-    { key: 'red', label: '未测量 / 待开始', note: '尚无有效掌握证据', color: '#c9554c' },
+    { key: 'red', label: '未测量', note: '尚无测量证据，不代表薄弱', color: '#8b98a6' },
   ];
   const SKILL_LABELS = { recognition: '识别', application: '应用', production: '论证' };
   const SUBJECT_LABELS = { comprehensive: '综合知识', case: '案例分析', essay: '论文' };
   const SUBJECT_ORDER = ['comprehensive', 'case', 'essay'];
   const app = document.getElementById('app');
-  let curriculum = [], status = null, learningPlan = null, learningPlanError = null, activeSubject = 'all', searchTerm = '', sortMode = 'weak';
+  let curriculum = [], domains = [], moduleCapacity = {}, routeCapacity = {}, status = null, learningPlan = null, learningPlanError = null, activeSubject = 'all', searchTerm = '', sortMode = 'weak';
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -447,6 +451,7 @@
     const stateStatus = selectedSkill ? (focusedRecord?.status || 'unseen') : (current.status || 'unseen');
     const average = selectedSkill ? Number(focusedRecord?.mastery || 0) : null;
     let levelIndex = { pass_ready: 0, fragile: 1, learning: 2, unseen: 4 }[stateStatus] ?? 4;
+    if (focusedRecord?.learning_status) levelIndex = { sample_ready: 0, evidence_insufficient: 2, needs_practice: 3, unmeasured: 4 }[focusedRecord.learning_status] ?? levelIndex;
     const diagnosis = diagnosisFor(topic);
     if (diagnosis?.status === 'pending_remediation' || diagnosis?.status === 'due_review') levelIndex = 3;
     else if (diagnosis?.status === 'awaiting_review' && levelIndex === 0) levelIndex = 1;
@@ -486,12 +491,12 @@
       });
   }
   function renderTopbar() {
-    return `<header class="topbar"><div class="brand"><div class="brand-mark">航</div><div><div class="brand-title">系统架构设计师 · 学习航图</div><div class="brand-subtitle">PASS-FIRST KNOWLEDGE MAP</div></div></div><nav class="nav-links"><a class="nav-link secondary" href="/">返回模拟考试</a><a class="nav-link" href="#syllabus">知识点全景</a></nav></header>`;
+    return `<header class="topbar"><div class="brand"><div class="brand-mark">航</div><div><div class="brand-title">系统架构设计师 · 学习航图</div><div class="brand-subtitle">PASS-FIRST KNOWLEDGE MAP</div></div></div><nav class="nav-links"><a class="nav-link secondary" href="/">返回模拟考试</a><a class="nav-link" href="#syllabus">知识域与模块</a></nav></header>`;
   }
   function renderHero() {
     const profile = status?.profile || {};
     const days = daysUntil(profile.exam_date);
-    return `<section class="hero"><div><div class="eyebrow">A learner's architecture atlas</div><h1>把缺口变成<br>过线路线。</h1><p class="hero-copy">这里展示课程表中的全部知识节点。颜色只表达当前证据强弱：先处理红色与黄色，再用跨日复测把浅绿推成绿色。</p></div><aside class="hero-note"><div class="hero-note-label">距离下一次考试</div><div class="days-line"><strong>${days == null ? '—' : days}</strong><span>${days == null ? '' : '天'}</span></div><small>${profile.exam_date ? `目标考期 ${escapeHtml(profile.exam_date)}` : '尚未设置考期'} · 每日预算 ${formatNumber(profile.daily_minutes || 0)} 分钟</small></aside></section>`;
+    return `<section class="hero"><div><div class="eyebrow">A learner's architecture atlas</div><h1>把缺口变成<br>过线路线。</h1><p class="hero-copy">按知识域与 K 模块组织训练。未测、证据不足与已发现薄弱分别显示；模块抽样达标不代表全部内容掌握。笔记标签不参与评分。</p></div><aside class="hero-note"><div class="hero-note-label">距离下一次考试</div><div class="days-line"><strong>${days == null ? '—' : days}</strong><span>${days == null ? '' : '天'}</span></div><small>${profile.exam_date ? `目标考期 ${escapeHtml(profile.exam_date)}` : '尚未设置考期'} · 每日预算 ${formatNumber(profile.daily_minutes || 0)} 分钟</small></aside></section>`;
   }
   function renderScoreCard(key) {
     const score = subjectScore(key);
@@ -505,7 +510,7 @@
     const relevant = activeSubject === 'all' ? curriculum : curriculum.filter(topic => topic.subjects.includes(activeSubject));
     const counts = LEVELS.map((_, index) => relevant.filter(topic => progressFor(topic).levelIndex === index).length);
     const total = relevant.length || 1;
-    return `<section class="panel"><div class="panel-heading"><div><div class="eyebrow">Five-stage signal</div><h2>掌握程度分布</h2></div><p>${relevant.length} 个知识节点</p></div><div class="stage-summary">${LEVELS.map((level, index) => `<div class="stage-summary-item" style="--stage:${level.color}"><span class="stage-summary-count">${counts[index]}</span><span class="stage-summary-label">${level.label}</span><div class="stage-summary-bar"><span style="width:${Math.round(counts[index] / total * 100)}%"></span></div></div>`).join('')}</div></section>`;
+    return `<section class="panel"><div class="panel-heading"><div><div class="eyebrow">Five-stage signal</div><h2>掌握程度分布</h2></div><p>${relevant.length} 个模块与赛道 · ${domains.length} 个知识域</p></div><div class="stage-summary">${LEVELS.map((level, index) => `<div class="stage-summary-item" style="--stage:${level.color}"><span class="stage-summary-count">${counts[index]}</span><span class="stage-summary-label">${level.label}</span><div class="stage-summary-bar"><span style="width:${Math.round(counts[index] / total * 100)}%"></span></div></div>`).join('')}</div></section>`;
   }
   function renderFocus() {
     const heading = `<section class="panel focus-panel"><div class="panel-heading"><div><div class="eyebrow">Next useful moves</div><h2>薄弱点与计划项</h2></div><p>${activeSubject === 'all' ? '三科过线优先' : SUBJECT_LABELS[activeSubject]}</p></div>`;
@@ -527,8 +532,21 @@
   function renderOverview() { return `<section class="overview">${renderStageSummary()}${renderFocus()}</section>`; }
   function renderLegend() { return `<div class="legend" aria-label="掌握程度颜色图例">${LEVELS.map(level => `<span class="legend-item"><i class="legend-swatch" style="--stage:${level.color}"></i>${level.label}</span>`).join('')}</div>`; }
   function renderFilters() {
-    const tabs = [['all', '全部知识点'], ...SUBJECT_ORDER.map(key => [key, SUBJECT_LABELS[key]])];
-    return `<div class="controls"><div class="filter-tabs" role="tablist" aria-label="科目筛选">${tabs.map(([key, label]) => `<button class="filter-tab ${activeSubject === key ? 'active' : ''}" data-subject="${key}" role="tab" aria-selected="${activeSubject === key}">${label}</button>`).join('')}</div><div class="control-right"><input class="search-input" type="search" placeholder="搜索知识点…" aria-label="搜索知识点" value="${escapeHtml(searchTerm)}"><select class="sort-select" aria-label="排序方式"><option value="weak" ${sortMode === 'weak' ? 'selected' : ''}>按薄弱优先</option><option value="frequency" ${sortMode === 'frequency' ? 'selected' : ''}>按历年频率</option><option value="name" ${sortMode === 'name' ? 'selected' : ''}>按名称</option></select></div></div>`;
+    const tabs = [['all', '全部模块'], ...SUBJECT_ORDER.map(key => [key, SUBJECT_LABELS[key]])];
+    return `<div class="controls"><div class="filter-tabs" role="tablist" aria-label="科目筛选">${tabs.map(([key, label]) => `<button class="filter-tab ${activeSubject === key ? 'active' : ''}" data-subject="${key}" role="tab" aria-selected="${activeSubject === key}">${label}</button>`).join('')}</div><div class="control-right"><input class="search-input" type="search" placeholder="搜索模块…" aria-label="搜索模块" value="${escapeHtml(searchTerm)}"><select class="sort-select" aria-label="排序方式"><option value="weak" ${sortMode === 'weak' ? 'selected' : ''}>按薄弱优先</option><option value="frequency" ${sortMode === 'frequency' ? 'selected' : ''}>按参考考频</option><option value="name" ${sortMode === 'name' ? 'selected' : ''}>按名称</option></select></div></div>`;
+  }
+  function renderModuleEvidence(topic) {
+    if (!topic.id.startsWith('K')) {
+      const capacity = routeCapacity[topic.id];
+      if (!capacity) return '';
+      return `<div class="module-evidence"><p>完整题库：${capacity.distinct_items} 道 · 独立测量至少 ${capacity.requirements.distinct_items} 道</p>${capacity.resource_status !== 'available' ? '<p>测量资源不足；可练已有题，重复成功不增加独立题量。</p>' : ''}</div>`;
+    }
+    if ( activeSubject !== 'all' && activeSubject !== 'comprehensive') return '';
+    const record = topicState(topic).mastery?.recognition;
+    const capacity = moduleCapacity[topic.id];
+    const req = capacity?.requirements;
+    const labels = {unmeasured:'未测', partial:'证据不足', sufficient:'样本充分'};
+    return `<div class="module-evidence"><p>模块抽样：${labels[record?.measurement_status || 'unmeasured']} · ${record?.distinct_items || 0}/${req?.distinct_items || 6} 道不同题 · ${record?.days || 0}/2 天</p>${req?.contexts ? `<p>阅读材料 ${record?.contexts || 0}/${req.contexts} 份</p>` : ''}<p>题库：${capacity?.distinct_items || 0} 道不同题${capacity?.resource_status !== 'available' ? ' · 测量题量不足' : ''}</p><p>抽样表现不代表模块全部内容掌握。</p></div>`;
   }
   function renderTopicCard({ topic, progress }, index) {
     const subjectNames = topic.subjects.map(subject => SUBJECT_LABELS[subject]).join(' · ');
@@ -539,13 +557,16 @@
     const masteryText = activeSubject === 'all' ? '分维度查看' : (progress.evidence ? `${masteryPercent}%` : '—');
     const masteryWidth = masteryPercent == null ? 0 : masteryPercent;
     const diagnosis = progress.diagnosis ? `<div class="topic-meta"><span>${escapeHtml(progress.diagnosis.topic_name)}</span><span>${progress.diagnosis.status === 'awaiting_review' ? '等待跨日复测' : progress.diagnosis.status === 'due_review' ? '复测已到期' : '模考缺口待复习'}</span></div>` : '';
-    return `<article class="topic-card" style="--stage:${progress.level.color}; animation-delay:${Math.min(index, 18) * 24}ms"><div class="topic-top"><span class="node-code">${escapeHtml(topic.id)}</span><span class="stage-pill">${progress.level.label}</span></div><h3>${escapeHtml(topic.name)}</h3><div class="topic-domain">${subjectNames}</div><div class="mastery-row"><span>${activeSubject === 'all' ? '能力状态' : `${SKILL_LABELS[progress.selectedSkill]}掌握估计`}</span><strong>${masteryText}</strong></div><div class="mastery-bar" aria-label="掌握估计 ${masteryWidth}%"><span style="width:${masteryWidth}%"></span></div><div class="topic-meta"><span>${meta}</span><span>${next}</span></div>${diagnosis}<div class="skill-row">${chips}</div></article>`;
+    return `<article class="topic-card" style="--stage:${progress.level.color}; animation-delay:${Math.min(index, 18) * 24}ms"><div class="topic-top"><span class="node-code">${escapeHtml(topic.id.split('.')[0])}</span><span class="stage-pill">${progress.level.label}</span></div><h3>${escapeHtml(topic.name)}</h3><div class="topic-domain">${subjectNames}</div><div class="mastery-row"><span>${activeSubject === 'all' ? '能力状态' : progress.selectedSkill === 'recognition' && topic.id.startsWith('K') ? '模块掌握估计' : `${SKILL_LABELS[progress.selectedSkill]}掌握估计`}</span><strong>${masteryText}</strong></div><div class="mastery-bar" aria-label="掌握估计 ${masteryWidth}%"><span style="width:${masteryWidth}%"></span></div><div class="topic-meta"><span>${meta}</span><span>${next}</span></div>${diagnosis}<div class="skill-row">${chips}</div>${renderModuleEvidence(topic)}</article>`;
   }
   function renderSyllabus() {
     const topics = filteredTopics();
-    return `<section id="syllabus" class="syllabus-section"><div class="section-heading"><div class="section-title"><div class="eyebrow">Syllabus / ${curriculum.length} nodes</div><h2>知识点全景</h2><p>每张卡片只看证据：识别、应用、论证分别核算，不用平均分掩盖短板。</p></div>${renderLegend()}</div>${renderFilters()}<div class="topic-grid">${topics.length ? topics.map(renderTopicCard).join('') : '<div class="empty-state">没有找到匹配的知识点，换一个关键词试试。</div>'}</div></section>`;
+    const groups = [...domains.map(domain => ({name: domain.name, rows: topics.filter(row => row.topic.domain_id === domain.id)})),
+                    {name:'案例与论文练习入口', rows: topics.filter(row => !row.topic.id.startsWith('K'))}];
+    const cards = groups.filter(group => group.rows.length).map(group => `<h3 class="domain-heading">${escapeHtml(group.name)}</h3><div class="topic-grid">${group.rows.map(renderTopicCard).join('')}</div>`).join('');
+    return `<section id="syllabus" class="syllabus-section"><div class="section-heading"><div class="section-title"><div class="eyebrow">Syllabus / ${curriculum.length} nodes</div><h2>学习模块与赛道</h2><p>两层知识分类：知识域 → K 模块。案例、论文是平行练习入口；题目直接按模块记分。</p></div>${renderLegend()}</div>${renderFilters()}${cards || '<div class="empty-state">没有找到匹配的模块，换一个关键词试试。</div>'}</section>`;
   }
-  function render() { app.innerHTML = renderTopbar() + `<main class="shell">${renderHero()}${renderScores()}${renderOverview()}${renderSyllabus()}<p class="footnote">状态来自本机 .study/ 的有效证据。红色表示“还没有足够证据”，不等于能力被否定；答题记录会在下次刷新后更新。</p></main>`; bindEvents(); }
+  function render() { app.innerHTML = renderTopbar() + `<main class="shell">${renderHero()}${renderScores()}${renderOverview()}${renderSyllabus()}<p class="footnote">状态来自本机 .study/ 的有效证据。未测与证据不足不作为薄弱结论；答题记录会在下次刷新后更新。</p></main>`; bindEvents(); }
   function bindEvents() {
     app.querySelectorAll('[data-subject]').forEach(button => button.addEventListener('click', async () => { activeSubject = button.dataset.subject; learningPlan = null; learningPlanError = null; render(); await loadLearningPlan(); }));
     const search = app.querySelector('.search-input');
@@ -579,6 +600,9 @@
       if (!curriculumResponse.ok || !curriculumPayload.ok) throw new Error(curriculumPayload.error || '课程目录加载失败');
       status = statusPayload.data;
       curriculum = curriculumPayload.data.topics || [];
+      domains = curriculumPayload.data.domains || [];
+      moduleCapacity = curriculumPayload.data.module_capacity || {};
+      routeCapacity = curriculumPayload.data.route_capacity || {};
     } catch (error) {
       app.className = '';
       app.innerHTML = `<section class="error-box"><h1>${needsRepair ? '请先修复历史题目关联' : '学习航图暂时无法打开'}</h1><p>${escapeHtml(error.message)}</p><p>${needsRepair ? '请由当前 Agent 执行 <code>python3 scripts/tutor.py repair --normalize-question-links</code>，核对后刷新页面。' : '请先确认本地考试服务已启动，再刷新 <code>/dashboard.html</code>。'}</p></section>`;

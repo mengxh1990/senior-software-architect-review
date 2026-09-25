@@ -21,22 +21,13 @@
 
 因此这些文件的 **题干与答案可追溯到正式试卷**，`解析` 部分属于出版方整理，不是本仓库编写。
 
-## 综合知识覆盖（20 / 20 考期）
+## 综合知识训练覆盖（2018 年起，11 个考期）
 
 | 考期 | 仓库状态 | 来源类型 | 文件 |
 |---|---|---|---|
-| 2009 下 | 已结构化（购买扫描件转录） | real | [2009下.md](./comprehensive-by-year/2009下.md) |
-| 2010 下 | 已结构化（购买扫描件转录） | real | [2010下.md](./comprehensive-by-year/2010下.md) |
-| 2011 下 | 已结构化（购买扫描件转录） | real | [2011下.md](./comprehensive-by-year/2011下.md) |
-| 2012 下 | 已结构化（购买扫描件转录） | real | [2012下.md](./comprehensive-by-year/2012下.md) |
-| 2013 下 | 已结构化（购买扫描件转录） | real | [2013下.md](./comprehensive-by-year/2013下.md) |
-| 2014 下 | 已结构化（购买扫描件转录） | real | [2014下.md](./comprehensive-by-year/2014下.md) |
-| 2015 下 | 已结构化（购买扫描件转录） | real | [2015下.md](./comprehensive-by-year/2015下.md) |
-| 2016 下 | 已结构化（购买扫描件转录） | real | [2016下.md](./comprehensive-by-year/2016下.md) |
-| 2017 下 | 已结构化（购买扫描件转录） | real | [2017下.md](./comprehensive-by-year/2017下.md) |
 | 2018 下 | 已结构化 | real | [2018下.md](./comprehensive-by-year/2018下.md) |
 | 2019 下 | 已结构化 | real | [2019下.md](./comprehensive-by-year/2019下.md) |
-| 2020 | 已结构化 | real | [2020.md](./comprehensive-by-year/2020.md) |
+| 2020 | 24 个回忆题块，原 PDF 自身不完整，不能视为 75 题完整卷 | recalled_real | [2020.md](./comprehensive-by-year/2020.md) |
 | 2021 | 已结构化 | real | [2021.md](./comprehensive-by-year/2021.md) |
 | 2022 | 已结构化 | real | [2022.md](./comprehensive-by-year/2022.md) |
 | 2023 下 | 已结构化（回忆版考点清单 + rkpass 重建稿按内容匹配互证，多空题组已拆为逐空小题） | recalled_real | [2023下.md](./comprehensive-by-year/2023下.md) |
@@ -46,21 +37,21 @@
 | 2025 下 | 已结构化 | recalled_real | [2025下.md](./comprehensive-by-year/2025下.md) |
 | 2026 上 | 来源 PDF + 考情概要 | recalled_real | [2026上.md](./comprehensive-by-year/2026上.md) |
 
-**知识点标签**：20 个考期全部带标签。2018 下–2026 上沿用原有逐题 `§N.M` 标签；2009–2017 的转录版本按**题组**补 `§N` 标签（题组即试卷中连续的同一考点区间，与仓库既有的 `## 第 N-M 题：[§…]` 分组格式一致），标签表在 [`scripts/comprehensive_topic_tags.json`](../scripts/comprehensive_topic_tags.json)，由 [`scripts/tag_comprehensive_questions.py`](../scripts/tag_comprehensive_questions.py) 落盘，可用 `--preview` 复核题干与原文解析中的考查提示。
+**知识点标签**：综合训练只保留 2018 下–2026 上的转录。2009–2017 综合题已删除，旧题组映射及批量导入入口同步移除；私人历史记录不受影响。
 
-**案例与论文标签**：案例分析 19 个考期共 101 道题按 [`case-types/`](./case-types/) 的题型编号（案例 01–13）标注，论文 16 个考期共 67 道题按 [`paper-topics/`](./paper-topics/) 的主题编号（论文 01–13）标注，每道题的标签紧跟在标题下方。标签表在 [`scripts/case_essay_tags.json`](../scripts/case_essay_tags.json)，由 [`scripts/tag_case_essay.py`](../scripts/tag_case_essay.py) 落盘（`--preview` / `--check` / `--apply`）。少量不属于既有题型/主题的题目标为 `案例 00` / `论文 00`，便于后续补充对应 playbook。
+**案例与论文标签**：标签表现有案例 91 条、论文 60 条（含不同版本/答案区，不等于独立试卷题数）。2009–2017 仅保留 30 道案例和 28 道论文。案例编号 01–15，论文编号 01–13；逐题依据见 [历史题复核](HISTORICAL_CURATION.md)，标签与正文一致性由 `scripts/tag_case_essay.py --check` 校验。
 
-## 案例分析覆盖（19 / 20 考期）
+## 案例分析覆盖（20 / 20 考期）
 
 | 考期 | 仓库状态 | 来源类型 | 文件 |
 |---|---|---|---|
-| 2009 下 – 2017 下 | 已结构化（**原卷**：题干与插图，无答案）+ 研读版（题干与参考答案混排） | real | [2009下-原卷.md](./case-by-year/2009下-原卷.md) … [2017下-原卷.md](./case-by-year/2017下-原卷.md) |
+| 2009 下 – 2017 下 | 30 道经典选题；题干版与答案版配对，非完整年份卷 | real | [2009下-原卷.md](./case-by-year/2009下-原卷.md) … [2017下-原卷.md](./case-by-year/2017下-原卷.md) |
 | 2018 下 | 已结构化（购买扫描件转录，含参考答案） | real | [2018下.md](./case-by-year/2018下.md) |
 | 2019 下 | 已结构化（购买扫描件转录，含问题解析） | real | [2019下.md](./case-by-year/2019下.md) |
 | 2020 | 已结构化（购买扫描件转录，含答案） | real | [2020.md](./case-by-year/2020.md) |
 | 2021 | 已结构化（购买扫描件转录，含答案） | real | [2021.md](./case-by-year/2021.md) |
 | 2022 | 已结构化（原卷题干 + 文末答案解析） | real | [2022.md](./case-by-year/2022.md) |
-| 2023 下 | **缺失**（本地只有考点清单，无题干） | unstructured | — |
+| 2023 下 | 已结构化（**部分还原**：必答题题干、插图与参考答案齐全，选答题仅存考点线索） | recalled_real | [2023下.md](./case-by-year/2023下.md) |
 | 2024 上 | 已结构化 | recalled_real | [2024上.md](./case-by-year/2024上.md) |
 | 2024 下 | 已结构化 | recalled_real | [2024下.md](./case-by-year/2024下.md) |
 | 2025 上 | 已结构化（回忆还原版） | recalled_real | [2025上.md](./case-by-year/2025上.md) |
@@ -76,11 +67,12 @@
 
 | 考期 | 完整题干 | 来源类型 |
 |---|---|---|
-| 2009 下 – 2018 下 | ✅（购买扫描件转录，另含参考要点） | real |
+| 2009 下 – 2017 下 | 28 道经典选题，原题号保留；非完整年份卷 | real |
+| 2018 下 | ✅（购买扫描件转录，另含参考要点） | real |
 | 2019 下 | ✅（购买扫描件转录，含解析） | real |
 | 2020 | ✅（购买扫描件转录，含参考要点） | real |
 | 2021 – 2022 | ✅（购买扫描件转录） | real |
-| 2023 下 | ⛔ 仅有题目线索，无完整题干 | unstructured |
+| 2023 下 | 部分还原（四个论题名称已多源确认，题干正文与小问仅部分还原） | recalled_real |
 | 2024 上 | 见 [`incoming-raw/2024年上半年/论文.md`](./incoming-raw/2024年上半年/论文.md) | recalled_real |
 | 2024 下 | ✅（回忆还原版转录） | recalled_real |
 | 2025 上 | ✅（回忆还原版转录） | recalled_real |
@@ -107,3 +99,7 @@
 - 该口径有回归测试保护（`tests/test_import_las_papers.py`），确保被剔除的图片不会再出现在 `assets/`。
 
 当前 136 张插图全部通过"无广告文案、无水印残留"复核。若权利人对收录有异议，请提交 Issue 申请移除。
+
+## 历史题筛选边界
+
+2009–2017 综合题已退出训练；旧案例/论文的保留理由与标签复核见 [HISTORICAL_CURATION.md](HISTORICAL_CURATION.md)。来源 PDF 留存于本机，仓库不复制已删除题目的全文作为另一套训练入口。

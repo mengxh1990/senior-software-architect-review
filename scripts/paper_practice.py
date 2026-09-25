@@ -31,10 +31,14 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import hashlib
 import re
 import sys
 from pathlib import Path
 from typing import Sequence
+
+import knowledge_taxonomy
+import sanitize_bank
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TAGGER_PATH = REPO_ROOT / "scripts" / "tag_case_essay.py"
@@ -46,7 +50,7 @@ ANSWER_MARKER_RE = re.compile(
 )
 # 注意：裸的「【解析】」不能当切分点——在 2009–2018 的答案详解转录版里，
 # 它是"问题→答案→解析"结构中的解析标记，用它切分会把答案留在题干里。
-QUESTION_BLOCK_RE = re.compile(r"^#{2,4}[ \t]*【?\s*问题\s*\d+\s*】?[^\n]*$", re.MULTILINE)
+QUESTION_BLOCK_RE = re.compile(r"^#{2,4}[ \t]*【?\s*问题\s*\d+(?!\d)(?![ \t]*解析)\s*】?[^\n]*$", re.MULTILINE)
 TAG_LINE_RE = re.compile(r"^>[ \t]*\*\*(?:题型|主题)\*\*[:：][^\n]*$", re.MULTILINE)
 APPENDIX_DIVIDER_RE = re.compile(r"^#{1,3}[ \t]*参考答案[^\n]*$", re.MULTILINE)
 IMAGE_LINK_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
@@ -69,11 +73,12 @@ tagger = _load_tagger()
 
 def split_question_from_answer(body: str) -> tuple[str, str] | None:
     """Return ``(stem, answer)`` when the answer boundary can be trusted."""
+    body = re.sub(r"\*\*(参考答案|答案解析|答案)\*\*\s*[:：]", r"\1：", body)
     marker = ANSWER_MARKER_RE.search(body)
     if marker:
         stem = body[: marker.start()]
         answer = body[marker.end() :]
-        if len(stem.strip()) > 20 and len(answer.strip()) > 20:
+        if len(stem.strip()) > 5 and len(answer.strip()) > 5:
             return stem, answer
     return None
 
@@ -98,32 +103,34 @@ def classify(body: str) -> tuple[str, str | None, str | None]:
     2009–2018 的答案详解转录版、2020、2024 下、2025 下等把答案直接接在
     题干后面且没有标记，一律标为研读材料，避免把参考答案当题干发出去。
     """
+    body = re.sub(r"\*\*(参考答案|答案解析|答案)\*\*\s*[:：]", r"\1：", body)
     if is_answer_key(body):
         return "answer_key", None, body.strip()
-    # 一道试题可能含多个小问，逐个切分后再拼回去，避免只切到第一个小问
-    blocks = QUESTION_BLOCK_RE.split(body)
-    if len(blocks) > 1:
-        stems: list[str] = [blocks[0].strip()]
-        answers: list[str] = []
-        all_split = True
-        for block in blocks[1:]:
-            heading = block.split("\n", 1)[0].strip()
-            split = split_question_from_answer(block)
+    markers = list(ANSWER_MARKER_RE.finditer(body))
+    if len(markers) == 1 and "参考答案" in markers[0].group(0):
+        split = split_question_from_answer(body)
+        if split:
+            return "blind", split[0].strip(), split[1].strip()
+    headings = list(QUESTION_BLOCK_RE.finditer(body))
+    if headings:
+        stems = [body[:headings[0].start()].strip()]
+        answers = []
+        for index, heading in enumerate(headings):
+            end = headings[index+1].start() if index+1 < len(headings) else len(body)
+            split = split_question_from_answer(body[heading.end():end])
             if split is None:
-                # 只要有一个小问切不开，就不能保证题干里没有混入答案
-                all_split = False
                 break
-            stem_part, answer_part = split
-            stems.append(f"### {heading}\n{stem_part.strip()}" if heading else stem_part.strip())
-            answers.append(f"### {heading}\n{answer_part.strip()}" if heading else answer_part.strip())
-        if all_split and answers:
-            stem_text = re.sub(r"\n{3,}", "\n\n", "\n\n".join(p for p in stems if p)).strip()
-            answer_text = re.sub(r"\n{3,}", "\n\n", "\n\n".join(answers)).strip()
-            return "blind", stem_text, answer_text
+            stems.append(heading.group(0) + "\n" + split[0].strip())
+            answers.append(heading.group(0) + "\n" + split[1].strip())
+        else:
+            return "blind", "\n\n".join(stems).strip(), "\n\n".join(answers).strip()
+        # A single answer section after all questions is also a safe boundary.
+        marker = ANSWER_MARKER_RE.search(body)
+        if marker and marker.start() < headings[-1].start():
+            return "read_only", body.strip(), None
     split = split_question_from_answer(body)
     if split:
-        stem, answer = split
-        return "blind", re.sub(r"\n{3,}", "\n\n", stem).strip(), re.sub(r"\n{3,}", "\n\n", answer).strip()
+        return "blind", split[0].strip(), split[1].strip()
     return "read_only", body.strip(), None
 
 
@@ -143,6 +150,66 @@ def normalise_body(body: str) -> tuple[str, list[str], bool]:
     return re.sub(r"\n{3,}", "\n\n", text).strip(), figures, missing_figure
 
 
+def assess_materials(item: dict) -> dict:
+    """Blind separation, complete material and topic mapping are distinct gates."""
+    stem = item.get("stem", "")
+    issues = []
+    if item.get("practice_mode") != "blind":
+        issues.append("not_blind")
+    if re.search(r"暂缺|待补(?:充|齐)?|尚未还原|未还原|不得据以出题|选项内容[.。]空|题干[、与及].{0,15}缺失", stem):
+        issues.append("incomplete_question")
+    if re.search(r"[…]{2,}|\.{4,}", stem):
+        issues.append("incomplete_source_text")
+    if item.get("missing_figure") and (item["subject"] == "case" or re.search(r"如图|见图|下图|图中|下表", stem)):
+        issues.append("missing_required_figure")
+    root = REPO_ROOT / "past-papers" / "assets" / item["year"]
+    if any(not (root / name).is_file() for name in item.get("figures", [])):
+        issues.append("missing_figure_asset")
+    if not item.get("figures") and re.search(r"如图|见图|图\s*\d+[-－]\d+|在图中|填写图中", stem):
+        issues.append("missing_required_figure")
+    if re.search(r"(?:表\s*\d+|下表|表中).{0,35}(?:空白|填|所示)|填.{0,20}表\s*\d+", stem) and not sanitize_bank.MARKDOWN_TABLE_RE.search(stem) and not item.get("figures"):
+        issues.append("missing_required_table")
+    if item["subject"] == "case":
+        question_headers = re.findall(r"^[ \t]*(?:#{1,4}[ \t]*)?(?:【)?问题[ \t]*\d+(?!\d)(?![ \t]*解析)[^\n]*", stem, re.M)
+        scores = [re.search(r"[（(](\d+)[ \t]*分", heading) for heading in question_headers]
+        if scores and all(scores) and sum(int(score.group(1)) for score in scores) != 25:
+            issues.append("incomplete_scoring_material")
+
+        if not item.get("figures") and re.search(r"(?:效用树|架构图|序列图|状态图|活动图|用例图).{0,15}(?:填空|空白|填入)|(?:完成|补充|填写).{0,20}(?:图|效用树)", stem):
+            issues.append("missing_required_figure")
+    if item["subject"] == "essay" and (len(stem) < 150 or not re.search(r"请围绕|依次|分别|概要|论述|讨论", stem)):
+        issues.append("incomplete_essay_prompt")
+    if str(item.get("tag", "")).endswith("00"):
+        issues.append("unclassified")
+    metadata = knowledge_taxonomy.subjective_metadata(item["id"])
+    if metadata:
+        item = {**item, "topic_id": metadata["topic_id"], "covered_topic_ids": metadata.get("covered_topic_ids", []),
+                "subquestions": metadata.get("subquestions", []),
+                "canonical_item_id": metadata.get("canonical_item_id", item["id"])}
+        if hashlib.sha256(stem.encode()).hexdigest() != metadata.get("content_fingerprint"):
+            issues.append("classification_content_changed")
+    elif item.get("practice_mode") == "blind":
+        issues.append("missing_module_mapping")
+    return {**item, "quality_issues": sorted(set(issues)),
+            "quality_status": "invalid" if issues else "ready", "complete": not issues}
+
+
+def eligible(item: dict, *, allow_missing_figures: bool = False) -> bool:
+    if item.get("practice_mode") != "blind":
+        return False
+    issues = set(item.get("quality_issues", []))
+    if allow_missing_figures:
+        issues -= {"missing_required_figure", "missing_figure_asset"}
+    return not issues and (allow_missing_figures or item.get("subject") == "essay" or not item.get("missing_figure"))
+
+
+def _stem_figures(stem: str, figures: list[str]) -> tuple[str, list[str]]:
+    numbers = list(dict.fromkeys(int(n) for n in re.findall(r"【图 (\d+)】", stem)))
+    selected = [figures[n-1] for n in numbers if 0 < n <= len(figures)]
+    mapping = {old: i+1 for i, old in enumerate(numbers)}
+    return re.sub(r"【图 (\d+)】", lambda m: f"【图 {mapping[int(m.group(1))]}】", stem), selected
+
+
 def build_case_items() -> list[dict]:
     """Every 案例 question with its practice mode and (held back) answer."""
     items: list[dict] = []
@@ -156,7 +223,8 @@ def build_case_items() -> list[dict]:
         # 整卷唯一的「参考答案与解析」分隔标题属于卷末附录；每道题各有一个
         # 「参考答案」标题的文件（如 2026 上）不能裁，否则会切掉答案标记
         appendix_divider = len(APPENDIX_DIVIDER_RE.findall(text)) == 1
-        for index, (numeral, title, body) in enumerate(tagger.split_questions(text)):
+        for index, record in enumerate(tagger.split_question_records(text)):
+            numeral, title, body, batch = record["number"], record["title"], record["body"], record["batch"]
             tag = tags[index] if index < len(tags) else {"tag": "", "label": ""}
             if appendix_divider:
                 body = APPENDIX_DIVIDER_RE.split(body)[0]
@@ -166,9 +234,11 @@ def build_case_items() -> list[dict]:
                 # 原卷（题干与答案天然分离）卷面本身不含答案，可直接盲练
                 mode, stem_text, answer_text = "blind", stem_raw, None
             item = {
-                "id": f"past-papers/case-by-year/{path.stem}.md#试题{numeral}",
+                "id": f"past-papers/case-by-year/{path.stem}.md#" + (f"批次{batch}-" if batch else "") + f"试题{numeral}",
+                "batch": batch,
                 "subject": "case",
                 "year": base_year,
+                "selection_only": bool(re.fullmatch(r"20(?:09|1[0-7])下", base_year)),
                 "numeral": numeral,
                 "title": title,
                 "tag": tag.get("tag", ""),
@@ -181,7 +251,7 @@ def build_case_items() -> list[dict]:
             if missing_figure:
                 item["figure_note"] = MISSING_FIGURE_NOTE
             item["practice_mode"] = mode
-            item["stem"] = stem_text or ""
+            item["stem"], item["figures"] = _stem_figures(stem_text or "", figures)
             item["answer"] = answer_text
             if mode == "answer_key":
                 item["id"] = f"{item['id']}-答案区"
@@ -209,7 +279,7 @@ def build_case_items() -> list[dict]:
             item.pop("note", None)
         item["answer"] = key
         item["note"] = "参考答案取自同卷的答案区"
-    return items
+    return [assess_materials(item) for item in items]
 
 
 def practice_items(items: list[dict]) -> list[dict]:
@@ -227,6 +297,13 @@ def build_essay_items() -> list[dict]:
         for index, (numeral, title, body) in enumerate(tagger.split_questions(text)):
             tag = tags[index] if index < len(tags) else {"tag": "", "label": ""}
             stem, figures, missing_figure = normalise_body(body)
+            answer = None
+            study_note = re.search(r"^#{1,4}\s*回忆稿附带的参考要点", stem, re.M)
+            if study_note:
+                stem, answer = stem[:study_note.start()].strip(), stem[study_note.end():].strip()
+            separated = split_question_from_answer(stem)
+            if separated:
+                stem, answer = (part.strip() for part in separated)
             looks_like_question = bool(
                 re.search(r"请围绕|依次从以下|进行论述", stem) or title.startswith("论")
             )
@@ -235,6 +312,7 @@ def build_essay_items() -> list[dict]:
                     "id": f"past-papers/essay-by-year/{path.stem}.md#试题{numeral}",
                     "subject": "essay",
                     "year": path.stem,
+                    "selection_only": bool(re.fullmatch(r"20(?:09|1[0-7])下", path.stem)),
                     "numeral": numeral,
                     "title": title,
                     "tag": tag.get("tag", ""),
@@ -244,30 +322,37 @@ def build_essay_items() -> list[dict]:
                     "stem": stem,
                     "figures": figures,
                     "missing_figure": missing_figure,
-                    "answer": None,
+                    "answer": answer,
                 }
             )
             if not looks_like_question:
                 items[-1]["note"] = "不是独立题目（多为正文子标题），不作为练习题目"
-    return items
+    return [assess_materials(item) for item in items]
 
 
 def select(items: list[dict], *, tag: str | None, year: str | None, numeral: str | None,
-           blind_only: bool, skip_missing_figures: bool) -> list[dict]:
+           blind_only: bool, skip_missing_figures: bool, batch: str | None = None,
+           item_id: str | None = None) -> list[dict]:
     chosen = []
     for item in items:
+        if item_id and item["id"] != item_id:
+            continue
+        if batch and item.get("batch") != batch:
+            continue
         if tag and not item["tag"].startswith(tag):
             continue
         if year and item["year"] != year:
             continue
         if numeral and item["numeral"] != numeral:
             continue
-        if blind_only and item["practice_mode"] != "blind":
+        if blind_only and not eligible(item, allow_missing_figures=not skip_missing_figures):
             continue
-        # 缺图默认照常出题（教练用文字描述图意），需要完整插图时才跳过
+        # An explicit partial-material request never authorizes invented figures.
         if skip_missing_figures and item["subject"] == "case" and item["missing_figure"]:
             continue
         chosen.append(item)
+    if year and numeral and not batch and not item_id and len({i.get("batch") for i in chosen}) > 1:
+        raise ValueError("该考期题号存在多个批次；请传 --batch 或 --item-id")
     return chosen
 
 
@@ -298,6 +383,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--topic", dest="topic", default=None, help="论文主题，如 论文 06 / 06")
     parser.add_argument("--year", default=None)
     parser.add_argument("--numeral", default=None, help="试题号，如 一")
+    parser.add_argument("--batch", help="多批次试卷的批次号，如 1")
+    parser.add_argument("--item-id", help="精确题目身份，推荐用于揭示答案")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--reveal", action="store_true", help="作答后取参考答案")
     parser.add_argument("--include-readonly", action="store_true")
@@ -325,6 +412,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         tag=tag,
         year=args.year,
         numeral=args.numeral,
+        batch=args.batch,
+        item_id=args.item_id,
         blind_only=not args.include_readonly,
         skip_missing_figures=args.skip_missing_figures or not args.allow_missing_figures,
     )
@@ -356,4 +445,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except ValueError as error:
+        print(str(error), file=sys.stderr)
+        sys.exit(2)

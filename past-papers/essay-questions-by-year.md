@@ -4,7 +4,7 @@
 >
 > ⚠️ 题目仅作主题映射使用，**不含答案**，避免版权风险。
 >
-> 📄 需要**完整题干与小问**做写作训练时，用 [`essay-by-year/`](./essay-by-year/)（按考期存放，2009 下–2022、2024 下、2025 上已覆盖）。
+> 📄 需要**完整题干与小问**做写作训练时，用 [`essay-by-year/`](./essay-by-year/)（按考期存放，2009 下–2022、2023 下、2024 下、2025 上已覆盖）。
 
 ## 速查使用说明
 
@@ -56,14 +56,16 @@
 | 3 | 模型驱动软件开发方法与应用 | 01 | [01-architecture-design.md](paper-samples/01-architecture-design.md) |
 | 4 | 论单元测试在软件回归测试中的应用和分析 | 12 | [12-testing-qa.md](paper-samples/12-testing-qa.md) |
 
-### 2023 年
+### 2023 年下半年
 
 | # | 题目 | 主题 | 配套范文 |
 |---|---|---|---|
-| 1 | 论面向对象设计的应用与实现 | 10 | [10-design-patterns.md](paper-samples/10-design-patterns.md) |
-| 2 | 论多数据源集成的应用与实现 | 11 | [11-enterprise-integration.md](paper-samples/11-enterprise-integration.md) |
-| 3 | 论软件可靠性模型的设计与实现 | 03 | [03b-reliability-evaluation.md](paper-samples/03b-reliability-evaluation.md) |
-| 4 | 论边缘计算技术的设计与实现 | - | （新趋势：见第 5 节） |
+| 1 | 论可靠性评估模型 | 03 | [03b-reliability-evaluation.md](paper-samples/03b-reliability-evaluation.md) |
+| 2 | 论面向对象分析方法及应用 | 10 | [10-design-patterns.md](paper-samples/10-design-patterns.md) |
+| 3 | 论多数据源企业集成 | 11 | [11-enterprise-integration.md](paper-samples/11-enterprise-integration.md) |
+| 4 | 论边云协同 | - | （新趋势：见第 5 节） |
+
+> 2023 年只举行一次考试（11 月，机考改革首年）。题名以希赛网、环球网校等多家机构汇总为准；考后回忆稿另用简写（可靠性分析与评价方法 / 面向对象分析 / 多数据源 / 边云协同）。完整题面与还原度说明见 [`essay-by-year/2023下.md`](./essay-by-year/2023下.md)。
 
 ### 2022 年
 
@@ -110,90 +112,82 @@
 | 3 | 论面向服务架构设计及其应用 | 07 | [07-soa.md](paper-samples/07-soa.md) |
 | 4 | 论 NoSQL 数据库技术及其应用 | 06 | [06-big-data-nosql.md](paper-samples/06-big-data-nosql.md) |
 
-### 2017 年
+### 2017 年（经典选题）
 
-| # | 题目 | 主题 | 配套范文 |
+| 原题号 | 题目 | 主题 | 题干 |
 |---|---|---|---|
-| 1 | 论软件系统建模方法及其应用 | 01 | [01-architecture-design.md](paper-samples/01-architecture-design.md) |
-| 2 | 论软件架构风格 | 01 | [01b-architecture-style.md](paper-samples/01b-architecture-style.md) |
-| 3 | 论无服务器架构（Serverless）及其应用 | 13 | [13-devops-serverless.md](paper-samples/13-devops-serverless.md) |
-| 4 | 论软件质量保证及其应用 | 12 | [12-testing-qa.md](paper-samples/12-testing-qa.md) |
+| 一 | 论软件架构风格 | 论文 01 · 软件架构风格 | [原题](essay-by-year/2017下.md) |
+| 二 | 论软件系统建模方法及其应用 | 论文 01 · 软件架构设计（系统建模） | [原题](essay-by-year/2017下.md) |
+| 三 | 论无服务器架构及其应用 | 论文 13 · 无服务器架构（Serverless） | [原题](essay-by-year/2017下.md) |
+| 四 | 论软件质量保证及其应用 | 论文 12 · 软件测试与质量保证 | [原题](essay-by-year/2017下.md) |
 
-### 2016 年
+### 2016 年（经典选题）
 
-| # | 题目 | 主题 | 配套范文 |
+| 原题号 | 题目 | 主题 | 题干 |
 |---|---|---|---|
-| 1 | 论软件系统架构评估 | 02 | [02-architecture-evaluation.md](paper-samples/02-architecture-evaluation.md) |
-| 2 | 论软件设计模式及其应用 | 10 | [10-design-patterns.md](paper-samples/10-design-patterns.md) |
-| 3 | 论数据访问层设计技术及其应用 | 06 | [06-big-data-nosql.md](paper-samples/06-big-data-nosql.md) |
-| 4 | 论微服务架构及其应用 | 05 | [05b-microservice-2021.md](paper-samples/05b-microservice-2021.md) |
+| 一 | 论软件系统架构评估 | 论文 02 · 软件架构评估（ATAM） | [原题](essay-by-year/2016下.md) |
+| 二 | 论软件设计模式及其应用 | 论文 10 · 设计模式在架构中的应用 | [原题](essay-by-year/2016下.md) |
+| 三 | 论数据访问层设计技术及其应用 | 论文 01 · 软件架构设计（数据访问层） | [原题](essay-by-year/2016下.md) |
+| 四 | 论微服务架构及其应用 | 论文 05 · 微服务架构 | [原题](essay-by-year/2016下.md) |
 
-### 2015 年
+### 2015 年（经典选题）
 
-| # | 题目 | 主题 | 配套范文 |
+| 原题号 | 题目 | 主题 | 题干 |
 |---|---|---|---|
-| 1 | 论应用服务器基础软件 | - | （冷门：考中间件原理） |
-| 2 | 论软件系统架构风格 | 01 | [01b-architecture-style.md](paper-samples/01b-architecture-style.md) |
-| 3 | 论面向服务的架构及其应用 | 07 | [07-soa.md](paper-samples/07-soa.md) |
-| 4 | 论企业集成平台的技术与应用 | 11 | [11-enterprise-integration.md](paper-samples/11-enterprise-integration.md) |
+| 二 | 论软件系统架构风格 | 论文 01 · 软件架构风格 | [原题](essay-by-year/2015下.md) |
+| 三 | 论面向服务的架构及其应用 | 论文 07 · 面向服务架构（SOA） | [原题](essay-by-year/2015下.md) |
+| 四 | 论企业集成平台的技术与应用 | 论文 11 · 企业应用集成（EAI） | [原题](essay-by-year/2015下.md) |
 
-### 2014 年
+### 2014 年（经典选题）
 
-| # | 题目 | 主题 | 配套范文 |
+| 原题号 | 题目 | 主题 | 题干 |
 |---|---|---|---|
-| 1 | 论软件需求管理 | - | （冷门：需求工程） |
-| 2 | 论非功能需求对企业应用架构设计的影响 | 02 | [02-architecture-evaluation.md](paper-samples/02-architecture-evaluation.md) |
-| 3 | 论软件的可靠性设计 | 03 | [03-reliability-design.md](paper-samples/03-reliability-design.md) |
-| 4 | 论网络安全体系设计 | 04 | [04b-network-security.md](paper-samples/04b-network-security.md) |
+| 二 | 论非功能性需求对企业应用架构设计的影响 | 论文 01 · 软件架构设计（非功能需求） | [原题](essay-by-year/2014下.md) |
+| 三 | 论软件的可靠性设计 | 论文 03 · 系统可靠性设计 | [原题](essay-by-year/2014下.md) |
+| 四 | 论网络安全体系设计 | 论文 04 · 系统安全性与保密性设计 | [原题](essay-by-year/2014下.md) |
 
-### 2013 年
+### 2013 年（经典选题）
 
-| # | 题目 | 主题 | 配套范文 |
+| 原题号 | 题目 | 主题 | 题干 |
 |---|---|---|---|
-| 1 | 论软件架构建模技术与应用 | 01 | [01-architecture-design.md](paper-samples/01-architecture-design.md) |
-| 2 | 论企业应用系统的分层架构风格 | 01 | [01b-architecture-style.md](paper-samples/01b-architecture-style.md) |
-| 3 | 论软件可靠性设计技术的应用 | 03 | [03-reliability-design.md](paper-samples/03-reliability-design.md) |
-| 4 | 论分布式存储系统架构设计 | 06 | [06-big-data-nosql.md](paper-samples/06-big-data-nosql.md) |
+| 一 | 软件架构建模技术与应用 | 论文 01 · 软件架构设计（4+1 视图） | [原题](essay-by-year/2013下.md) |
+| 二 | 企业应用系统的分层架构风格 | 论文 01 · 软件架构设计（分层） | [原题](essay-by-year/2013下.md) |
+| 三 | 论软件可靠性设计技术的应用 | 论文 03 · 系统可靠性设计 | [原题](essay-by-year/2013下.md) |
+| 四 | 论分布式存储系统架构设计 | 论文 06 · 分布式存储架构 | [原题](essay-by-year/2013下.md) |
 
-### 2012 年
+### 2012 年（经典选题）
 
-| # | 题目 | 主题 | 配套范文 |
+| 原题号 | 题目 | 主题 | 题干 |
 |---|---|---|---|
-| 1 | 论基于架构的软件设计方法及应用（ABSD） | 01 | [01-architecture-design.md](paper-samples/01-architecture-design.md) |
-| 2 | 论企业应用系统的数据持久层架构设计 | 06 | [06-big-data-nosql.md](paper-samples/06-big-data-nosql.md) |
-| 3 | 论决策支持系统的开发与应用（DSS） | - | （冷门：BI/DSS） |
-| 4 | 论企业信息化规划的实施与应用 | - | （冷门：信息化管理） |
+| 一 | 论基于架构的软件设计方法及应用 | 论文 01 · 软件架构设计（ABSD） | [原题](essay-by-year/2012下.md) |
+| 二 | 论企业应用系统的数据持久层架构设计 | 论文 01 · 软件架构设计（数据持久层） | [原题](essay-by-year/2012下.md) |
 
-### 2011 年
+### 2011 年（经典选题）
 
-| # | 题目 | 主题 | 配套范文 |
+| 原题号 | 题目 | 主题 | 题干 |
 |---|---|---|---|
-| 1 | 论模型驱动架构在系统开发中的应用（MDA） | 01 | [01-architecture-design.md](paper-samples/01-architecture-design.md) |
-| 2 | 论企业集成平台的架构设计 | 11 | [11-enterprise-integration.md](paper-samples/11-enterprise-integration.md) |
-| 3 | 论企业架构管理与应用 | 01 | [01-architecture-design.md](paper-samples/01-architecture-design.md) |
-| 4 | 论软件需求获取技术及应用 | - | （冷门：需求工程） |
+| 一 | 论模型驱动架构在系统开发中的应用 | 论文 01 · 软件架构设计（MDA） | [原题](essay-by-year/2011下.md) |
+| 二 | 论企业集成平台的架构设计 | 论文 11 · 企业应用集成（EAI） | [原题](essay-by-year/2011下.md) |
 
-### 2010 年
+### 2010 年（经典选题）
 
-| # | 题目 | 主题 | 配套范文 |
+| 原题号 | 题目 | 主题 | 题干 |
 |---|---|---|---|
-| 1 | 论软件的静态演化和动态演化及其应用 | 09 | [09-architecture-evolution.md](paper-samples/09-architecture-evolution.md) |
-| 2 | 论数据挖掘技术的应用 | 06 | [06-big-data-nosql.md](paper-samples/06-big-data-nosql.md) |
-| 3 | 论大规模分布式系统缓存设计策略 | 06 | [06-big-data-nosql.md](paper-samples/06-big-data-nosql.md) |
-| 4 | 论软件可靠性评价 | 03 | [03b-reliability-evaluation.md](paper-samples/03b-reliability-evaluation.md) |
+| 一 | 论软件的静态演化和动态演化及其应用 | 论文 09 · 软件架构演化与维护 | [原题](essay-by-year/2010下.md) |
+| 三 | 大规模分布式系统缓存设计策略 | 论文 01 · 软件架构设计（分布式缓存） | [原题](essay-by-year/2010下.md) |
+| 四 | 论软件可靠性评价 | 论文 03 · 软件可靠性评价 | [原题](essay-by-year/2010下.md) |
 
-### 2009 年
+### 2009 年（经典选题）
 
-| # | 题目 | 主题 | 配套范文 |
+| 原题号 | 题目 | 主题 | 题干 |
 |---|---|---|---|
-| 1 | 论基于 DSSA 的软件架构设计与应用 | 01 | [01-architecture-design.md](paper-samples/01-architecture-design.md) |
-| 2 | 论信息系统建模方法 | 01 | [01-architecture-design.md](paper-samples/01-architecture-design.md) |
-| 3 | 论基于 REST 服务的 Web 应用系统设计 | 05 | [05-microservice-cloud-native.md](paper-samples/05-microservice-cloud-native.md) |
-| 4 | 论软件可靠性设计与应用 | 03 | [03-reliability-design.md](paper-samples/03-reliability-design.md) |
+| 一 | 论基于 DSSA 的软件架构设计与应用 | 论文 01 · 软件架构设计（DSSA） | [原题](essay-by-year/2009下.md) |
+| 二 | 论信息系统建模方法 | 论文 01 · 软件架构设计（系统建模） | [原题](essay-by-year/2009下.md) |
+| 四 | 论软件可靠性设计与应用 | 论文 03 · 系统可靠性设计 | [原题](essay-by-year/2009下.md) |
 
-## 3. 主题分布热力图（统计截点：2024）
+## 3. 历史主题分布（旧统计，不用于当前选题排序）
 
-> 2025 考期尚未补齐，2026 上半年又是不完整回忆版，因此下表暂不强行重算精确频次。
+> 本表保留历史统计语境，标签曾有错配，不能用作当前选题权重；精选后的数量也不等于历年考试频率。2025 考期尚未补齐，2026 上半年又是不完整回忆版，因此下表暂不强行重算精确频次。
 
 | 主题 | 出现次数 | 占比 | 频度 | 推荐准备度 |
 |---|---|---|---|---|
@@ -256,8 +250,10 @@
 | 2021 | AOP 面向方面编程 | 编程范式 | 套主题 10（设计模式延伸）|
 | 2022 | 区块链技术 | 新兴技术 | 单独准备：联盟链/智能合约/去中心化账本/共识算法 |
 | 2022 | 湖仓一体（Lakehouse） | 大数据 | 套主题 06（已涵盖 Iceberg/Delta） |
-| 2023 | 多数据源集成 | EAI | 套主题 11 |
-| 2023 | 边缘计算 | 新兴技术 | 单独准备：边-云协同/IoT 网关/低延迟/带宽优化 |
+| 2023 | 多数据源企业集成 | EAI | 套主题 11（2024 下再考「多源异构数据集成」，两年内重复） |
+| 2023 | 边云协同 | 新兴技术 | 单独准备：边-云协同/IoT 网关/低延迟/带宽优化 |
+| 2023 | 面向对象分析方法及应用 | 分析方法 | 套主题 10（用例模型 + 分析模型） |
+| 2023 | 可靠性评估模型 | 可靠性 | 套主题 03 / 变体范文 03b |
 | 2024 | Lambda 架构 | 大数据 | 套主题 06（已涵盖） |
 | 2024 | 云原生 DevOps 运维 | DevOps | 套主题 13 |
 | 2024 | 模型驱动开发 MDD | 架构设计 | 套主题 01（MDA 延伸） |

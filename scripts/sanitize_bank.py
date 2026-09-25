@@ -27,7 +27,7 @@ Example::
 历年真题（``past-papers/comprehensive-by-year/*.md``）走同一套脱敏契约，但按
 考点/年份抽题，并给出该题对应的 tutor 考点建议：
 
-    python3 scripts/sanitize_bank.py past-papers/comprehensive-by-year/2013下.md --tag §5 --limit 3
+    python3 scripts/sanitize_bank.py past-papers/comprehensive-by-year/2019下.md --tag §5 --limit 3
     python3 scripts/sanitize_bank.py --topic K10.DATABASE_MODELING --year 2013下 --limit 3
     python3 scripts/sanitize_bank.py --tag §6 --list
 
@@ -53,6 +53,8 @@ from collections import defaultdict
 from html import unescape
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
+
+import knowledge_taxonomy
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CURRICULUM_PATH = REPO_ROOT / "tutor" / "curriculum.json"
@@ -1074,7 +1076,7 @@ def parse_paper(path: Path) -> List[Dict]:
             item_id=item["id"],
         )
         item.update(assess_quality(item, source_path=path, exclusions=exclusions))
-    return items
+    return [knowledge_taxonomy.annotate_question(item) if knowledge_taxonomy.objective_metadata(item["id"]) else item for item in items]
 
 
 def _passage_contexts(text: str, source: Path) -> Dict[str, Dict[str, str]]:
@@ -1121,7 +1123,7 @@ def parse_exam_bank(path: Path) -> List[Dict]:
         item.update(contexts.get(number, {}))
         item.update(assess_quality(item, source_path=path, exclusions=exclusions))
         items.append(item)
-    return items
+    return [knowledge_taxonomy.annotate_question(item) if knowledge_taxonomy.objective_metadata(item["id"]) else item for item in items]
 
 
 BLOCK_HEADER = re.compile(r"^###\s+(\d+)[.\s]", re.MULTILINE)

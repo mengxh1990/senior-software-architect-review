@@ -25,40 +25,13 @@ verify_paper_normalization = _load_verifier()
 
 
 class VerifyPaperNormalizationTests(unittest.TestCase):
-    def test_only_the_exact_invalid_baseline_additions_are_allowlisted(self) -> None:
-        additions = verify_paper_normalization.BASELINE_UNPARSEABLE_ADDITIONS
-        self.assertEqual(
-            additions["past-papers/comprehensive-by-year/2012下.md"],
-            {(69, 69): "baseline_missing_required_options"},
-        )
-        self.assertEqual(
-            additions["past-papers/comprehensive-by-year/2013下.md"],
-            {(47, 51): "baseline_html_table_option_set_unparseable"},
-        )
-        self.assertEqual(
-            verify_paper_normalization.BASELINE_TRAILING_POLLUTION_FIELDS[
-                "past-papers/comprehensive-by-year/2013下.md"
-            ],
-            {(45, 46): {"explanation": "baseline_consumed_following_question_blocks"}},
-        )
-        self.assertEqual(
-            verify_paper_normalization.BASELINE_RAW_ASSET_FIELD_EXCEPTIONS[
-                "past-papers/comprehensive-by-year/2011下.md"
-            ],
-            {
-                (2, 4): {"stem": "baseline_embedded_raw_figure_path"},
-                (69, 69): {"stem": "baseline_embedded_raw_figure_path"},
-            },
-        )
-        self.assertEqual(
-            verify_paper_normalization.BASELINE_TRAILING_POLLUTION_FIELDS[
-                "past-papers/comprehensive-by-year/2011下.md"
-            ],
-            {
-                (1, 1): {"explanation": "baseline_consumed_following_figure_intro"},
-                (70, 70): {"explanation": "baseline_consumed_following_english_passage"},
-            },
-        )
+    def test_normalization_exceptions_only_reference_retained_papers(self) -> None:
+        for name in ("BASELINE_UNPARSEABLE_ADDITIONS", "BASELINE_TRAILING_POLLUTION_FIELDS",
+                     "BASELINE_RAW_ASSET_FIELD_EXCEPTIONS", "REVIEWED_GROUP_SPLITS",
+                     "REVIEWED_CONTENT_FIXES", "REVIEWED_ITEM_DIGESTS"):
+            for relative in getattr(verify_paper_normalization, name):
+                with self.subTest(name=name, path=relative):
+                    self.assertTrue((REPO_ROOT / relative).is_file())
 
     def test_shipped_papers_match_the_normalization_baseline(self) -> None:
         result = subprocess.run(
@@ -88,6 +61,26 @@ class VerifyPaperNormalizationTests(unittest.TestCase):
                 for field, expected in fields.items():
                     with self.subTest(path=relative, key=key, field=field):
                         self.assertEqual(expected, items[key][field])
+
+    def test_reviewed_pdf_repairs_are_pinned_to_exact_content(self) -> None:
+        import importlib.util
+
+        sanitizer_path = REPO_ROOT / "scripts" / "sanitize_bank.py"
+        spec = importlib.util.spec_from_file_location("sanitize_bank", sanitizer_path)
+        assert spec and spec.loader
+        sanitizer = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sanitizer)
+
+        for relative, digests in verify_paper_normalization.REVIEWED_ITEM_DIGESTS.items():
+            items = {
+                (item["range"][0], item["range"][1]): item
+                for item in sanitizer.parse_paper(REPO_ROOT / relative)
+            }
+            for key, expected in digests.items():
+                with self.subTest(path=relative, key=key):
+                    self.assertEqual(expected, verify_paper_normalization.content_digest(items[key]))
+                    altered = {**items[key], "stem": items[key]["stem"] + "变动"}
+                    self.assertNotEqual(expected, verify_paper_normalization.content_digest(altered))
 
     def test_reviewed_group_splits_expose_one_usable_item_per_blank(self) -> None:
         import importlib.util
@@ -123,7 +116,9 @@ class VerifyPaperNormalizationTests(unittest.TestCase):
                         self.assertEqual(1, len(child["correct"]))
                         self.assertTrue(child.get("context"), "子题必须带上共享题干")
                         shipped += 1
-        self.assertGreater(shipped, 50)
+        expected = sum(end - start + 1 for groups in verify_paper_normalization.REVIEWED_GROUP_SPLITS.values() for start, end in groups)
+        self.assertGreater(expected, 0)
+        self.assertEqual(shipped, expected)
 
 
 if __name__ == "__main__":

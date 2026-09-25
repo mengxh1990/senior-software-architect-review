@@ -1,0 +1,921 @@
+{
+  "schema_version": 1,
+  "description": "三套互不重题的固定75题全模块诊断卷；卷01保持v4题序。题面修改后必须复核并发布新卷ID。",
+  "papers": {
+    "curriculum-mock-01-v4": {
+      "title": "综合知识全模块诊断模拟卷 01",
+      "items": [
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#2",
+          "question_fingerprint": "6e55fa8cd846fa9ae0b4e36a5782742b7f524df1b74f888cb9d76fcf7eb24f6a"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2020.md#24",
+          "question_fingerprint": "04833fc890d26a8ce96b27578191ff6106c11bf165d16708030f8d2c20f03667"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#13",
+          "question_fingerprint": "756dd87cb790f1671107387f76f62fbe2951bb0e6b77b6c6e30de325b46b0b18"
+        },
+        {
+          "item_id": "exam-bank/04-networking.md#8",
+          "question_fingerprint": "59040854fe4271946c3831c8371239a7f79239aaccaad4eba07cfdc8e19ffd30"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#34",
+          "question_fingerprint": "e5518c52f1a57aa66b428aac34e1e489331d103ada3b1270c57767f801835b19"
+        },
+        {
+          "item_id": "exam-bank/05-uml.md#11",
+          "question_fingerprint": "0890fc4a293d2f4f69900e243e2dd3cbf734e31072671535439eb7c3fc33c9be"
+        },
+        {
+          "item_id": "exam-bank/05-uml.md#14",
+          "question_fingerprint": "c143493ca71c95101f8abf72f267373bdb13e5eb972c8a297b6d4e918716cdda"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#45",
+          "question_fingerprint": "9918863d6cd9ab77bc513ed71b2eebb95fd983cb4a85e82a005a499035aa14f7"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#42",
+          "question_fingerprint": "a6155bde13dd3ccd652d4905caa384972bef50f60062c3e4688e433e83a405f8"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2024上.md#28",
+          "question_fingerprint": "5011d53140f2c474f6b18752d20485c3911d31ef9349d3907042958f622eb92f"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025下.md#28",
+          "question_fingerprint": "185e65f1d7d0f3d2cffce1c3122c231c577a8b110618cdf942c73c50c77849fe"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#42",
+          "question_fingerprint": "d836f7c9b4d70987f604af9da8ffc25bdf0ca6c6c2c9378776ce415e0638d712"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#41",
+          "question_fingerprint": "ac5922040e3381caddeba31921296e5c1a27a957c3819ef94d6a8280daa181be"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#43",
+          "question_fingerprint": "a97e30026c4fa308233798acf00d9874daaeab99e806da16300c6af559b6752c"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#23",
+          "question_fingerprint": "f932e7b53c65a4fd99b0734090e325f11a9f486cd9cc7f0399bbf06781822b15"
+        },
+        {
+          "item_id": "exam-bank/14-absd-views.md#8",
+          "question_fingerprint": "c8edf94335f06d5933167f1519f598e9283e83ad22f169cb2e57befcaa290624"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#11",
+          "question_fingerprint": "c4b4e3ba1b11eb8ff5fcfb1d01a12257b418eff6a79a46d16cdd489ad020df53"
+        },
+        {
+          "item_id": "exam-bank/22-embedded.md#14",
+          "question_fingerprint": "e4dc7bf12b0c95e3ccd951acecfa1052ce0202a2928eedc2caae1c75bf3e5295"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#26",
+          "question_fingerprint": "80155166e90283d03daa5b95f3cc95e68713e3ea4fc2c97b9637591196c2f26e"
+        },
+        {
+          "item_id": "exam-bank/27-information-systems.md#12",
+          "question_fingerprint": "c7da71248b1c3276927f0e8554bcc89b060b340cf01dcf2fd698be7fe485503e"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#17",
+          "question_fingerprint": "ac0a18934340ff9f8f2053ebd35c6ebd173de3978d31d72b52ed3863fee36d35"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#58",
+          "question_fingerprint": "bb20e60bf34c870329f056b99a5a6a0a30ee80783fddbaed14e9acb484dd8b51"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#52",
+          "question_fingerprint": "6b326a2b62feb76f20ea6445629a267985e331360ac6662ca42bafaf80a4085e"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#59",
+          "question_fingerprint": "d3044e3a6545f15076460bad093e05bffacdeaf4daaae9a6b295c8fd4418483c"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#16",
+          "question_fingerprint": "d60e9fa091ab477026496ea5984cbb08197ee5e896a08feb1f050e60103ead85"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#7",
+          "question_fingerprint": "35427dcd58263b019a668fec0bfccffd5024bb92a2d119c8ace046d59d16b539"
+        },
+        {
+          "item_id": "exam-bank/03-database.md#20",
+          "question_fingerprint": "91a133884115c87bbf8829ab1e63c64db24c9755a746bff0cb927f2e92ce2087"
+        },
+        {
+          "item_id": "exam-bank/03-database.md#10",
+          "question_fingerprint": "053283fc1985e399a9bcc4596ba106531db33cf4256d956825bcbfa7b92011a9"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#5",
+          "question_fingerprint": "09d19f6190a269dd7c823edb553e5cf6e9c4ce485dee916539cdece455365c10"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#35",
+          "question_fingerprint": "340e5150f7850588198d3d337616877f2aaa6e2e16cd05d65205b7a417eecb92"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#31",
+          "question_fingerprint": "9b8bbe071ba12d4da5e8ccb631559251816a8246820cdb5b03736f0e0c1c8959"
+        },
+        {
+          "item_id": "exam-bank/10-architecture-styles.md#16",
+          "question_fingerprint": "e0e504c5205c7f576a9705255d893a8a3d3aa6a2af7f68169bd40b988d452bcc"
+        },
+        {
+          "item_id": "exam-bank/15-microservice-cloud-native.md#15",
+          "question_fingerprint": "0ca6321bf4ab60a1f4d330f08d07a371b695a96ad926378dfed5480838426387"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2024上.md#22",
+          "question_fingerprint": "a6ff8a6e7d59b1a98baa07c6767b20c3111112650f023e67772d046c46e6f4bd"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025上.md#59",
+          "question_fingerprint": "b672b849cd15534be8c00fe7f9fa1492833741fe7594af11288d65933363865f"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#1",
+          "question_fingerprint": "5ceb1393927dddfa4befb64bb6529ed800bfa5b86923b8eceb41b0b95d42bdac"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#33",
+          "question_fingerprint": "ab710c7c5888f8c0ad48b7c95c800c8f110cc48a01eda9829d91f5d2ecdcfb24"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#24",
+          "question_fingerprint": "f114f4aa3176a5837fb20139aa921785d83d9996e668cfce9b2039386a633cd1"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#25",
+          "question_fingerprint": "dc2cb7e54a0e1cb5b0bd35f5aa1c0da8f3be332456c8a209db2d8318c1b3d293"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#66",
+          "question_fingerprint": "ec10797acf1ce626b774995ec45348afba7aaaf8baf26ede75850539594eb497"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#67",
+          "question_fingerprint": "407d070b859e1d26d05f3d0dbbffda04397a9b6e36aaa4f3dd6e84d76b93e0a5"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#67",
+          "question_fingerprint": "ae5cccf8c2a65646bfddb40c65160e178455ffa7015bea2f565c8aece13d906d"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#10",
+          "question_fingerprint": "3a1f4dc3c025f8d9f0fcf0b59910c82bc4f675fa81dc06ed0886c48602c11d16"
+        },
+        {
+          "item_id": "exam-bank/01-computer-systems.md#1",
+          "question_fingerprint": "5e68b5808c0e6caac0f371b1af9edf642a7704cde5fd7b719822e16dfc09ab26"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#48",
+          "question_fingerprint": "b607c281a5916a88542a64e347a44e6d6853ef973848338e3bd34f99e0411080"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#47",
+          "question_fingerprint": "525199a7e305cf250472973bd512e0e231fc91b32d8e26aac3526a84719f38ff"
+        },
+        {
+          "item_id": "exam-bank/12-atam-evaluation.md#14",
+          "question_fingerprint": "467fa0f9ebaef0cf78b5c67653228c72f1a1810094a16a336e3c3d4bfcc4f6e0"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#64",
+          "question_fingerprint": "22d509e4671a090fc6bbe1b308718b1c7861129c802d86ec7dc86fd9c91ec232"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2026上.md#28",
+          "question_fingerprint": "e233c925d6c8cefa70cb967254714250327aac67473aaabfcccc5ec1cac991fc"
+        },
+        {
+          "item_id": "exam-bank/21-security.md#19",
+          "question_fingerprint": "afce8301737b5a704150559c82995596c034f4884098df6a76b00f6b3decf7c2"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#12",
+          "question_fingerprint": "ae602fb5de8bddc30a1fac163f39a94f41af495855f4964013164a7d2f0cd7e9"
+        },
+        {
+          "item_id": "exam-bank/17-distributed-transactions.md#13",
+          "question_fingerprint": "845f5f9a3efaac3504d441d07eae7686cd2da23a1e24d00f594e8a3948c57dc1"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#27",
+          "question_fingerprint": "2ea1f7223baad00515205a84773992af5e72925bd42ee5f31628c8c73003f747"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#22",
+          "question_fingerprint": "5517537d1eb5b5cac82cc5d783a33f3860928d9914e8a275d402a44e7aa7d0ad"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#70",
+          "question_fingerprint": "2afd06cf77779dc7b0dde27987bc7f59f01e7018643d20f5697545dee1415053"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2024上.md#13",
+          "question_fingerprint": "6587d1d0ac25d077de0927afbc1fd60a9e345936e2e6e6ef3f94b6ef640e18a1"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#18",
+          "question_fingerprint": "400aff9f9ad7e474d7fea163f635e43df9e57922898f97d5fadd45ab957bb22a"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#65",
+          "question_fingerprint": "b2a1e48e14de3924c1d5f42a9ea4369711c2dff76abcfeb0c576b833fe77f790"
+        },
+        {
+          "item_id": "exam-bank/20-reliability.md#3",
+          "question_fingerprint": "8e368676093b9cbc4bbeac3545cf517b37ad546075d7ade58deba9b4b81ebc83"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#39",
+          "question_fingerprint": "a5d0563c3c44cf747e0466d77400fbb3eb0e7a0785477dc2227bdc734c0e3f46"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2020.md#7",
+          "question_fingerprint": "b7ff343260d26f71f802143e6986f876ed5e02e3ce42b55d4342ac110dfae800"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#1",
+          "question_fingerprint": "9cfd192c6c44f7b769c6499d9f2403edb4ad60954a38aaa001702ba482a8643c"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#69",
+          "question_fingerprint": "36c517cde72953a09ab5dad314f750ac61a08e7050bd28684f0c3c093fdb6320"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#69",
+          "question_fingerprint": "b9037a48273873051f5ab5eb6bd80d681c086fdf2512026b62fb9566dc612902"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#54",
+          "question_fingerprint": "ba3d2235d0e770ed57617feed8ee22d6f3cb408b3ef8b0e62722f530f17c78cc"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025下.md#57",
+          "question_fingerprint": "fcef167218798788d6d404b9ac8f575e395e0c7d642e047413ecd8d774845e95"
+        },
+        {
+          "item_id": "exam-bank/13-design-patterns.md#13",
+          "question_fingerprint": "2abdfb98eb8eb804b619ef388d7d162cf45db98d796af3a92eee422f33764305"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2026上.md#69",
+          "question_fingerprint": "06a7157b3eae2ffc1f281b37d22a6bacfcfd16e4f7c55a694d7c83327c23d770"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#8",
+          "question_fingerprint": "8711b0160bf77081dbc37baea21b3cecd297a98deb483a13354d8110109e22d2"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025上.md#63",
+          "question_fingerprint": "47c0be4765f885aea62600e0e25ac7db52ffe0202f172f388d9974edd5055a12"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#1",
+          "question_fingerprint": "7a3f34074be123c9b1f2434594d015ae927824f00dd8b83834c1152107ebe194"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#2",
+          "question_fingerprint": "5172fbd9f3b2a87ea31d059793712d2991903367532d55b96d4bc3ffc687aa17"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#3",
+          "question_fingerprint": "0a58e143b24c990e215d8d8f4ddb311e7ebc85e823f809323f1f966826293527"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#4",
+          "question_fingerprint": "fd451b54a8acaafcf3650adcf6f642b7b3b2f204aa08da1c72cb37c7aebdaaaa"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#5",
+          "question_fingerprint": "e1f5ea1f8ecdce05ed6672ba4337f209883241eb722b13907ce499d1a7d3d52e"
+        }
+      ]
+    },
+    "curriculum-mock-02-v4": {
+      "title": "综合知识全模块诊断模拟卷 02",
+      "items": [
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#1",
+          "question_fingerprint": "46c7b3d715d7c408ab7128ae277db8674bed082b51318475955272db1d7480ed"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025下.md#34",
+          "question_fingerprint": "bcab52dce5797668c247f9fbe4a7215b6e5dbaa5efd06347b6e1297eef39e11c"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#14",
+          "question_fingerprint": "3c2c71e2bc67cfcfe1f950c8500b84aa79ec68f2de14f126ae9117bba308fe0f"
+        },
+        {
+          "item_id": "exam-bank/04-networking.md#4",
+          "question_fingerprint": "02785c2d755b355f16c906d26b251893b512f9b2d92f1f9b3744a0474ca4c100"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#26",
+          "question_fingerprint": "caea81935771abe79496d0ef6e5a73925f1cb1e9cec70c69b393daa65ce9b8ac"
+        },
+        {
+          "item_id": "exam-bank/05-uml.md#15",
+          "question_fingerprint": "076da05fa83d6e983a28e586bb45a0c95933c4389e2b49916f4b32e37e9747e9"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#48",
+          "question_fingerprint": "7b0671491062df8be0653861c326293711858a1c55ce05ee9927ea887d7105c3"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#46",
+          "question_fingerprint": "0f1a3a00afab993da7b20176fd27898c15788132c51dc997ffad8d8f03987b71"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2024上.md#45",
+          "question_fingerprint": "4f873ef4570d1bed61a6f008ab32bfd439369112e3c8b074c53148f649cf9ff0"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2026上.md#50",
+          "question_fingerprint": "0442e08ebd79d6e2ea68856033f39ad1472d4f922a0c02a856c41e3bdfac2fc9"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025下.md#4",
+          "question_fingerprint": "5eb7c64ad2b8c1b03f000ffa41a6d8a6ea23c226c8513a5a95ecbbf211446988"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#42",
+          "question_fingerprint": "6468a36edc071b408440f52a0069b1ec137e939b65b1f311c811c07e51383a06"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#43",
+          "question_fingerprint": "fba8e9e7bfc126a9be9c631e47e05e1833019257654ce8722326fe875a3828ae"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#17",
+          "question_fingerprint": "a30dff5c187530f3331f99d64eda3127dd9bc9cb2fd689b6eb9ca4b67302f94d"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#31",
+          "question_fingerprint": "27b41d55ab9751b15263d3beb54134de6fbf1363c564b214b3438c44ed47ba6c"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#32",
+          "question_fingerprint": "fdecdc3ec25ee3eafd7d4afa24698afd21490423fc7ceb1c142432a88de63a17"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#11",
+          "question_fingerprint": "656ee9f7d7cf3901072a2695ff48ad8c797746017a3292fe368f975aa2d723b4"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#12",
+          "question_fingerprint": "8a3064c53c0bb7bdb330ebdcb5fee303832a062b22228ef96b76f222548908d3"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#27",
+          "question_fingerprint": "cfa465588ec85125dec5fbb83d7607baaefcad2b73fb6faf5bd200fc652c6086"
+        },
+        {
+          "item_id": "exam-bank/24-devops-serverless.md#11",
+          "question_fingerprint": "0c6b8f1f917ee82224189bf83f1d2fe173e8439ad34c49ceb0394e12d19b29ba"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#53",
+          "question_fingerprint": "9e3d5492a63d61802476120a379a092bb7fccd2a2a8f743f2001ba16ac743ee5"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#56",
+          "question_fingerprint": "f865564c86581a9cc2fd18dee9e7ad7235f621a02674435ddd9dac927a9e0be1"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#58",
+          "question_fingerprint": "debd85f7182c5a99fcccf69a45fca87f88a37a95435f9ca57c2458c530e9ed07"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#57",
+          "question_fingerprint": "4ff899f4c92bf813d2cd016917ceac7d08529b4ea1c4ba6f04315b40ee8fb8ec"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#7",
+          "question_fingerprint": "2d71983a2a425439b2d2138fba03a2daa210286662ccff69313e7a91f7a9e354"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025上.md#61",
+          "question_fingerprint": "90c926d09042e4570ae0f3ff3fc337469ec8d259be2088a84216801c050f13c6"
+        },
+        {
+          "item_id": "exam-bank/19-big-data.md#19",
+          "question_fingerprint": "3b052c78a4f4bb78ea08b602e04dff8b0a2dd5d8bbf094c38e9b4475992dd802"
+        },
+        {
+          "item_id": "exam-bank/03-database.md#1",
+          "question_fingerprint": "3257d9dd9b7380d2d89f3b0fb2b777a541d378274b6e1c3e3ff8d09b52571adb"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#8",
+          "question_fingerprint": "b79ed54da8b679335226151043d76b4d4ee892be19cebbffe25e9272aede5e9f"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#36",
+          "question_fingerprint": "6449fbc10204ed3c76f28ccf78eaf1dc85714d2903dfa822aef47805ac758d51"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#32",
+          "question_fingerprint": "738a90f32b8329f32e98cf59c0d794cc8e098abc0c3c8151f359300e9d0e0aa5"
+        },
+        {
+          "item_id": "exam-bank/15-microservice-cloud-native.md#12",
+          "question_fingerprint": "a613c4ac88a890a29303f9527edaa73b61dbf1411714e63b240d198f38e776bf"
+        },
+        {
+          "item_id": "exam-bank/26-soa-evolution.md#10",
+          "question_fingerprint": "0b1c9a2cdb95244d6b99c0cdac522811604d7d91d4078ccd20a95a8e05fa938b"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2024上.md#49",
+          "question_fingerprint": "355f9958b57065ad18647ad3e9aac9b93fe64ef06ca2ea79236cdf4b0d7624c1"
+        },
+        {
+          "item_id": "exam-bank/16-middleware.md#8",
+          "question_fingerprint": "f54aa5c7cae6802aeb50f640377326f30730405de9f759077a068ad177a67e46"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#4",
+          "question_fingerprint": "653721433361e34ac74e2b0ddc030d12232a8dc4c798c8a4071d90331ce41da7"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#25",
+          "question_fingerprint": "bdeae94a323526d4e3a12a1d7cffe9e814ae373c2944e6dab486c52c9fc43e7f"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#19",
+          "question_fingerprint": "3ee44600822c69f3c822c5b4155fc909a80befb63dc021aa2a6710835d47054a"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#20",
+          "question_fingerprint": "8ecffcda6111c1a2db8d7c9701a772bea4dada0aefe432d2d02129e23c75f5c3"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#68",
+          "question_fingerprint": "ee669c493d7877663bf2b09477a20a036977d6d575a9eeb5adc40e52138f1965"
+        },
+        {
+          "item_id": "exam-bank/06-ip-and-standards.md#14",
+          "question_fingerprint": "8a24bcaebab46dd202f223b64d78c02e62fe55c9f2a12ae2cfaae5bea0b2d6a1"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#66",
+          "question_fingerprint": "10e8fc7082436c1bc3a287c88ebc733966df31b12024a27e88e48f3950964ef3"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#12",
+          "question_fingerprint": "2bb9007f95248cc2801c55f2c70666868017c61836dbb5c127a69289010e4687"
+        },
+        {
+          "item_id": "exam-bank/01-computer-systems.md#6",
+          "question_fingerprint": "b3b3f74c99fc689e37afa30113616c2ae995dc6c0d53e00f57ad4ef28cf71227"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#60",
+          "question_fingerprint": "24b9efbd67a72ff2706eb71458642ce0372aae5ace44b36904604259fa13da4b"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2024下.md#56",
+          "question_fingerprint": "61eec2cef88f71aceed8db45b7cc5abdf218ca87cd995a7fcab6810cae0a38b0"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#61",
+          "question_fingerprint": "9eeb925b97b67e52882c156774a45fa610797bb4dc76be7bad3cd582cfde8e0e"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#65",
+          "question_fingerprint": "2429824698ee38400ca4caae27893f9ec5e376c1653fced1b43d6fdc1775c74d"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#4",
+          "question_fingerprint": "d94cc901bb36ab586aaf58cd59d67c4fb1399988e24e3675a7aea1cc8ad8d1ec"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#5",
+          "question_fingerprint": "62fcb6fe2fae190c2269b9cad18a74581aa00536c1c93edd1828acef25c6c115"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2024上.md#66",
+          "question_fingerprint": "d5bc6f6f8d378ec85feca12f1345548582dac97830b9c0a6f8a7ccf24a037000"
+        },
+        {
+          "item_id": "exam-bank/18-cache.md#1",
+          "question_fingerprint": "68bce1409514c44133b8880abfc2a89ef7d464f453f27dcd3eb0da380ae9db2a"
+        },
+        {
+          "item_id": "exam-bank/03-database.md#16",
+          "question_fingerprint": "313fedee7073dd4b2540e414b6a978fe467771eef0504c7f87338f368e2ba690"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#18",
+          "question_fingerprint": "816fd645456e8c8c0f0cbf728fb758ba52617fb9283699128f877ffb1329a673"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2024下.md#21",
+          "question_fingerprint": "418869e9366125bfc7f1b9ac19dd0fd40dca300e9ef9b821207186f4a10af6ee"
+        },
+        {
+          "item_id": "exam-bank/07-software-engineering.md#13",
+          "question_fingerprint": "5eeae8c5d25ef9c78abac53ab940d1856d7ad0ecf6291d84dae19de4466d8b02"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#19",
+          "question_fingerprint": "4b89b5bc5a03f6fd48221331afee8535cc2629d768a5b78a98d34e7a4738bb35"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#16",
+          "question_fingerprint": "e1638b70ece32d6c248c42f7dc2eb74bef3bc3f68eea27aacb05e054e7e9068a"
+        },
+        {
+          "item_id": "exam-bank/20-reliability.md#4",
+          "question_fingerprint": "ee681b827464c2fe37eb66168dfd6e0147eceb1e42a2ce0f04415c33773558f3"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#40",
+          "question_fingerprint": "30efd4e265c6feeae6a13415478b3a3f8983d85ef479b506974048e13b755401"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#3",
+          "question_fingerprint": "01a315dc5bf3b01fee54fa926a5fd7a72ebdec5e94a09e26da3de219af18f65a"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2024上.md#61",
+          "question_fingerprint": "b1b6ea5afcab69a93573e998e08da69ece9fe21bc3098fed70920e3503d9480a"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#70",
+          "question_fingerprint": "c0adecf3a6186feff57a0bee1a9268047fecd182a8f6ef9a88fc89369e7ddf6d"
+        },
+        {
+          "item_id": "exam-bank/29-applied-math.md#12",
+          "question_fingerprint": "7da66631662de347db1c51ac7c53dedbbaa5e46b6bd531eb599a3d78883f3d4f"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#55",
+          "question_fingerprint": "e6cea736da0726dabe67d64fc02f39cfbe65f468103752acf1a8758024834463"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025下.md#67",
+          "question_fingerprint": "e130d02a7c97e08237f96ad906d42fcf6a9d15ca4f3acae8c21a90c75b13e48c"
+        },
+        {
+          "item_id": "exam-bank/13-design-patterns.md#19",
+          "question_fingerprint": "67bdcaad369224297f39ca78d5727be59d049d21b00f43d0734015fe3f6fb631"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2026上.md#70",
+          "question_fingerprint": "f72d93046ae327c093c352e95ed0637f96d4703206e86187791e026d5c3730f6"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#18",
+          "question_fingerprint": "1833c1fb0dd9cd431625cf325f0561d35a7b318df2b576aae28b1b9ad7b5f7e7"
+        },
+        {
+          "item_id": "exam-bank/19-big-data.md#9",
+          "question_fingerprint": "f517ef01df3545691e4a0898903bd5b220e6e1ae2cb6ea7a5086b2b70d57800c"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#10",
+          "question_fingerprint": "2d906e693fc9440f33a387a593cfe4ed7ca5a4bd84fa6aaaf1e1da782fee163b"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#6",
+          "question_fingerprint": "6220d1e8075fe44f011cb5facf7d0d792ceda6a2fe704e65b4d36fad135c738f"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#7",
+          "question_fingerprint": "dc85143723912947109d5a94d6b988fcb70be49a37330ad1865dc40e2d75bcb8"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#8",
+          "question_fingerprint": "8092773da27d9651e2250af2dc5782906fb40b0f4cea6d326b0d11a1dee52cb4"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#9",
+          "question_fingerprint": "3b217fd2b9406c53871a61dcbc2d23d1e7b971c18aaad9e2fd857d03f9adacb9"
+        }
+      ]
+    },
+    "curriculum-mock-03-v4": {
+      "title": "综合知识全模块诊断模拟卷 03",
+      "items": [
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#2",
+          "question_fingerprint": "138ba2016ff7632fef4bbf641635b6e03421002e3f51ee6ef86ac43627f50d0c"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025下.md#42",
+          "question_fingerprint": "5ad2c680537c42f8cb4253a3c8f2f9793f77b2b4e08dec074f9377609e90cb91"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#15",
+          "question_fingerprint": "fd84c70043a64092fa9266f4e14dd03479dca86bdbf53b59dc6976b68c463e14"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#13",
+          "question_fingerprint": "7ff87aeb30d9dcd098a33936e603ec60aecd7517248fc0ffa4e3520e388a065c"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#49",
+          "question_fingerprint": "a46b3e44dbe158fb3db04354cdfa3ef8b4efdeadc9eb76208c6ac2dcea10e1d9"
+        },
+        {
+          "item_id": "exam-bank/05-uml.md#8",
+          "question_fingerprint": "5f131be5de9a41bd6064c562142f165220187af0394e1b078bb89cba35d9f399"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#26",
+          "question_fingerprint": "ba7e76c8b1198697696adfe506428afe5e3d8375cf9d6e5db665644bc867993e"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#49",
+          "question_fingerprint": "4e9aa54401a18a9dde37d18533f6994c35b6a44cfed26c2b7a2acdc9a133b277"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025下.md#16",
+          "question_fingerprint": "0481354e3a0e750f87d3886ac69dcbc8862b3622d80c5537661bfa935329e1ce"
+        },
+        {
+          "item_id": "exam-bank/10-architecture-styles.md#20",
+          "question_fingerprint": "c4db780a90ca947f40cc8df53d04775f35b3081bbf634cce963dff0aa83501f2"
+        },
+        {
+          "item_id": "exam-bank/10-architecture-styles.md#10",
+          "question_fingerprint": "ff562346130c232412fc5099ccc3cdb2340f05892238f12841f4821e215f97d5"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#33",
+          "question_fingerprint": "4efa9086d183ee71942acd729ba0ef0b059b5bd6aa1926a164d5309756ae4109"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#34",
+          "question_fingerprint": "21aae1373ecfa8690d25194dcecf06175105be14f4cb8609b95305697783ac2f"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#23",
+          "question_fingerprint": "69730977f1e9e7fd50138afef73724a544fd1efb6d12916c8606b3d974a304a9"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#33",
+          "question_fingerprint": "c3a7ec791f5da9ec2c363a6c68c15110f9662c21a9accc34b94fbd83124028d6"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#34",
+          "question_fingerprint": "89a7f204c736fefe0906284f71db5e6505c4182e1d6acd668c51c30aaa842e84"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2020.md#3",
+          "question_fingerprint": "fd9de0e8ed1a4fe5727ed96219e7964c30a4354a3a7d5603b38153c0732c731f"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#2",
+          "question_fingerprint": "9e25fe0ae50bd24353bf49b6561dcfdeb00592e0936cbecba0a9f076ae017fc0"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#28",
+          "question_fingerprint": "38ab980be2a11f9a5dfb418d27c1a46616e97d82b2b18cb3ba4553dba3f99303"
+        },
+        {
+          "item_id": "exam-bank/24-devops-serverless.md#3",
+          "question_fingerprint": "99dd86811fca0aa7fe01ebc073dcad085441ff36d3c0a9e471d2c5796b834dc4"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#59",
+          "question_fingerprint": "6a7928c9c7cefd3af051f45e3b1553c60c43a03aac010e6d105d84b74133f9a5"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#63",
+          "question_fingerprint": "ec9b29941a813a9b5b61aad39e7e3ab80deec518fddf98cbf2634b50c706b432"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#60",
+          "question_fingerprint": "bd57954c3b1c839e3bc973894f2fe4f14d8d52515d9c2526879ed83fd0f6e4e6"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025上.md#75",
+          "question_fingerprint": "85cb3143647860b8e174e42bc94085bdaef4d93bbea52e946c3c460bd9b4464c"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2020.md#4",
+          "question_fingerprint": "8d1d6b8dc16855e1b3d0ae9a39cca57b2a1fec33493a31506f0467ec4d5a2ab5"
+        },
+        {
+          "item_id": "exam-bank/03-database.md#3",
+          "question_fingerprint": "b3955d5490e1f0851e40888249bcc2c24bc058f54b13c2f66bd306ac96d78b2c"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#6",
+          "question_fingerprint": "5f51122c12fce8c7ace26576cd95d1dabd1f3f26cce6c228fc7f4223211f8c24"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#7",
+          "question_fingerprint": "e009091a7e87960d127f52c3ae7a73f6a8d5949988a0faf00641755c6fefcd3c"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#24",
+          "question_fingerprint": "67956006eb1ae7c44bd4854b128c67c15f7fd7aff40e8428b1c0e07b6024dfd0"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#37",
+          "question_fingerprint": "0a9f31286b3e20090d4370812834f67d8a9d5e948800c8548b1e9481e8f1145f"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025上.md#12",
+          "question_fingerprint": "be64c28615bd2cf2329126f0b0e3d8637736be65bac9bbf323e2d3a96afd01a4"
+        },
+        {
+          "item_id": "exam-bank/26-soa-evolution.md#11",
+          "question_fingerprint": "0dfb2f6f93919a4c20f82f4ff3a3c1842b34a6f59f63c68631be17d36f67a897"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025上.md#74",
+          "question_fingerprint": "d356fbf19bb30fbbdaae5803877ba384e0bf53bce0bf5763536c85ac899848f2"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2024上.md#7",
+          "question_fingerprint": "4d5d07711a330c29ea5162b0e6aeeb18490e96efb8b3800c9594f263f7450afe"
+        },
+        {
+          "item_id": "exam-bank/25-enterprise-integration.md#12",
+          "question_fingerprint": "a0121457d5c4feaca0359b29ead74f6229536587057dfd15bb682b4309c212c5"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#3",
+          "question_fingerprint": "f2b54aa05cd1cb1753748eaece4623c393d2fba689bc1b0c631b23ff87d0229b"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2024下.md#63",
+          "question_fingerprint": "f4ba0d8fa73899aec83d8f7e9d21baecdc880056f4783b1105159daa9574fab0"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#25",
+          "question_fingerprint": "1347f9c65be4178c1ee0b0eb4e9a0285e976f0f10752281f17202666eee5af1c"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025上.md#25",
+          "question_fingerprint": "a40de3c76d2031926fc9410e29aa4daea64fe657691f1cbe626b316c79ef1720"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#68",
+          "question_fingerprint": "acc61bb52ab441c68144174d2236be08d1f516a4fbeb14d10b0673a1a18f68f6"
+        },
+        {
+          "item_id": "exam-bank/06-ip-and-standards.md#7",
+          "question_fingerprint": "fb89db87a9321b0258926f28113ee89eb375f206f09908ed391975c035844888"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2020.md#1",
+          "question_fingerprint": "c5faf51ce7ab0896e623e7fffea3a1deb3e64ee3118e86e6cd7a58f427d5e351"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#9",
+          "question_fingerprint": "392019a01faf781cf8a8bdc3b03adb592e008f403630b50e7d39cda79577d974"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#16",
+          "question_fingerprint": "891107a351a16d4b2c10d0f6e5125e8f5f9bd2927a75e20cdd50104a0eae83a6"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#58",
+          "question_fingerprint": "ab858abee8625af64eda2d04f2b747b4cebbdc695f038491013d9fef8e3b49fc"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2024下.md#67",
+          "question_fingerprint": "2fd4f30f9a30ed927d049b974e3917f4c55a43a2159fa82358f18b2014c15400"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#59",
+          "question_fingerprint": "e730f93742b7c58d0dd615f5a129ac9f8d1227532608623638bb1ee9ca4f3020"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#64",
+          "question_fingerprint": "a5b1aa2d9a9ea3cea33e886d140da593eacee0697276f7a0b3355896a7accd75"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#30",
+          "question_fingerprint": "a9798cdb58013c6d74443878abab869450e96acda84c9a186b184c112ee0a0c3"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#31",
+          "question_fingerprint": "45d42fad547deb9253c76c6b7d1a496dab114628c68ff8cc9e650ffe6ff5155d"
+        },
+        {
+          "item_id": "exam-bank/03-database.md#17",
+          "question_fingerprint": "47f4bb5c300136ae4be283e7f427038860519acd26fd01b034f32989e2487518"
+        },
+        {
+          "item_id": "exam-bank/18-cache.md#5",
+          "question_fingerprint": "9292b70cc929cf0ff6ccc0a3e8f59ce61ab8fa3005efab5a58f5e680721343d8"
+        },
+        {
+          "item_id": "exam-bank/03-database.md#25",
+          "question_fingerprint": "8e3dd3224ecc0ae22f8b1a915309a1a1c671d11a3a6343e5e1705d189c2ad708"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#24",
+          "question_fingerprint": "bb4e3c66bf3bc6e07f2213904041ec41d5c6f4f530a382bbd97db19ab2b3c915"
+        },
+        {
+          "item_id": "exam-bank/08-project-management.md#2",
+          "question_fingerprint": "f637f1b83fa5ce9dca1dca2a53c6e3694589da3bbe44c04763ce89f27ba1a7e5"
+        },
+        {
+          "item_id": "exam-bank/09-software-metrics.md#11",
+          "question_fingerprint": "42e7732b8621a910e921a420faab35494677295b1c030875011ae195e9b77e76"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#20",
+          "question_fingerprint": "73cc3f780f80632b417d7a05627bb6a43707f8785a5018029de31f0461bdc1a4"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#17",
+          "question_fingerprint": "94dda972a6efafaf878a3c5bcd10f3b0bc4c95c2aa29cb999a2d2ca68f4a81f8"
+        },
+        {
+          "item_id": "exam-bank/20-reliability.md#8",
+          "question_fingerprint": "184db80e04cee8dad1d8ec27572d941a0d3207839983b40e903ce081d9d5f533"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2019下.md#41",
+          "question_fingerprint": "3fab7fafd9114af179606dce9910166d10c23bc69bb2d7f44a5ba482cf73efb4"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#11",
+          "question_fingerprint": "0f61501c34a67ba5be755b5da8e629ce11169bc1c2de228dea5e0340221c0091"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2025上.md#53",
+          "question_fingerprint": "aaaad8266c513d34b3a24dcdcbaf82771d22e05124edefd43f7d6cc177b8670b"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2020.md#23",
+          "question_fingerprint": "affa7d1fdfebd7666e44b9c15b96828336a8d21fdf38d39861c17c00fbf1e477"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2021.md#69",
+          "question_fingerprint": "8308f1755f55fee0679830c21eb76405d45f3c161229fadd889ce71f0534c6d6"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#56",
+          "question_fingerprint": "b761fbfa91eed00bb745d8626c9f06137df5efc3ccc39f7a3d22580a67d34ef0"
+        },
+        {
+          "item_id": "exam-bank/13-design-patterns.md#12",
+          "question_fingerprint": "e666a539bdbdf738ba1e9a8630fe5fa6899bda41271fe4392895a329e3736069"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2018下.md#57",
+          "question_fingerprint": "abb7056bb9d0eb553ea6ae83986692080b4c3d9c21733019fb56ee051c4e738e"
+        },
+        {
+          "item_id": "exam-bank/30-targeted-coverage.md#6",
+          "question_fingerprint": "6883e0307585c1d365de31df7f6770719dc3120dc3aa4d347b69883abb634866"
+        },
+        {
+          "item_id": "past-papers/comprehensive-by-year/2022.md#19",
+          "question_fingerprint": "7386bbf7741499360899b571ff1e70fd190966b996d17adbdf9e3334e44bf19f"
+        },
+        {
+          "item_id": "exam-bank/03-database.md#19",
+          "question_fingerprint": "d574d18d1a04dba232668a6574b4dd17edf71590d88fdae743db01b724692dcc"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#11",
+          "question_fingerprint": "0097ad6196eda0e87d389bc9898e71fa444b2be1e4cdfb23f2e95fc0bd4d7cd1"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#12",
+          "question_fingerprint": "720ecbd74ff8e33cf069bcfea64d2a898e95b5931fd939d75661f42eeadf6673"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#13",
+          "question_fingerprint": "c4b7e5eb6fd52595904c4910f67e44c2965d63cf2212f41cf2586e383baec37f"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#14",
+          "question_fingerprint": "50204d7cf68cb95cf9f82735b833927338c4a7668db1efa5216e9509240a5421"
+        },
+        {
+          "item_id": "exam-bank/23-english-reading.md#15",
+          "question_fingerprint": "d82eccd483d473148cbcdd975e1c730570725a9b60ac2c5e8240297d975c6dad"
+        }
+      ]
+    }
+  }
+}

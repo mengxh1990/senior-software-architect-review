@@ -1,0 +1,1082 @@
+{
+  "schema_version": 1,
+  "description": "可选笔记标签；不参与任何训练、评分、复测、进度或考频。",
+  "tags": [
+    {
+      "id": "OS.PROCESS",
+      "name": "进程与线程"
+    },
+    {
+      "id": "OS.DEADLOCK",
+      "name": "死锁条件与处理"
+    },
+    {
+      "id": "OS.PAGING",
+      "name": "分页与地址转换"
+    },
+    {
+      "id": "OS.REPLACEMENT",
+      "name": "页面置换与抖动"
+    },
+    {
+      "id": "OS.VIRTUAL_MEMORY",
+      "name": "虚拟内存与分配"
+    },
+    {
+      "id": "OS.SYNCHRONIZATION",
+      "name": "信号量与进程同步"
+    },
+    {
+      "id": "OS.KERNEL",
+      "name": "内核结构与操作系统功能"
+    },
+    {
+      "id": "NET.LAYERS",
+      "name": "网络分层与协议定位"
+    },
+    {
+      "id": "NET.PORTS",
+      "name": "常用协议与端口"
+    },
+    {
+      "id": "NET.TCP",
+      "name": "TCP 连接与传输控制"
+    },
+    {
+      "id": "NET.ADDRESSING",
+      "name": "IP 地址与子网划分"
+    },
+    {
+      "id": "NET.ARP",
+      "name": "ARP 地址解析"
+    },
+    {
+      "id": "NET.DNS_DHCP",
+      "name": "DNS 与 DHCP"
+    },
+    {
+      "id": "NET.HTTP",
+      "name": "HTTP 与 Web 协议"
+    },
+    {
+      "id": "NET.ROUTING",
+      "name": "路由协议与组网"
+    },
+    {
+      "id": "NET.CRC",
+      "name": "CRC 检错与编码"
+    },
+    {
+      "id": "NET.PERFORMANCE",
+      "name": "网络带宽与性能"
+    },
+    {
+      "id": "DESIGN.COHESION_COUPLING",
+      "name": "内聚与耦合"
+    },
+    {
+      "id": "DESIGN.SOLID",
+      "name": "面向对象设计原则"
+    },
+    {
+      "id": "UML.DIAGRAMS",
+      "name": "UML 图分类与用途"
+    },
+    {
+      "id": "UML.RELATIONS",
+      "name": "类关系与接口"
+    },
+    {
+      "id": "UML.USE_CASE",
+      "name": "用例建模"
+    },
+    {
+      "id": "UML.INTERACTION",
+      "name": "顺序图与通信图"
+    },
+    {
+      "id": "UML.STATE_ACTIVITY",
+      "name": "状态与活动建模"
+    },
+    {
+      "id": "UML.DEPLOYMENT",
+      "name": "构件图与部署图"
+    },
+    {
+      "id": "UML.SYSML",
+      "name": "SysML 系统建模"
+    },
+    {
+      "id": "DESIGN.OO_MODELING",
+      "name": "面向对象分析与模型驱动"
+    },
+    {
+      "id": "ARCH.STYLES",
+      "name": "架构风格分类与选型"
+    },
+    {
+      "id": "ARCH.PIPE_FILTER",
+      "name": "管道过滤器与批处理"
+    },
+    {
+      "id": "ARCH.REPOSITORY",
+      "name": "仓库与黑板架构"
+    },
+    {
+      "id": "ARCH.EVENT_DRIVEN",
+      "name": "事件驱动架构"
+    },
+    {
+      "id": "ARCH.LAYERED_MVC",
+      "name": "分层与 MVC 架构"
+    },
+    {
+      "id": "ARCH.MICROKERNEL",
+      "name": "微内核与插件架构"
+    },
+    {
+      "id": "ARCH.INTERPRETER",
+      "name": "解释器与规则系统架构"
+    },
+    {
+      "id": "ARCH.P2P",
+      "name": "对等网络架构"
+    },
+    {
+      "id": "ARCH.ABSD",
+      "name": "基于架构的软件开发 ABSD"
+    },
+    {
+      "id": "ARCH.DSSA",
+      "name": "DSSA 与领域工程"
+    },
+    {
+      "id": "ARCH.FOUNDATIONS",
+      "name": "架构概念与设计决策"
+    },
+    {
+      "id": "TEST.CMMI",
+      "name": "CMMI 成熟度与过程能力"
+    },
+    {
+      "id": "TEST.TYPES",
+      "name": "测试层次与分类"
+    },
+    {
+      "id": "TEST.INTEGRATION",
+      "name": "集成测试策略"
+    },
+    {
+      "id": "TEST.CASE_DESIGN",
+      "name": "测试用例设计与覆盖"
+    },
+    {
+      "id": "TEST.QUALITY_ASSURANCE",
+      "name": "软件质量保证与验证"
+    },
+    {
+      "id": "TEST.CLEANROOM",
+      "name": "净室软件工程"
+    },
+    {
+      "id": "TEST.QUALITY_MODEL",
+      "name": "软件产品质量模型"
+    },
+    {
+      "id": "DESIGN.SYSTEM_DESIGN",
+      "name": "概要、详细与数据设计"
+    },
+    {
+      "id": "DESIGN.UI",
+      "name": "用户界面与输入输出设计"
+    },
+    {
+      "id": "DOC.SOFTWARE_DOCUMENTS",
+      "name": "软件文档分类与文档化"
+    },
+    {
+      "id": "ARCH.VIEWS_4PLUS1",
+      "name": "4+1 架构视图"
+    },
+    {
+      "id": "ARCH.ADL",
+      "name": "架构描述语言与连接件"
+    },
+    {
+      "id": "ARCH.VIEWPOINT",
+      "name": "视图与视点"
+    },
+    {
+      "id": "EMBED.FOUNDATIONS",
+      "name": "嵌入式系统特征与层次"
+    },
+    {
+      "id": "EMBED.REALTIME",
+      "name": "实时系统与截止期"
+    },
+    {
+      "id": "EMBED.PRIORITY_INVERSION",
+      "name": "优先级反转与继承"
+    },
+    {
+      "id": "EMBED.RMS",
+      "name": "RMS 调度与可调度性"
+    },
+    {
+      "id": "EMBED.EDF",
+      "name": "EDF 调度与可调度性"
+    },
+    {
+      "id": "EMBED.TOOLCHAIN",
+      "name": "嵌入式开发与架构建模"
+    },
+    {
+      "id": "PROCESS.MODELS",
+      "name": "软件生命周期与过程模型"
+    },
+    {
+      "id": "PROCESS.RUP",
+      "name": "RUP 阶段与工作流"
+    },
+    {
+      "id": "PROCESS.AGILE",
+      "name": "敏捷与 Scrum"
+    },
+    {
+      "id": "DEVOPS.CULTURE",
+      "name": "DevOps 与 CALMS"
+    },
+    {
+      "id": "DEVOPS.CICD",
+      "name": "持续集成与持续交付"
+    },
+    {
+      "id": "DEVOPS.RELEASE",
+      "name": "蓝绿、金丝雀与滚动发布"
+    },
+    {
+      "id": "DEVOPS.IAC_GITOPS",
+      "name": "IaC、GitOps 与基础设施管理"
+    },
+    {
+      "id": "DEVOPS.METRICS",
+      "name": "DORA 交付效能指标"
+    },
+    {
+      "id": "PROCESS.PSP_TSP",
+      "name": "个人与团队软件过程"
+    },
+    {
+      "id": "QUALITY.SCENARIOS",
+      "name": "质量属性场景六元组"
+    },
+    {
+      "id": "QUALITY.ATTRIBUTES",
+      "name": "质量属性识别与权衡"
+    },
+    {
+      "id": "QUALITY.PERFORMANCE",
+      "name": "性能与伸缩性战术"
+    },
+    {
+      "id": "QUALITY.AVAILABILITY",
+      "name": "可用性战术与故障恢复"
+    },
+    {
+      "id": "QUALITY.MODIFIABILITY",
+      "name": "可修改性战术"
+    },
+    {
+      "id": "QUALITY.SECURITY",
+      "name": "安全性战术与场景"
+    },
+    {
+      "id": "QUALITY.TESTABILITY",
+      "name": "可测试性战术"
+    },
+    {
+      "id": "QUALITY.INTEROPERABILITY",
+      "name": "互操作性战术"
+    },
+    {
+      "id": "QUALITY.USABILITY",
+      "name": "易用性战术"
+    },
+    {
+      "id": "DB.KEYS_FD",
+      "name": "函数依赖与候选键"
+    },
+    {
+      "id": "DB.NORMAL_FORMS",
+      "name": "范式与规范化"
+    },
+    {
+      "id": "DB.DECOMPOSITION",
+      "name": "无损分解与依赖保持"
+    },
+    {
+      "id": "DB.ACID",
+      "name": "数据库事务 ACID"
+    },
+    {
+      "id": "DB.ISOLATION_LOCKING",
+      "name": "隔离级别与并发控制"
+    },
+    {
+      "id": "DB.ER_MODELING",
+      "name": "ER 建模与关系转换"
+    },
+    {
+      "id": "DB.INDEX_QUERY",
+      "name": "索引与查询优化"
+    },
+    {
+      "id": "DB.SCHEMAS_VIEWS",
+      "name": "三级模式与数据库视图"
+    },
+    {
+      "id": "DB.INTEGRITY",
+      "name": "主外键与完整性约束"
+    },
+    {
+      "id": "DB.RELATIONAL_ALGEBRA",
+      "name": "关系代数与 SQL"
+    },
+    {
+      "id": "DB.NOSQL",
+      "name": "NoSQL 类型与选型"
+    },
+    {
+      "id": "DB.STORAGE_RECOVERY",
+      "name": "存储引擎与备份恢复"
+    },
+    {
+      "id": "DB.DISTRIBUTION",
+      "name": "分库分表与分布式数据库"
+    },
+    {
+      "id": "DB.ACCESS_LAYER",
+      "name": "数据库访问层与 ORM"
+    },
+    {
+      "id": "DB.TIME_SERIES",
+      "name": "时序数据库与数据特征"
+    },
+    {
+      "id": "COMPONENT.FOUNDATIONS",
+      "name": "软件构件与复用"
+    },
+    {
+      "id": "COMPONENT.PLATFORMS",
+      "name": "构件平台与分布式对象"
+    },
+    {
+      "id": "COMPONENT.EJB",
+      "name": "EJB 构件类型与职责"
+    },
+    {
+      "id": "COMPONENT.REUSE",
+      "name": "软件产品线与复用资产"
+    },
+    {
+      "id": "MICRO.FOUNDATIONS",
+      "name": "微服务特征与拆分"
+    },
+    {
+      "id": "MICRO.DDD",
+      "name": "DDD 限界上下文与领域建模"
+    },
+    {
+      "id": "CLOUD.NATIVE",
+      "name": "云原生原则与十二要素"
+    },
+    {
+      "id": "CLOUD.CONTAINERS",
+      "name": "容器与镜像"
+    },
+    {
+      "id": "CLOUD.KUBERNETES",
+      "name": "Kubernetes 资源与编排"
+    },
+    {
+      "id": "MICRO.MESH",
+      "name": "服务网格与 Sidecar"
+    },
+    {
+      "id": "MICRO.GATEWAY",
+      "name": "API 网关与服务治理"
+    },
+    {
+      "id": "CLOUD.SERVERLESS",
+      "name": "Serverless 与 FaaS"
+    },
+    {
+      "id": "MICRO.RESILIENCE",
+      "name": "熔断、降级与隔离"
+    },
+    {
+      "id": "MICRO.SOA_COMPARISON",
+      "name": "微服务与 SOA 的边界比较"
+    },
+    {
+      "id": "SOA.PRINCIPLES",
+      "name": "SOA 定义与设计原则"
+    },
+    {
+      "id": "SOA.WEB_SERVICE",
+      "name": "Web Service、SOAP、WSDL 与 UDDI"
+    },
+    {
+      "id": "SOA.ESB",
+      "name": "ESB 与服务集成拓扑"
+    },
+    {
+      "id": "SOA.ORCHESTRATION",
+      "name": "服务编排与 BPEL"
+    },
+    {
+      "id": "SOA.REST",
+      "name": "REST 约束与资源建模"
+    },
+    {
+      "id": "EAI.LEVELS",
+      "name": "企业应用集成层次与方式"
+    },
+    {
+      "id": "EAI.PATTERNS",
+      "name": "企业集成消息模式"
+    },
+    {
+      "id": "OS.CPU_SCHEDULING",
+      "name": "处理器调度算法"
+    },
+    {
+      "id": "OS.DISK_SCHEDULING",
+      "name": "磁盘调度算法"
+    },
+    {
+      "id": "OS.FILE_SYSTEMS",
+      "name": "文件系统、索引与空间管理"
+    },
+    {
+      "id": "ANALYSIS.DFD",
+      "name": "DFD 建模与数据平衡"
+    },
+    {
+      "id": "ANALYSIS.STRUCTURED",
+      "name": "结构化分析与设计工具"
+    },
+    {
+      "id": "ANALYSIS.BEHAVIOR",
+      "name": "结构化行为模型"
+    },
+    {
+      "id": "REQ.PROCESS",
+      "name": "需求工程活动与跟踪"
+    },
+    {
+      "id": "REQ.CLASSIFICATION",
+      "name": "需求分类与规格说明"
+    },
+    {
+      "id": "REQ.ELICITATION",
+      "name": "需求获取与可行性分析"
+    },
+    {
+      "id": "REQ.CHANGE",
+      "name": "需求基线与变更控制"
+    },
+    {
+      "id": "IP.COPYRIGHT",
+      "name": "软件著作权与归属"
+    },
+    {
+      "id": "IP.PATENT",
+      "name": "专利保护与申请"
+    },
+    {
+      "id": "IP.TRADEMARK_SECRET",
+      "name": "商标与商业秘密"
+    },
+    {
+      "id": "STANDARD.TYPES",
+      "name": "标准分类与标准化"
+    },
+    {
+      "id": "HW.CPU_PERFORMANCE",
+      "name": "CPU 性能与指令执行"
+    },
+    {
+      "id": "HW.PIPELINE",
+      "name": "流水线吞吐与冲突"
+    },
+    {
+      "id": "HW.CACHE",
+      "name": "硬件 Cache 与存储层次"
+    },
+    {
+      "id": "HW.REPRESENTATION",
+      "name": "数值表示与浮点编码"
+    },
+    {
+      "id": "HW.HAMMING",
+      "name": "海明码与纠错"
+    },
+    {
+      "id": "HW.INSTRUCTION_SET",
+      "name": "CISC 与 RISC 指令集"
+    },
+    {
+      "id": "HW.ARCHITECTURE",
+      "name": "计算机组成与体系结构"
+    },
+    {
+      "id": "HW.IO_INTERRUPT",
+      "name": "中断与 DMA"
+    },
+    {
+      "id": "HW.MULTIMEDIA",
+      "name": "多媒体与数据压缩"
+    },
+    {
+      "id": "EVAL.ATAM_PROCESS",
+      "name": "ATAM 过程、参与者与产物"
+    },
+    {
+      "id": "EVAL.SENSITIVITY",
+      "name": "敏感点识别"
+    },
+    {
+      "id": "EVAL.TRADEOFF",
+      "name": "权衡点识别"
+    },
+    {
+      "id": "EVAL.RISK",
+      "name": "风险点与非风险点"
+    },
+    {
+      "id": "EVAL.UTILITY_TREE",
+      "name": "效用树构建与优先级"
+    },
+    {
+      "id": "EVAL.METHODS",
+      "name": "SAAM、ATAM 与评估方法比较"
+    },
+    {
+      "id": "SEC.CIA",
+      "name": "CIA 与安全服务"
+    },
+    {
+      "id": "SEC.STRIDE",
+      "name": "STRIDE 威胁建模"
+    },
+    {
+      "id": "SEC.CRYPTOGRAPHY",
+      "name": "对称、非对称与国密算法"
+    },
+    {
+      "id": "SEC.PKI_SIGNATURE",
+      "name": "PKI、证书与数字签名"
+    },
+    {
+      "id": "SEC.TLS",
+      "name": "TLS 与安全传输"
+    },
+    {
+      "id": "SEC.ACCESS_AUTH",
+      "name": "认证、授权与访问控制"
+    },
+    {
+      "id": "SEC.ATTACKS",
+      "name": "网络与应用攻击防护"
+    },
+    {
+      "id": "SEC.HASH",
+      "name": "哈希完整性与碰撞"
+    },
+    {
+      "id": "SEC.GOVERNANCE",
+      "name": "等保、零信任与安全管理"
+    },
+    {
+      "id": "MIDDLEWARE.TYPES",
+      "name": "中间件分类与通信方式"
+    },
+    {
+      "id": "MQ.PROTOCOLS",
+      "name": "消息协议与产品特征"
+    },
+    {
+      "id": "MQ.DELIVERY",
+      "name": "消息可靠投递、幂等与顺序"
+    },
+    {
+      "id": "MQ.KAFKA",
+      "name": "Kafka 日志与消费模型"
+    },
+    {
+      "id": "MQ.MQTT",
+      "name": "MQTT QoS 与物联网消息"
+    },
+    {
+      "id": "DIST.CAP",
+      "name": "CAP 定理与一致性取舍"
+    },
+    {
+      "id": "DIST.BASE",
+      "name": "BASE 与最终一致性"
+    },
+    {
+      "id": "DIST.TWO_PHASE_COMMIT",
+      "name": "2PC、XA 与三阶段提交"
+    },
+    {
+      "id": "DIST.TCC",
+      "name": "TCC 与业务补偿"
+    },
+    {
+      "id": "DIST.SAGA",
+      "name": "Saga 长事务补偿"
+    },
+    {
+      "id": "DIST.OUTBOX",
+      "name": "本地消息表与事务消息"
+    },
+    {
+      "id": "DIST.LOCKS",
+      "name": "分布式锁"
+    },
+    {
+      "id": "DIST.TX_SELECTION",
+      "name": "分布式事务方案选型"
+    },
+    {
+      "id": "CACHE.PENETRATION",
+      "name": "缓存穿透与布隆过滤器"
+    },
+    {
+      "id": "CACHE.BREAKDOWN",
+      "name": "缓存击穿与热点互斥"
+    },
+    {
+      "id": "CACHE.AVALANCHE",
+      "name": "缓存雪崩与过期策略"
+    },
+    {
+      "id": "CACHE.ASIDE_CONSISTENCY",
+      "name": "Cache Aside 与缓存一致性"
+    },
+    {
+      "id": "CACHE.REDIS_STORAGE",
+      "name": "Redis 淘汰与持久化"
+    },
+    {
+      "id": "CACHE.CLUSTER",
+      "name": "Redis 集群与分片"
+    },
+    {
+      "id": "CACHE.WARMUP",
+      "name": "缓存预热"
+    },
+    {
+      "id": "ENG.TECH_READING",
+      "name": "专业英语术语与上下文阅读"
+    },
+    {
+      "id": "PM.PROCESSES",
+      "name": "项目过程、组织与沟通"
+    },
+    {
+      "id": "PM.CPM",
+      "name": "关键路径、时差与工期压缩"
+    },
+    {
+      "id": "PM.PERT",
+      "name": "PERT 三点估算"
+    },
+    {
+      "id": "PM.EVM",
+      "name": "挣值与成本绩效"
+    },
+    {
+      "id": "PM.RISK_COST",
+      "name": "项目风险与成本估算"
+    },
+    {
+      "id": "PM.CONFIGURATION",
+      "name": "软件配置与版本管理"
+    },
+    {
+      "id": "METRIC.FUNCTION_POINTS",
+      "name": "功能点与规模度量"
+    },
+    {
+      "id": "METRIC.MCCABE",
+      "name": "McCabe 圈复杂度"
+    },
+    {
+      "id": "METRIC.HALSTEAD",
+      "name": "Halstead 软件度量"
+    },
+    {
+      "id": "METRIC.QUALITY",
+      "name": "GQM 与面向对象度量"
+    },
+    {
+      "id": "IS.LIFECYCLE",
+      "name": "信息系统生命周期与诺兰模型"
+    },
+    {
+      "id": "IS.TYPES",
+      "name": "TPS、MIS、DSS 与专家系统"
+    },
+    {
+      "id": "IS.ERP_MES",
+      "name": "ERP、制造与企业资源"
+    },
+    {
+      "id": "IS.EGOV_ECOMMERCE",
+      "name": "电子政务与电子商务"
+    },
+    {
+      "id": "IS.SYSTEMS_ENGINEERING",
+      "name": "系统工程方法与信息化规划"
+    },
+    {
+      "id": "REL.METRICS",
+      "name": "可靠性、MTBF 与可用性计算"
+    },
+    {
+      "id": "REL.SERIES_PARALLEL",
+      "name": "串并联与表决可靠度"
+    },
+    {
+      "id": "REL.FAULT_TOLERANCE",
+      "name": "N 版本、恢复块与容错"
+    },
+    {
+      "id": "REL.DISASTER_RECOVERY",
+      "name": "RTO、RPO 与灾难恢复"
+    },
+    {
+      "id": "REL.RATE_LIMIT",
+      "name": "限流与流量整形"
+    },
+    {
+      "id": "REL.REDUNDANCY",
+      "name": "冗余、消除单点与容灾部署"
+    },
+    {
+      "id": "REL.MODELS",
+      "name": "软件可靠性建模与评估"
+    },
+    {
+      "id": "EVOLUTION.TYPES",
+      "name": "架构演化类型与原则"
+    },
+    {
+      "id": "EVOLUTION.STRANGLER",
+      "name": "绞杀者迁移与渐进改造"
+    },
+    {
+      "id": "EVOLUTION.CLOUD_MIGRATION",
+      "name": "上云 6R 迁移策略"
+    },
+    {
+      "id": "EVOLUTION.LEGACY",
+      "name": "遗留系统评估与处置"
+    },
+    {
+      "id": "NEW.CPS_IOT",
+      "name": "CPS、物联网与感知控制"
+    },
+    {
+      "id": "NEW.EDGE_CLOUD",
+      "name": "边缘计算与边云协同"
+    },
+    {
+      "id": "NEW.DIGITAL_TWIN",
+      "name": "数字孪生"
+    },
+    {
+      "id": "NEW.MACHINE_LEARNING",
+      "name": "机器学习与推荐系统"
+    },
+    {
+      "id": "NEW.LLM",
+      "name": "Transformer 与大模型"
+    },
+    {
+      "id": "NEW.ROBOTICS",
+      "name": "机器人技术"
+    },
+    {
+      "id": "NEW.CLOUD_MODELS",
+      "name": "云计算服务与部署模式"
+    },
+    {
+      "id": "NEW.BLOCKCHAIN",
+      "name": "区块链与智能合约"
+    },
+    {
+      "id": "NEW.KNOWLEDGE_GRAPH",
+      "name": "知识图谱构建与推理"
+    },
+    {
+      "id": "NEW.FRONTIERS",
+      "name": "信息综合技术范围"
+    },
+    {
+      "id": "MATH.GRAPHS",
+      "name": "图算法、最短路与生成树"
+    },
+    {
+      "id": "MATH.OPTIMIZATION",
+      "name": "线性规划与运筹优化"
+    },
+    {
+      "id": "MATH.ALGORITHMS",
+      "name": "动态规划与组合算法"
+    },
+    {
+      "id": "MATH.QUEUEING",
+      "name": "排队论与性能模型"
+    },
+    {
+      "id": "MATH.PROBABILITY",
+      "name": "概率、统计与期望决策"
+    },
+    {
+      "id": "PATTERN.CLASSIFICATION",
+      "name": "GoF 模式分类"
+    },
+    {
+      "id": "PATTERN.FACTORY_BUILDER",
+      "name": "工厂与建造者模式"
+    },
+    {
+      "id": "PATTERN.ADAPTER",
+      "name": "适配器模式"
+    },
+    {
+      "id": "PATTERN.SINGLETON",
+      "name": "单例模式"
+    },
+    {
+      "id": "PATTERN.STRATEGY",
+      "name": "策略模式"
+    },
+    {
+      "id": "PATTERN.PROXY",
+      "name": "代理模式"
+    },
+    {
+      "id": "PATTERN.OBSERVER",
+      "name": "观察者模式"
+    },
+    {
+      "id": "PATTERN.CHAIN",
+      "name": "职责链模式"
+    },
+    {
+      "id": "PATTERN.TEMPLATE",
+      "name": "模板方法模式"
+    },
+    {
+      "id": "PATTERN.DECORATOR",
+      "name": "装饰器模式"
+    },
+    {
+      "id": "PATTERN.ITERATOR",
+      "name": "迭代器模式"
+    },
+    {
+      "id": "PATTERN.COMPOSITE",
+      "name": "组合模式"
+    },
+    {
+      "id": "PATTERN.FACADE",
+      "name": "外观模式"
+    },
+    {
+      "id": "PATTERN.FLYWEIGHT",
+      "name": "享元模式"
+    },
+    {
+      "id": "PATTERN.STATE",
+      "name": "状态模式"
+    },
+    {
+      "id": "PATTERN.COMMAND_MEMENTO",
+      "name": "命令与备忘录模式"
+    },
+    {
+      "id": "PATTERN.BRIDGE",
+      "name": "桥接模式"
+    },
+    {
+      "id": "PATTERN.ARCHITECTURAL",
+      "name": "架构级设计模式"
+    },
+    {
+      "id": "LANG.COMPILATION",
+      "name": "编译过程与语言处理"
+    },
+    {
+      "id": "LANG.PARSING",
+      "name": "语法分析与移进归约"
+    },
+    {
+      "id": "LANG.FOUNDATIONS",
+      "name": "程序语言与形式化方法"
+    },
+    {
+      "id": "DATA.HDFS",
+      "name": "HDFS 存储与元数据"
+    },
+    {
+      "id": "DATA.MAPREDUCE_YARN",
+      "name": "MapReduce 与 YARN"
+    },
+    {
+      "id": "DATA.HIVE_HBASE",
+      "name": "Hive 与 HBase"
+    },
+    {
+      "id": "DATA.SPARK_STREAM",
+      "name": "Spark 与流处理引擎"
+    },
+    {
+      "id": "DATA.LAMBDA_KAPPA",
+      "name": "Lambda 与 Kappa 架构"
+    },
+    {
+      "id": "DATA.WAREHOUSE_LAKE",
+      "name": "数据仓库、数据湖与湖仓一体"
+    },
+    {
+      "id": "DATA.OLAP_MODELING",
+      "name": "OLAP 与维度建模"
+    },
+    {
+      "id": "DATA.ETL",
+      "name": "ETL、ELT 与数据集成"
+    },
+    {
+      "id": "DATA.DISTRIBUTED_STORAGE",
+      "name": "分布式存储与数据架构"
+    },
+    {
+      "id": "PROCESS.TOOL_INTEGRATION",
+      "name": "软件开发环境与工具集成"
+    },
+    {
+      "id": "NET.COMMUNICATION",
+      "name": "通信方式、调制与信道容量"
+    },
+    {
+      "id": "NET.WIRELESS_5G",
+      "name": "无线网络与 5G"
+    },
+    {
+      "id": "HW.BENCHMARK",
+      "name": "计算机性能评测与基准程序"
+    },
+    {
+      "id": "IP.FOUNDATIONS",
+      "name": "知识产权属性与保护范围"
+    },
+    {
+      "id": "IP.CLASSIFIED_INFORMATION",
+      "name": "国家秘密分级与保密期限"
+    },
+    {
+      "id": "MATH.MODELING",
+      "name": "数学建模与模型检验"
+    },
+    {
+      "id": "MATH.FUNCTIONS",
+      "name": "函数与定义域"
+    },
+    {
+      "id": "MATH.WORK_RATE",
+      "name": "工作效率与比例计算"
+    },
+    {
+      "id": "MATH.COMBINATORICS",
+      "name": "集合、容斥与组合推理"
+    },
+    {
+      "id": "EVOLUTION.REVERSE",
+      "name": "逆向工程与抽象层次"
+    },
+    {
+      "id": "PM.SCOPE",
+      "name": "项目范围与 WBS"
+    },
+    {
+      "id": "PM.SUPERVISION",
+      "name": "信息系统监理"
+    },
+    {
+      "id": "NEW.KNOWLEDGE_REPRESENTATION",
+      "name": "知识表示与知识库"
+    },
+    {
+      "id": "NEW.MULTIMODAL",
+      "name": "多模态融合与对齐"
+    },
+    {
+      "id": "NEW.WORLD_MODEL",
+      "name": "世界模型与环境预测"
+    },
+    {
+      "id": "SEC.AI_ATTACKS",
+      "name": "提示词注入与 AI 数据投毒"
+    },
+    {
+      "id": "DB.PERFORMANCE",
+      "name": "数据库运行监测与性能调优"
+    },
+    {
+      "id": "SEC.DATABASE",
+      "name": "数据库访问封装与安全"
+    },
+    {
+      "id": "NEW.AI_CHIPS",
+      "name": "AI 芯片与计算架构"
+    },
+    {
+      "id": "DATA.GOVERNANCE",
+      "name": "数据资产、治理与 DCMM"
+    },
+    {
+      "id": "ARCH.CQRS",
+      "name": "CQRS 读写模型分离"
+    },
+    {
+      "id": "ARCH.CONTROL_LOOP",
+      "name": "反馈控制环路架构"
+    },
+    {
+      "id": "NET.CDN",
+      "name": "CDN 与内容分发"
+    },
+    {
+      "id": "DB.DENORMALIZATION",
+      "name": "反规范化与数据冗余设计"
+    },
+    {
+      "id": "QUALITY.LOAD_BALANCING",
+      "name": "负载均衡策略与算法"
+    },
+    {
+      "id": "TEST.DEFECT_MANAGEMENT",
+      "name": "软件缺陷管理"
+    },
+    {
+      "id": "DESIGN.AOP",
+      "name": "面向方面编程与横切关注点"
+    }
+  ]
+}

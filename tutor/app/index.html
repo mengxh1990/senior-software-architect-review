@@ -114,6 +114,9 @@
       .question-scroll { padding: 20px 17px; } .question-actions { align-items: stretch; flex-direction: column; } .action-cluster { width: 100%; } .action-cluster button { flex: 1; }
       .score-banner { grid-template-columns: 1fr; } .score-block { padding: 20px; } .score-number { font-size: 54px; } .topic-grid { grid-template-columns: 1fr 1fr; }
     }
+    .source-table { overflow-x: auto; margin: 12px 0; }
+    .source-table table { border-collapse: collapse; width: 100%; font-size: 14px; }
+    .source-table th, .source-table td { border: 1px solid #c7d1dd; padding: 8px 10px; text-align: left; }
   </style>
 </head>
 <body>
@@ -127,6 +130,21 @@
   function saveSession() { if (session) localStorage.setItem(STORAGE_KEY, JSON.stringify(session)); else localStorage.removeItem(STORAGE_KEY); }
   function escapeHtml(value) { return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
   function formatInline(value) { return escapeHtml(value).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/`(.+?)`/g, '<code>$1</code>'); }
+  function formatBlock(value) {
+    const lines = String(value ?? '').split('\n'), result = [];
+    const cells = line => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim());
+    for (let index = 0; index < lines.length;) {
+      if (lines[index].includes('|') && /^[ |:-]+$/.test(lines[index + 1] || '') && (lines[index + 1] || '').includes('---')) {
+        const headers = cells(lines[index]); index += 2;
+        const rows = [];
+        while (index < lines.length && lines[index].trim().startsWith('|')) rows.push(cells(lines[index++]));
+        result.push(`<div class="source-table"><table><thead><tr>${headers.map(cell => `<th>${formatInline(cell)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${formatInline(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
+      } else {
+        result.push(formatInline(lines[index++]));
+      }
+    }
+    return result.join('<br>');
+  }
   function formatTime(seconds) { const safe = Math.max(0, Math.floor(seconds)); return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`; }
   function elapsedSeconds() { return session?.startedAt ? Math.max(1, Math.round((Date.now() - session.startedAt) / 1000)) : 0; }
   function remainingSeconds() { return Math.max(0, paper.duration_seconds - elapsedSeconds()); }
@@ -149,14 +167,14 @@
   }
   function renderIntro() {
     const examDate = profile?.exam_date || '未设置';
-    return `<main class="intro-page"><section class="admission-card"><div class="admission-title"><div class="eyebrow">Computer-based mock examination</div><h1>${escapeHtml(paper.title)}</h1><p>仿机考工作台 · 高频过线导向 · 模拟题</p></div><div class="candidate-grid"><div class="candidate-cell"><div class="field-label">考试科目</div><div class="field-value">综合知识</div></div><div class="candidate-cell"><div class="field-label">试题数量</div><div class="field-value">${paper.question_count} 题</div></div><div class="candidate-cell"><div class="field-label">考试时长</div><div class="field-value">150 分钟</div></div><div class="candidate-cell"><div class="field-label">你的考期</div><div class="field-value">${escapeHtml(examDate)}</div></div></div><div class="instruction-wrap"><div><h2>考生须知</h2><ol class="instructions"><li>每题只有一个最符合题意的选项；答题过程中不显示答案和解析。</li><li>左侧答题卡显示未答、已答、标记和“拿不准”状态，可随时跳转。</li><li>交卷后立即确定性判分并自动保存原始答卷；错因作为考后补充反馈。</li><li>本卷满分 75 分，45 分为合格线；日常训练以 52 分作为安全目标。</li></ol></div><aside class="privacy-box"><strong>${profileReady ? '本地闭环已就绪' : '需要先由 Agent 建档'}</strong><p>${profileReady ? '题目、作答、用时和错因只提交给当前 127.0.0.1 服务，最终保存在仓库根目录的 .study/ 中。' : '考试页不负责创建私人身份。请回到当前 Agent 先执行建档与诊断，再刷新页面。'}</p><button class="primary-btn" data-action="start" ${profileReady ? '' : 'disabled'}>开始考试</button></aside></div></section></main>`;
+    return `<main class="intro-page"><section class="admission-card"><div class="admission-title"><div class="eyebrow">Computer-based mock examination</div><h1>${escapeHtml(paper.title)}</h1><p>仿机考工作台 · 全模块诊断 · 模拟组卷</p></div><div class="candidate-grid"><div class="candidate-cell"><div class="field-label">考试科目</div><div class="field-value">综合知识</div></div><div class="candidate-cell"><div class="field-label">试题数量</div><div class="field-value">${paper.question_count} 题</div></div><div class="candidate-cell"><div class="field-label">考试时长</div><div class="field-value">150 分钟</div></div><div class="candidate-cell"><div class="field-label">你的考期</div><div class="field-value">${escapeHtml(examDate)}</div></div></div><div class="instruction-wrap"><div><h2>考生须知</h2><ol class="instructions"><li>每题只有一个最符合题意的选项；答题过程中不显示答案和解析。</li><li>左侧答题卡显示未答、已答、标记和“拿不准”状态，可随时跳转。</li><li>交卷后立即确定性判分并自动保存原始答卷；错因作为考后补充反馈。</li><li>本卷满分 75 分，45 分为合格线；日常训练以 52 分作为安全目标。</li><li>覆盖 ${paper.coverage?.modules || 0}/${paper.coverage?.total_modules || 0} 个模块。${escapeHtml(paper.measurement_note || "")}</li></ol></div><aside class="privacy-box"><strong>${profileReady ? '本地闭环已就绪' : '需要先由 Agent 建档'}</strong><p>${profileReady ? '题目、作答、用时和错因只提交给当前 127.0.0.1 服务，最终保存在仓库根目录的 .study/ 中。' : '考试页不负责创建私人身份。请回到当前 Agent 先执行建档与诊断，再刷新页面。'}</p><button class="primary-btn" data-action="start" ${profileReady ? '' : 'disabled'}>开始考试</button></aside></div></section></main>`;
   }
   function currentQuestion() { return paper.items[session.current - 1]; }
-  function passageFor(number) { return (paper.passages || []).find(item => number >= item.start && number <= item.end); }
+  function passageFor(number) { return (paper.passages || []).find(item => item.question_numbers ? item.question_numbers.includes(number) : number >= item.start && number <= item.end); }
   function renderWorkstation() {
     const question = currentQuestion(), selected = session.answers[String(question.number)] || '', marked = Boolean(session.marked[String(question.number)]), guessed = session.confidences[String(question.number)] === 'guess';
     const answered = Object.values(session.answers).filter(Boolean).length, passage = passageFor(question.number);
-    return `<main class="workstation">${pageHeader()}<div class="exam-toolbar"><div class="exam-meta"><span>考生：<strong>本地考生</strong></span><span>科目：<strong>综合知识</strong></span><span>进度：<strong>${answered}/${paper.question_count}</strong></span></div><div>剩余时间 <span class="timer" data-timer aria-label="剩余考试时间">${formatTime(remainingSeconds())}</span></div></div><div class="workspace"><section class="question-panel"><div class="question-head"><div><div class="question-index">第 ${question.number} 题</div><div class="question-type">单项选择题 · 1 分</div></div><div class="question-type">可使用键盘 A-D 作答，← → 切题</div></div><div class="question-scroll">${passage ? `<article class="passage">${passage.text.split(/\n\n+/).map(paragraph => `<p>${formatInline(paragraph)}</p>`).join('')}</article>` : ''}<div class="question-stem">${formatInline(question.stem)}</div><div>${question.options.map(option => `<button class="option ${selected === option.key ? 'selected' : ''}" data-choice="${option.key}" aria-pressed="${selected === option.key}" aria-label="选项 ${option.key}"><span class="option-key">${option.key}</span><span>${formatInline(option.text)}</span></button>`).join('')}</div></div><div class="question-actions"><div class="action-cluster"><button class="flag-btn ${marked ? 'active' : ''}" data-action="mark" aria-pressed="${marked}">${marked ? '已标记' : '标记此题'}</button><button class="guess-btn ${guessed ? 'active' : ''}" data-action="guess" aria-pressed="${guessed}">${guessed ? '已标记拿不准' : '这题拿不准'}</button></div><div class="action-cluster"><button class="plain-btn" data-action="previous" ${question.number === 1 ? 'disabled' : ''}>上一题</button><button class="primary-btn" data-action="next">${question.number === paper.question_count ? '回到第 1 题' : '下一题'}</button></div></div></section><aside class="navigator" aria-label="答题卡"><h2>答题卡</h2><div class="progress-line"><span style="width:${answered / paper.question_count * 100}%"></span></div><div class="progress-copy"><span>已答 ${answered}</span><span>未答 ${paper.question_count - answered}</span></div><div class="answer-grid">${paper.items.map(item => { const key = String(item.number), state = [session.answers[key] ? '已答' : '未答', session.marked[key] ? '已标记' : '', session.confidences[key] === 'guess' ? '拿不准' : ''].filter(Boolean).join('，'); return `<button class="answer-cell ${session.answers[key] ? 'answered' : ''} ${item.number === question.number ? 'current' : ''} ${session.marked[key] ? 'marked' : ''} ${session.confidences[key] === 'guess' ? 'guessed' : ''}" data-jump="${item.number}" aria-label="第 ${item.number} 题，${state}" ${item.number === question.number ? 'aria-current="true"' : ''}>${item.number}</button>`; }).join('')}</div><div class="legend"><span><i class="done"></i>已答</span><span><i></i>未答</span><span><i class="now"></i>当前</span><span><i class="mark"></i>标记</span></div><div class="nav-summary">标记题 <strong>${Object.values(session.marked).filter(Boolean).length}</strong> 道 · 拿不准 <strong>${Object.values(session.confidences).filter(value => value === 'guess').length}</strong> 道</div><button class="danger-btn submit-wide" data-action="open-submit">交卷</button></aside></div>${submitDialog ? renderSubmitDialog(answered) : ''}</main>`;
+    return `<main class="workstation">${pageHeader()}<div class="exam-toolbar"><div class="exam-meta"><span>考生：<strong>本地考生</strong></span><span>科目：<strong>综合知识</strong></span><span>进度：<strong>${answered}/${paper.question_count}</strong></span></div><div>剩余时间 <span class="timer" data-timer aria-label="剩余考试时间">${formatTime(remainingSeconds())}</span></div></div><div class="workspace"><section class="question-panel"><div class="question-head"><div><div class="question-index">第 ${question.number} 题</div><div class="question-type">单项选择题 · 1 分</div></div><div class="question-type">可使用键盘 A-D 作答，← → 切题</div></div><div class="question-scroll">${passage ? `<article class="passage">${formatBlock(passage.text)}</article>` : ''}<div class="question-stem">${formatBlock(question.stem)}</div><div>${question.options.map(option => `<button class="option ${selected === option.key ? 'selected' : ''}" data-choice="${option.key}" aria-pressed="${selected === option.key}" aria-label="选项 ${option.key}"><span class="option-key">${option.key}</span><span>${formatInline(option.text)}</span></button>`).join('')}</div></div><div class="question-actions"><div class="action-cluster"><button class="flag-btn ${marked ? 'active' : ''}" data-action="mark" aria-pressed="${marked}">${marked ? '已标记' : '标记此题'}</button><button class="guess-btn ${guessed ? 'active' : ''}" data-action="guess" aria-pressed="${guessed}">${guessed ? '已标记拿不准' : '这题拿不准'}</button></div><div class="action-cluster"><button class="plain-btn" data-action="previous" ${question.number === 1 ? 'disabled' : ''}>上一题</button><button class="primary-btn" data-action="next">${question.number === paper.question_count ? '回到第 1 题' : '下一题'}</button></div></div></section><aside class="navigator" aria-label="答题卡"><h2>答题卡</h2><div class="progress-line"><span style="width:${answered / paper.question_count * 100}%"></span></div><div class="progress-copy"><span>已答 ${answered}</span><span>未答 ${paper.question_count - answered}</span></div><div class="answer-grid">${paper.items.map(item => { const key = String(item.number), state = [session.answers[key] ? '已答' : '未答', session.marked[key] ? '已标记' : '', session.confidences[key] === 'guess' ? '拿不准' : ''].filter(Boolean).join('，'); return `<button class="answer-cell ${session.answers[key] ? 'answered' : ''} ${item.number === question.number ? 'current' : ''} ${session.marked[key] ? 'marked' : ''} ${session.confidences[key] === 'guess' ? 'guessed' : ''}" data-jump="${item.number}" aria-label="第 ${item.number} 题，${state}" ${item.number === question.number ? 'aria-current="true"' : ''}>${item.number}</button>`; }).join('')}</div><div class="legend"><span><i class="done"></i>已答</span><span><i></i>未答</span><span><i class="now"></i>当前</span><span><i class="mark"></i>标记</span></div><div class="nav-summary">标记题 <strong>${Object.values(session.marked).filter(Boolean).length}</strong> 道 · 拿不准 <strong>${Object.values(session.confidences).filter(value => value === 'guess').length}</strong> 道</div><button class="danger-btn submit-wide" data-action="open-submit">交卷</button></aside></div>${submitDialog ? renderSubmitDialog(answered) : ''}</main>`;
   }
   function renderSubmitDialog(answered) {
     const unanswered = paper.items.filter(item => !session.answers[String(item.number)]).map(item => item.number);
@@ -167,7 +185,7 @@
   function renderReport() {
     const passed = session.score >= paper.pass_line, feedbackItems = wrongAndFragile(), groups = topicSummary(session.results || []), comprehensive = session.receipt?.status?.subjects?.comprehensive;
     const rawStatus = session.receipt ? `<div class="receipt">原始答卷已自动写入 .study/。${session.receipt.retest ? '这是同卷复测，只更新逐题复习证据，不重复抬高完整模考证据等级。' : '已保存整卷成绩；已见题或超时等情况不提升独立模考证据。'}</div>` : `<div class="modal-alert">${escapeHtml(session.recordError || '原始答卷尚未写入本地。')} <button class="secondary-btn" data-action="retry-record">重试保存</button></div>`;
-    return `<main class="report-page"><div class="report"><section class="score-banner"><div class="score-block"><div class="score-number">${session.score}<small>/75</small></div><div>综合知识</div></div><div class="score-detail"><h1>${session.phase === 'saved' ? '学习证据与错因已写入本地' : '模拟考试完成'}</h1><span class="status-badge ${passed ? 'pass' : 'fail'}">${passed ? '达到 45 分合格线' : '未达到 45 分合格线'}</span><div class="benchmark"><span>用时 <strong>${formatTime(session.durationSeconds)}</strong></span><span>安全目标 <strong>52 分</strong></span><span>错题 <strong>${session.results.filter(item => !item.correct).length}</strong></span><span>猜对/拿不准 <strong>${session.results.filter(item => item.correct && session.confidences[String(item.number)] === 'guess').length}</strong></span></div></div></section><section class="report-card">${rawStatus}</section><section class="report-card"><h2>板块表现（由弱到强）</h2><div class="topic-grid">${groups.map(([name, stat]) => `<div class="topic-stat"><b>${stat.correct}/${stat.total}</b><span>${escapeHtml(name)}</span></div>`).join('')}</div></section><section class="report-card"><h2>错题与脆弱题反馈</h2>${feedbackItems.length ? feedbackItems.map(result => { const fragile = result.correct, reason = session.wrongReasons[String(result.number)] || ''; return `<article class="review-item"><div class="review-title"><span>第 ${result.number} 题 · ${escapeHtml(result.topic_name)}</span><span class="${fragile ? 'fragile-label' : 'wrong-label'}">${fragile ? `答对但拿不准（${escapeHtml(result.selected)}）` : `你的答案 ${escapeHtml(result.selected || '未答')} · 正确答案 ${escapeHtml(result.correct_answer)}`}</span></div><div class="explanation">${formatInline(result.explanation || '请回到该考点进行复测。')}</div>${session.phase === 'saved' || fragile ? '' : `<select class="reason-select" data-reason="${result.number}"><option value="">请选择这道错题的主要错因</option>${reasonOptions(reason)}</select>`}</article>`; }).join('') : '<div class="receipt">本卷全对。按照进度协议，仍需跨日独立复测后才能判定稳定掌握。</div>'}${session.phase === 'saved' ? `<div class="receipt">错因补充已保存。${comprehensive ? `当前综合科证据等级：${escapeHtml(comprehensive.evidence_level)}；启发式下界：${escapeHtml(comprehensive.lower_bound_score)} 分。` : ''} 回到 Agent 后直接说“读取我的最新模考结果”。</div>` : `<div class="report-actions"><button class="primary-btn" data-action="save-feedback" ${busy ? 'disabled' : ''}>${busy ? '正在写入…' : '保存错因补充'}</button><button class="secondary-btn" data-action="return-result">稍后再填</button></div>`}</section>${session.phase === 'saved' ? '<div class="report-actions"><button class="secondary-btn" data-action="new-exam">开始同卷复测</button></div>' : ''}</div></main>`;
+    return `<main class="report-page"><div class="report"><section class="score-banner"><div class="score-block"><div class="score-number">${session.score}<small>/75</small></div><div>综合知识</div></div><div class="score-detail"><h1>${session.phase === 'saved' ? '学习证据与错因已写入本地' : '模拟考试完成'}</h1><span class="status-badge ${passed ? 'pass' : 'fail'}">${passed ? '达到 45 分合格线' : '未达到 45 分合格线'}</span><div class="benchmark"><span>用时 <strong>${formatTime(session.durationSeconds)}</strong></span><span>安全目标 <strong>52 分</strong></span><span>错题 <strong>${session.results.filter(item => !item.correct).length}</strong></span><span>猜对/拿不准 <strong>${session.results.filter(item => item.correct && session.confidences[String(item.number)] === 'guess').length}</strong></span></div></div></section><section class="report-card">${rawStatus}</section><section class="report-card"><h2>板块表现（由弱到强）</h2><div class="topic-grid">${groups.map(([name, stat]) => `<div class="topic-stat"><b>${stat.correct}/${stat.total}</b><span>${escapeHtml(name)}</span></div>`).join('')}</div></section><section class="report-card"><h2>错题与脆弱题反馈</h2>${feedbackItems.length ? feedbackItems.map(result => { const fragile = result.correct, reason = session.wrongReasons[String(result.number)] || ''; return `<article class="review-item"><div class="review-title"><span>第 ${result.number} 题 · ${escapeHtml(result.topic_name)}</span><span class="${fragile ? 'fragile-label' : 'wrong-label'}">${fragile ? `答对但拿不准（${escapeHtml(result.selected)}）` : `你的答案 ${escapeHtml(result.selected || '未答')} · 正确答案 ${escapeHtml(result.correct_answer)}`}</span></div><div class="explanation">${formatInline(result.explanation || '请回到该考点进行复测。')}</div>${session.phase === 'saved' || fragile ? '' : `<select class="reason-select" data-reason="${result.number}"><option value="">请选择这道错题的主要错因</option>${reasonOptions(reason)}</select>`}</article>`; }).join('') : '<div class="receipt">本卷全对。按照进度协议，仍需跨日独立复测后才能判定稳定掌握。</div>'}${session.phase === 'saved' ? `<div class="receipt">错因补充已保存。${comprehensive ? `当前综合科证据等级：${escapeHtml(comprehensive.evidence_level)}；启发式下界：${escapeHtml(comprehensive.lower_bound_score)} 分。` : ''} 回到 Agent 后直接说“读取我的最新模考结果”。</div>` : `<div class="report-actions"><button class="primary-btn" data-action="save-feedback" ${busy ? 'disabled' : ''}>${busy ? '正在写入…' : '保存错因补充'}</button><button class="secondary-btn" data-action="return-result">稍后再填</button></div>`}</section>${session.phase === 'saved' ? '<div class="report-actions"><button class="primary-btn" data-action="next-exam">选择新的独立测量卷</button><button class="secondary-btn" data-action="new-exam">同卷复习</button></div>' : ''}</div></main>`;
   }
   function reasonOptions(selected) { const options = [['knowledge_gap','知识盲区'],['recall_failure','记忆提取失败'],['concept_confusion','概念混淆'],['misread','审题失误'],['calculation','计算失误'],['careless','粗心']]; return options.map(([value, label]) => `<option value="${value}" ${selected === value ? 'selected' : ''}>${label}</option>`).join(''); }
   function bindEvents() {
@@ -188,9 +206,20 @@
     if (action === 'retry-record') retryRecord();
     if (action === 'save-feedback') saveFeedback();
     if (action === 'return-result') window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (action === 'new-exam') { session = null; saveSession(); render(); }
+    if (action === 'new-exam' || action === 'next-exam') {
+      const query = action === 'new-exam' ? `?paper_id=${encodeURIComponent(paper.paper_id)}&mode=review` : '';
+      session = null; saveSession(); history.replaceState(null, '', '/' + query); boot();
+    }
   }
-  function startExam() { session = { id: makeSessionId(), paperId: paper.paper_id, phase: 'taking', startedAt: Date.now(), questionEnteredAt: Date.now(), current: 1, answers: {}, marked: {}, confidences: {}, durations: {}, wrongReasons: {}, results: null, score: null, durationSeconds: null, receipt: null }; saveSession(); render(); startTimer(); }
+  async function startExam() {
+    try {
+      const mode = paper.measurement?.available ? 'measurement' : 'review';
+      const response = await fetch(`/api/mock-paper?paper_id=${encodeURIComponent(paper.paper_id)}&mode=${mode}`);
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.error || '试卷测量条件已变化，请刷新选择新卷');
+      paper = payload.data;
+    } catch (error) { alert(error.message); return; }
+    session = { id: makeSessionId(), paperId: paper.paper_id, phase: 'taking', startedAt: Date.now(), questionEnteredAt: Date.now(), current: 1, answers: {}, marked: {}, confidences: {}, durations: {}, wrongReasons: {}, results: null, score: null, durationSeconds: null, receipt: null }; saveSession(); render(); startTimer(); }
   function choose(key) { if (session.phase !== 'taking') return; session.answers[String(session.current)] = key; if (!session.confidences[String(session.current)]) session.confidences[String(session.current)] = 'sure'; saveSession(); render(); }
   function jump(number) { commitQuestionTime(); session.current = Math.min(paper.question_count, Math.max(1, number)); session.questionEnteredAt = Date.now(); saveSession(); render(); }
   async function gradeExam(auto = false) {
@@ -205,7 +234,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          session_id: session.id,
+          session_id: session.id, paper_id: session.paperId,
           answers: answerPayload(),
           confidences: session.confidences,
           durations: session.durations,
@@ -232,7 +261,7 @@
     }
   }
   async function recordExamEvidence() {
-    const response = await fetch('/api/mock-record', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: session.id, answers: answerPayload(), confidences: session.confidences, durations: session.durations, duration_seconds: session.durationSeconds }) });
+    const response = await fetch('/api/mock-record', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: session.id, paper_id: session.paperId, answers: answerPayload(), confidences: session.confidences, durations: session.durations, duration_seconds: session.durationSeconds }) });
     const payload = await response.json();
     if (!response.ok || !payload.ok) { session.recordError = payload.error || '原始答卷自动保存失败'; saveSession(); return false; }
     session.receipt = payload.data; session.recordError = null; saveSession(); return true;
@@ -242,7 +271,7 @@
     if (busy) return; const wrongs = session.results.filter(item => !item.correct), missing = wrongs.filter(item => !session.wrongReasons[String(item.number)]).map(item => item.number);
     if (missing.length) { alert(`请先为这些错题选择主要错因：${missing.join('、')}`); return; }
     busy = true; render(); const wrongReasons = Object.fromEntries(wrongs.map(item => [String(item.number), [session.wrongReasons[String(item.number)]]]));
-    try { if (!session.receipt && !(await recordExamEvidence())) throw new Error(session.recordError || '原始答卷尚未保存'); const response = await fetch('/api/mock-feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: session.id, answers: answerPayload(), wrong_reasons: wrongReasons }) }); const payload = await response.json(); if (!response.ok || !payload.ok) throw new Error(payload.error || '保存失败'); session.phase = 'saved'; session.feedbackReceipt = payload.data; saveSession(); }
+    try { if (!session.receipt && !(await recordExamEvidence())) throw new Error(session.recordError || '原始答卷尚未保存'); const response = await fetch('/api/mock-feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: session.id, paper_id: session.paperId, answers: answerPayload(), wrong_reasons: wrongReasons }) }); const payload = await response.json(); if (!response.ok || !payload.ok) throw new Error(payload.error || '保存失败'); session.phase = 'saved'; session.feedbackReceipt = payload.data; saveSession(); }
     catch (error) { alert(`写入失败：${error.message}`); } finally { busy = false; render(); }
   }
   function updateTimer() { const timer = app.querySelector('[data-timer]'); if (!timer || session?.phase !== 'taking') return; const remaining = remainingSeconds(); timer.textContent = formatTime(remaining); timer.classList.toggle('warning', remaining <= 300); }
@@ -251,11 +280,14 @@
   document.addEventListener('visibilitychange', () => { if (session?.phase !== 'taking') return; if (document.hidden) { commitQuestionTime(); saveSession(); } else { session.questionEnteredAt = Date.now(); saveSession(); } });
   window.addEventListener('pagehide', () => { if (session?.phase === 'taking') { commitQuestionTime(); saveSession(); } });
   async function boot() {
-    let needsRepair = false;
+    let needsRepair = false, resourceUnavailable = false, reviewPapers = [];
     try {
-      const [paperResponse, statusResponse] = await Promise.all([fetch('/api/mock-paper'), fetch('/api/status')]);
+      const query = session?.paperId ? `?paper_id=${encodeURIComponent(session.paperId)}&mode=review` : window.location.search;
+      const [paperResponse, statusResponse] = await Promise.all([fetch('/api/mock-paper' + query), fetch('/api/status')]);
       const paperPayload = await paperResponse.json(), statusPayload = await statusResponse.json();
       needsRepair = Boolean(statusPayload.needs_repair);
+      resourceUnavailable = Boolean(paperPayload.resource_unavailable);
+      reviewPapers = (paperPayload.papers || []).filter(row => !row.reasons.some(reason => ['quality_unavailable', 'quarantined_items'].includes(reason)));
       if (needsRepair) throw new Error(statusPayload.error || '历史题目关联需要迁移');
       if (!paperResponse.ok || !paperPayload.ok) throw new Error(paperPayload.error || '本地试卷加载失败');
       paper = paperPayload.data;
@@ -266,7 +298,7 @@
       render(); startTimer();
     } catch (error) {
       app.className = '';
-      app.innerHTML = `<section class="error-box"><h1>${needsRepair ? '请先修复历史题目关联' : '本地考试服务未就绪'}</h1><p>${escapeHtml(error.message)}</p><p>${needsRepair ? '请由当前 Agent 执行 <code>python3 scripts/tutor.py repair --normalize-question-links</code>，核对后刷新页面。' : '请由当前 Agent 启动 <code>python3 scripts/serve.py</code>，再刷新此页面。'}</p></section>`;
+      app.innerHTML = `<section class="error-box"><h1>${needsRepair ? '请先修复历史题目关联' : resourceUnavailable ? '暂无可用的独立测量卷' : '本地考试服务未就绪'}</h1><p>${escapeHtml(error.message)}</p><p>${resourceUnavailable ? '可返回学习航图继续模块训练，或选择同卷复习。复习成绩不计入独立模考证据。' : needsRepair ? '请由当前 Agent 执行 <code>python3 scripts/tutor.py repair --normalize-question-links</code>，核对后刷新页面。' : '请由当前 Agent 启动 <code>python3 scripts/serve.py</code>，再刷新此页面。'}</p>${resourceUnavailable ? `<p><a href="/dashboard.html">返回学习航图</a></p>${reviewPapers.map(row => `<p><a href="/?paper_id=${encodeURIComponent(row.paper_id)}&mode=review">复习模拟卷 ${escapeHtml(row.paper_id.match(/mock-(\d+)/)?.[1] || '')}</a></p>`).join('')}` : ''}</section>`;
     }
   }
   if (window.location.protocol === 'file:') {

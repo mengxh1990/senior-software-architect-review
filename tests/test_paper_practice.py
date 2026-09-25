@@ -15,6 +15,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = REPO_ROOT / "scripts" / "paper_practice.py"
 
 
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
+
+
 def _load_module():
     spec = importlib.util.spec_from_file_location("paper_practice", SCRIPT_PATH)
     assert spec and spec.loader

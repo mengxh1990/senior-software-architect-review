@@ -18,8 +18,8 @@ past-papers/
 ├── README.md                 # 本文件
 ├── analysis-template.md      # 真题解析模板
 ├── SOURCE_COVERAGE.md        # 真题来源类型与结构化覆盖状态
-├── comprehensive-by-year/    # ⭐ 综合知识按考期（2009 下 – 2026 上）
-├── case-by-year/             # ⭐ 案例分析按考期（2009 下 – 2026 上，缺 2023 下）
+├── comprehensive-by-year/    # ⭐ 综合知识按考期（2018 下 – 2026 上）
+├── case-by-year/             # ⭐ 案例分析按考期（2009–2017 经典选题，2018 起按年，2023 部分还原）
 ├── essay-by-year/            # ⭐ 论文按考期（完整题干与小问）
 ├── assets/                   # 原题插图（无损 WebP，已剔除广告与水印图）
 ├── incoming-raw/             # 待整理的回忆版原始文本
@@ -78,3 +78,5 @@ past-papers/
 | UML | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ |
 | 安全 / 等保 | ⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ |
 | 可靠性 | ⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ |
+
+> 历史题训练范围及逐题依据见 [`HISTORICAL_CURATION.md`](HISTORICAL_CURATION.md)。

@@ -8,6 +8,8 @@ import re
 from pathlib import Path
 from typing import Any, Iterable
 
+import knowledge_taxonomy
+
 
 SCHEMA_VERSION = 1
 BANK_PRIMARY_TOPICS = json.loads((Path(__file__).with_name("exam_bank_topics.json")).read_text(encoding="utf-8"))["items"]
@@ -63,20 +65,23 @@ PUBLIC_ITEM_CORRECTIONS = {
 def topic_override(item_id: str) -> str | None:
     """Return the verified topic for a mislabeled public item, if any."""
 
-    return (BANK_PRIMARY_TOPICS.get(item_id) or PUBLIC_ITEM_CORRECTIONS.get(item_id)
+    metadata = knowledge_taxonomy.objective_metadata(item_id)
+    return ((metadata or {}).get("topic_id") or BANK_PRIMARY_TOPICS.get(item_id) or PUBLIC_ITEM_CORRECTIONS.get(item_id)
             or ITEM_TOPIC_OVERRIDES.get(item_id))
 
 
 def canonicalize_public_event(event: dict[str, Any]) -> dict[str, Any]:
     """Project verified topic corrections without rewriting answer evidence."""
 
+    projected = knowledge_taxonomy.project_event(event)
+    if projected != event:
+        return projected
+    if projected.get("classification_reason"):
+        return projected
     topic_id = topic_override(str(event.get("item_id") or ""))
-    if (
-        not topic_id
-        or event.get("topic_id") == topic_id
-        or event.get("subject") not in (None, "comprehensive")
-        or event.get("skill") not in (None, "recognition")
-    ):
+    if (not topic_id or event.get("topic_id") == topic_id
+            or event.get("subject") not in (None, "comprehensive")
+            or event.get("skill") not in (None, "recognition")):
         return event
     return {**event, "topic_id": topic_id}
 

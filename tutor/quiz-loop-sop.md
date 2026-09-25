@@ -50,10 +50,11 @@ python3 scripts/tutor.py progress --runtime-json
 ```
 
 只有 `next_action.mode=quiz_prepare` 时进入本客观题流程。沿用返回的
-`next_action.command`，包括其 `--topic` 考点路由参数；同组客观题按该稳定考点组卷：
+`next_action.command`，包括其 `--topic` 模块和题数；常规训练与复测均按K模块组卷，不按笔记标签筛选：
 
 ```bash
 python3 scripts/tutor.py quiz-prepare --subject comprehensive --topic <next_action.topic_id> --limit 5
+# limit 原样采用路由返回值。
 ```
 
 该命令在一个进程内完成大考点诊断、推荐、真题优先抽取和当天题目去重，
@@ -112,7 +113,7 @@ python3 scripts/sanitize_bank.py exam-bank/07-software-engineering.md 1 4 6
 
 ### Step 2b · 真题抽题契约（由 `quiz-prepare` 内部执行）
 
-`past-papers/comprehensive-by-year/` 里是 20 个考期的综合知识真题（1055 个可用题块），
+`past-papers/comprehensive-by-year/` 里保留 2018 年起的 11 个考期综合知识转录（完整性逐卷核验），
 **同一套脱敏契约**。`quiz-prepare` 已按"真题优先、自编题兜底"抽题并完成脱敏，
 本节只说明它内部使用的契约；下面的命令仅用于题库维护、抽查与人工修复，
 **不在答题循环内调用**。
@@ -138,15 +139,15 @@ python3 scripts/sanitize_bank.py --list
 
 | 字段 | 含义 |
 |---|---|
-| `tag` / `tag_label` | 该题块的 §考点标签（2009–2017 为题组级，2018 起为逐题） |
+| `tag` / `tag_label` | 该题块的 §考点标签（仅 2018 年起进入训练） |
 | `range` | 原卷题号区间，如 `[7, 8]`；运行时只放行可作为**单个独立作答单元**呈现的题 |
-| `candidate_topics` | 由 `curriculum.json` 的 `raw_tags` 推出的 tutor 考点编号，用于 `record --topic` |
+| `candidate_topics` | 由题目模块映射表确定的唯一 K 主模块；原始标签仅用于来源追溯 |
 
 抽题注意事项：
 
-- `id` 形如 `past-papers/comprehensive-by-year/2013下.md#7-8`，**record 时原样作为 `--item-id`**；
+- `id` 形如 `past-papers/comprehensive-by-year/2019下.md#6-7`，**record 时原样作为 `--item-id`**；
 - 一个题块含多个独立小问（如 `#7-8`）且尚未有逐小题选项、答案与记档模型时，会被质量门禁标记为 `multi_question_group` 并跳过；**不得**把多道题的答案压成一次作答或手工拆题。未来有结构化子题模型后再恢复。
-- `--source-type` 按考期来源选择：2009–2022 用 `real`，回忆版考期（2023 下、2024 上/下、2025 上/下、2026 上）用 `recalled_real`；
+- `--source-type` 按考期来源选择：2018–2022 中可靠原卷用 `real`，2020 不完整回忆版用 `recalled_real`，回忆版考期（2023 下、2024 上/下、2025 上/下、2026 上）用 `recalled_real`；
 - 真题保留试卷原始的答案分布，**不要**套用"自编题正确答案需分散到不同选项"的规则；
 - 2019 下、2020、2023 下的整理版本只覆盖部分题目（26 / 12 / 1 个可用题块），抽不到时退回 `exam-bank/` 或自编题；
 - 当前客观题是文本契约，依赖插图但不可呈现的题由门禁拦截，不得用“原题含图”代替必要图示。
@@ -168,15 +169,15 @@ python3 scripts/tutor.py case-prepare --topic K25.RELIABILITY_ENGINEERING
 不存在的题；只有用户明确接受缺图题时才加 `--allow-missing-figures`。收到成功结果后
 不得再调用 `--list`、手工比较题型或搜索图片路径。
 
-论文以及案例作答后的答案揭示仍使用 [`scripts/paper_practice.py`](../scripts/paper_practice.py)：
+论文取题使用 `python3 scripts/tutor.py essay-prepare`；案例/论文作答后的答案揭示使用 [`scripts/paper_practice.py`](../scripts/paper_practice.py)：
 
 ```bash
 # 案例：按题型盲练（自动剥离参考答案）
 python3 scripts/paper_practice.py --subject case --type 01 --limit 2
 # 案例：作答后取参考答案
-python3 scripts/paper_practice.py --subject case --year 2013下 --numeral 一 --reveal
+python3 scripts/paper_practice.py --subject case --item-id "past-papers/case-by-year/2013下-原卷.md#试题一" --reveal
 # 论文：按主题取题干与小问
-python3 scripts/paper_practice.py --subject essay --topic 06 --limit 4
+python3 scripts/tutor.py essay-prepare --topic P02.ESSAY_BIG_DATA
 # 看各题型可用量
 python3 scripts/paper_practice.py --list
 ```
@@ -195,7 +196,7 @@ python3 scripts/paper_practice.py --list
 
 - 案例题作答后跑 `--reveal` 取参考答案，按评分点逐项估分并标注"AI 估分"；
 - `--item-id` 用输出的 `id`，`--skill application`（案例）/ `production`（论文成文）；
-- 案例可盲练 79 道（2009 下–2017 下取自 `<考期>-原卷.md` 的无答案题干，2018 下起取自带答案的整理版）、论文 67 道；案例其余 62 道为题干与答案混排的卷子，只作研读与作答后对答案。不够时回退 [`case-types/`](../past-papers/case-types/) 的自编模拟题与 [`paper-topics/`](../past-papers/paper-topics/) 的仿真题。
+- 案例/论文数量以 `paper_practice.py --list` 为准；2009–2017 只保留经典选题，不能用作完整年份模考。题干与参考答案必须分离；未满足门禁时不得盲练。
 
 ## Step 3 · 批量出题
 
@@ -426,3 +427,13 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 变式支持与普通题相同的 `--invalidate` / `--audit`；题目在等待作答期间已从门禁池移除时自动排除，其他有效答案正常记档。变式解析直接从返回值获得。
 
 主观题原答和评分写入 `.study/` 的 JSON，包含 `response_text`、`rubric.version`、`rubric.points[]`（每点 score/max_score/evidence）。完整案例记档额外传 `--assessment-scope case --complete --max-score 25 --assessment-file ...`；论文完整限时传 `--mode full_timed --assessment-file ...`。如题目针对某个 K 考点的到期任务，在 JSON 的 `assessed_topics[]` 中记录实际考查的 topic_id/score/max_score/evidence；不得将整题分数无差别复制到所有关联考点。
+
+> 历史题训练范围及逐题依据见 [`历史题复核`](../past-papers/HISTORICAL_CURATION.md)。
+
+## 两层分类与完整题面补充契约
+
+- 出题服从直接K模块映射与题面指纹；`topic_id` 是出题、判分和复测的唯一分类主键，domain用于组织展示。笔记标签不参与上述流程。
+- 主观题服从complete、quality_status和评分上下文；缺失材料不能现场补写成原题。
+- 多批次题必须使用精确item_id或明确batch揭示。
+- rubric评分点标实际考查的K模块与原答依据；同模块多个小问合并一次，不复制总分。
+- 模块抽样达标不代表全部内容掌握；未测、证据不足和题库缺口都不能直接解释为薄弱。

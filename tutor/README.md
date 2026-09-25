@@ -35,7 +35,8 @@ python3 scripts/serve.py
 
 - 距离考试还有多久、每天能学多少分钟；
 - 综合、案例、论文三科各自的真实测量证据；
-- 每个稳定教学考点在“识别 / 应用 / 产出”三种能力上的掌握度；
+- 13个知识域、31个K模块的抽样表现、测量充分度与题库容量缺口；
+- 每个K模块在“识别 / 应用 / 产出”三种能力上的证据，以及模块覆盖率；
 - 哪些题是猜对的、错因是什么、何时需要重做；
 - 案例主赛道和论文匿名项目素材。
 
@@ -60,10 +61,12 @@ python3 scripts/serve.py
 - [`.claude/agents/senior-architect-pass-coach.md`](../.claude/agents/senior-architect-pass-coach.md) — 教师人格与决策规则（诊断 / 案例 / 论文全流程）
 - [`PROGRESS_PROTOCOL.md`](./PROGRESS_PROTOCOL.md) — 记档规则、证据分级、隐私边界
 - [`quiz-loop-sop.md`](./quiz-loop-sop.md) — 客观题一轮"出题→作答→判分→记档"的运行时管道
-- [`topic-map.md`](./topic-map.md) — 考点↔资源映射表（脚本自动生成，请勿手改）
+- [`TAXONOMY.md`](./TAXONOMY.md) — 两层模块分类、逐题映射和迁移契约
+- [`note-tags.json`](./note-tags.json) — 可选笔记标签，不参与训练与评分
+- [`topic-map.md`](./topic-map.md) — 完整分类和真实可用题目数量（自动生成）
 - [`../scripts/tutor.py`](../scripts/tutor.py) — 私人进度 CLI（含 `quiz-prepare` / `quiz-grade` 一体化客观题循环，以及只读的 `weakpoints` 薄弱点排名）
 - [`../scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) — exam-bank 答案脱敏器与题目质量门禁（题库维护、抽查与人工修复用，不在答题循环内调用）
-- [`frequency-snapshot.json`](./frequency-snapshot.json) — 双层考频审计快照；覆盖率达标前只报告、不替换运行时权重
+- [`frequency-snapshot.json`](./frequency-snapshot.json) — 双层考频审计快照；样本充分且版本一致时参与排课，残缺卷不放大
 - [`../scripts/build_frequency_snapshot.py`](../scripts/build_frequency_snapshot.py) — 从质量门禁后的真题生成并校验考频快照
 - [`../scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) — 由 `curriculum.json` 重新生成 `topic-map.md`
 
@@ -104,6 +107,12 @@ python3 scripts/tutor.py --data-dir .study recommend
 # 一次完成诊断、选题与脱敏
 python3 scripts/tutor.py --data-dir .study quiz-prepare \
   --subject comprehensive --limit 5
+
+# 显式练K模块
+python3 scripts/tutor.py --data-dir .study quiz-prepare --topic K06.DESIGN_DATA_VIEWS --limit 3
+
+# 一次完成论文选题与完整性检查（只读）
+python3 scripts/tutor.py --data-dir .study essay-prepare
 
 # 一次完成案例路由、盲练真题选取、去重与插图完整性检查（只读）
 python3 scripts/tutor.py --data-dir .study case-prepare
@@ -160,7 +169,7 @@ python3 scripts/tutor.py --data-dir .study configure \
 # 记录一次作答（示例）
 python3 scripts/tutor.py --data-dir .study record \
   --topic K19.ATAM_TACTICS --skill recognition \
-  --score 4 --max-score 5 --attempt-id demo-atam-001 \
+  --score 1 --max-score 1 --attempt-id demo-atam-001 \
   --item-id exam-bank/12-atam-evaluation.md#3 \
   --source exam-bank/12-atam-evaluation.md
 
@@ -196,7 +205,7 @@ python3 scripts/build_frequency_snapshot.py --check
 - 自动训练优先使用通过质量与讲解门禁的历年真题，自编题作为补充。
 - 案例与论文分数只能称为“AI 估分”，并必须展示评分依据。案例完成作答后还必须提供逐问“标准答案（参考）”；主观题答案以核心采分点为准，不宣称存在唯一官方文字答案。
 - 没有完整限时证据时，只显示“待诊断/低置信度”，不制造精确通过率。
-- 使用必填的稳定 `item_id` 追踪独立题目；每题只映射到稳定大考点，保留题目来源和内容指纹。
+- 使用必填的稳定 `item_id` 追踪独立题目；每题直接固定唯一K模块，保留题目来源和内容指纹；补练在同K模块内选题。
 
 ## 维护者入口
 
@@ -217,7 +226,17 @@ python3 -m unittest discover -s tests -v
 - 默认小组最多 5 题，资源不足可以缩短；`quiz-prepare --mixed` 用于跨考点检验。
 - 不确定/猜对、同内容不同 ID、片段案例、同卷复测或超时不能冒充独立稳定证据。`lower_bound_score` 是启发式余量，不是统计置信下界。
 - 完整案例/论文使用私人评分 JSON：`response_text` 原答，`rubric` 对象内包含 `version` 及 `points` 数组；每点包含 `score`、`max_score`、`evidence`，合计等于记录分数。完整案例用 `--assessment-scope case --complete --assessment-file ...`；完整论文字数从原答计算。
-- 案例细考点的 `assessed_topics` 只记录实际覆盖的评分点，不自动把整个赛道分数复制到细考点。
+- 主观题 rubric 评分点按 `topic_id` 记录，可跨模块；完整性、用时和独立测量分别校验，片段不能证明整题能力。
 - `quiz-variant-grade` 同样支持 `--invalidate` 和 `--audit`。确定坏题自动隔离；核验后用 `release-question --item-id ... --evidence '核验来源与依据'` 放行当前版本。
 - 代码升级可先运行 `repair --dry-run` 检查差异，再运行 `repair --recompute-derived` 备份并重算；原作答日志不变。
 - 考频快照的 runtime_ready 仅表示统计覆盖达到门槛；当前运行时仍使用 curriculum_curated 固定权重，未自动切换到快照权重。
+
+## 分类与题源维护检查
+
+```bash
+python3 scripts/audit_taxonomy.py --json
+python3 scripts/build_frequency_snapshot.py --check
+python3 scripts/gen_topic_map.py --check
+```
+
+分类、题面或来源变化后，先复核逐题知识点与指纹，再重建考频与覆盖报告。具体流程见 [TAXONOMY.md](./TAXONOMY.md)。

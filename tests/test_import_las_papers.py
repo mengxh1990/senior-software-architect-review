@@ -263,7 +263,7 @@ class ReviewedRemovalTests(unittest.TestCase):
             for document in manifest["documents"]
             for name in (document.get("drop_images") or {})
         }
-        self.assertGreaterEqual(len(drops), 30, "广告/水印剔除清单不应为空")
+        self.assertGreater(len(drops), 0, "保留考期的广告/水印剔除清单不应为空")
         for label, stem in drops:
             with self.subTest(asset=f"{label}/{stem}"):
                 self.assertFalse(

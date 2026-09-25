@@ -8,7 +8,7 @@ import json
 import sys
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
@@ -178,14 +178,22 @@ class TrainingPolicyTests(unittest.TestCase):
 
     def test_invalidated_question_is_quarantined_until_reviewed_release(self):
         pool = [self.raw(0)]
-        with patch.object(t, "load_quiz_question_pool", return_value=pool):
-            quiz = self.cli("quiz-prepare", "--topic", K, "--limit", "1")
+        # 客观题会话的 created_at 取自真实时钟，而 quiz_questions_served_on 按它做
+        # 「当日不重复出题」判定；--today 只影响筛选日。若不固定时钟，当真实日期恰好
+        # 等于下面的查询日时，放行后的题目仍会被当日去重挡住。因此固定时钟，并让
+        # 出题日（DAY）与查询日（DAY+1）错开。
+        served_on = DAY.isoformat()
+        queried_on = (DAY + timedelta(days=1)).isoformat()
+        with patch.object(t, "now_iso", return_value=f"{served_on}T09:00:00+08:00"), patch.object(
+            t, "load_quiz_question_pool", return_value=pool
+        ):
+            quiz = self.cli("quiz-prepare", "--topic", K, "--limit", "1", "--today", served_on)
             self.cli("quiz-grade", "--quiz-id", quiz["quiz_id"], "--answers", "X", "--invalidate", "1=missing_table")
             self.assertEqual({"fixture:0"}, t.quarantined_item_ids(self.data, pool))
-            self.cli("quiz-prepare", "--topic", K, "--limit", "1", "--today", "2026-09-25", code=2)
+            self.cli("quiz-prepare", "--topic", K, "--limit", "1", "--today", queried_on, code=2)
             self.cli("release-question", "--item-id", "fixture:0", "--evidence", "Verified source table")
             self.assertEqual(set(), t.quarantined_item_ids(self.data, pool))
-            self.cli("quiz-prepare", "--topic", K, "--limit", "1", "--today", "2026-09-25")
+            self.cli("quiz-prepare", "--topic", K, "--limit", "1", "--today", queried_on)
         changed = [self.raw(0, explanation="new unreviewed version")]
         self.assertEqual({"fixture:0"}, t.quarantined_item_ids(self.data, changed))
 

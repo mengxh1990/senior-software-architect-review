@@ -1,0 +1,808 @@
+{
+  "schema_version": 1,
+  "reviewed_on": "2026-09-25",
+  "comprehensive_removed_years": [
+    "2009下",
+    "2010下",
+    "2011下",
+    "2012下",
+    "2013下",
+    "2014下",
+    "2015下",
+    "2016下",
+    "2017下"
+  ],
+  "case": {
+    "2009下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "案例 01",
+        "label": "架构评估与质量属性",
+        "evidence": [
+          "质量属性",
+          "架构设计策略"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "案例 14",
+        "label": "结构化分析与 DFD",
+        "evidence": [
+          "数据流图",
+          "流程图"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": false,
+        "reason": "VxWorks5.5/Linux 对比与宇航隔离细节，版本语境强，排除本轮经典训练"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "案例 03",
+        "label": "架构风格对比与选型",
+        "evidence": [
+          "控制环路",
+          "面向对象"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "五",
+        "keep": true,
+        "tag": "案例 07",
+        "label": "安全架构分析",
+        "evidence": [
+          "认证",
+          "授权侵犯"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ],
+    "2010下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "案例 03",
+        "label": "架构风格对比与选型",
+        "evidence": [
+          "管道-过滤器",
+          "主程序"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "案例 02",
+        "label": "数据库设计（分布式 / 读写分离）",
+        "evidence": [
+          "读写分离",
+          "数据库"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": false,
+        "reason": "AUTOSAR 工作包、ECU 分层细节，专门标准成本高"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "案例 10",
+        "label": "SOA 与企业应用集成",
+        "evidence": [
+          "ESB",
+          "集成"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "五",
+        "keep": true,
+        "tag": "案例 13",
+        "label": "可靠性与容错设计",
+        "evidence": [
+          "可靠度",
+          "N版本"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ],
+    "2011下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "案例 01",
+        "label": "架构评估（ATAM）",
+        "evidence": [
+          "效用树",
+          "权衡点"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "案例 02",
+        "label": "数据库设计（反规范化）",
+        "evidence": [
+          "反规范化",
+          "数据模型"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": false,
+        "reason": "FC/VME、ARINC653、PowerPC 具体实现，专门平台依赖强"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "案例 10",
+        "label": "SOA 与资源服务（REST）",
+        "evidence": [
+          "REST",
+          "面向资源"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "五",
+        "keep": true,
+        "tag": "案例 07",
+        "label": "安全架构分析（加密 / RBAC）",
+        "evidence": [
+          "机密性",
+          "Role-Based"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ],
+    "2012下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "案例 03",
+        "label": "架构风格对比与选型",
+        "evidence": [
+          "管道-过滤器",
+          "数据存储"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": false,
+        "reason": "ODP 五视点与分布式对象机制，不是微服务拆分，撤销原错标训练"
+      },
+      {
+        "number": "三",
+        "keep": false,
+        "reason": "GOA/SAEAS4893 接口编号细节，专门标准依赖强"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "案例 15",
+        "label": "设计模式应用",
+        "evidence": [
+          "策略模式",
+          "适配器"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "五",
+        "keep": true,
+        "tag": "案例 09",
+        "label": "大数据 / NoSQL 架构设计",
+        "evidence": [
+          "NoSQL",
+          "关系数据库"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ],
+    "2013下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "案例 10",
+        "label": "SOA 与企业应用集成",
+        "evidence": [
+          "ESB",
+          "服务建模"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": false,
+        "reason": "项目计划与赶工费用专题，退出本轮精选架构案例范围"
+      },
+      {
+        "number": "三",
+        "keep": false,
+        "reason": "TMS320C25S 中断寄存器与 FMECA 细节，已有通用可靠性题可替代"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "案例 03",
+        "label": "架构风格（MVC / 解释器）",
+        "evidence": [
+          "MVC",
+          "XML"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "五",
+        "keep": true,
+        "tag": "案例 07",
+        "label": "安全架构分析",
+        "evidence": [
+          "数字信封",
+          "认证"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ],
+    "2014下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "案例 03",
+        "label": "架构风格（MVC / 扩展接口）",
+        "evidence": [
+          "MVC",
+          "扩展接口"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "案例 14",
+        "label": "结构化分析与 DFD",
+        "evidence": [
+          "数据流图",
+          "CRUD"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": false,
+        "reason": "GENESYS/BSP/RS-232 接口细节，专门平台依赖强"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "案例 01",
+        "label": "架构评估（ATAM）",
+        "evidence": [
+          "效用树",
+          "权衡点"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "五",
+        "keep": false,
+        "reason": "含旧 MySQL query cache 选型约束；通用高并发能力由 2017 五替代"
+      }
+    ],
+    "2015下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "案例 01",
+        "label": "架构评估（ATAM）",
+        "evidence": [
+          "效用树",
+          "权衡点"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "案例 04",
+        "label": "UML 建模与分析",
+        "evidence": [
+          "状态图",
+          "活动图"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": true,
+        "tag": "案例 13",
+        "label": "可靠性与容错设计",
+        "evidence": [
+          "恢复块",
+          "N版本"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "四",
+        "keep": false,
+        "reason": "把内存与关系数据库对立、固定 SQL 优劣结论，难作为跨实现经典题"
+      },
+      {
+        "number": "五",
+        "keep": false,
+        "reason": "EJB Entity Bean、Hibernate/iBatis 框架分类记忆；持久层用 2017 四替代"
+      }
+    ],
+    "2016下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "案例 03",
+        "label": "架构风格与质量属性",
+        "evidence": [
+          "质量属性",
+          "管道"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "案例 04",
+        "label": "UML 建模与分析",
+        "evidence": [
+          "用例",
+          "类图"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": true,
+        "tag": "案例 08",
+        "label": "实时系统与可靠性基础",
+        "evidence": [
+          "实时系统",
+          "失效"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "四",
+        "keep": false,
+        "reason": "以旧 PHP/J2EE 平台优劣作固定推论，版本与实现语境强"
+      },
+      {
+        "number": "五",
+        "keep": false,
+        "reason": "SSH/Struts/Sitemesh 架构填图，不是 DevOps 或 CI/CD 能力测量"
+      }
+    ],
+    "2017下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "案例 01",
+        "label": "架构评估（ATAM）",
+        "evidence": [
+          "效用树",
+          "权衡点"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": false,
+        "reason": "EJB Bean 具体分类与旧 JavaEE 组件填图，不是 SOA 集成"
+      },
+      {
+        "number": "三",
+        "keep": false,
+        "reason": "ROS Master 注册及旧 ROS 实时性结论，版本语境强"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "案例 02",
+        "label": "数据库访问层与 ORM",
+        "evidence": [
+          "ORM",
+          "数据访问层"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "五",
+        "keep": true,
+        "tag": "案例 09",
+        "label": "高并发 Web 架构设计",
+        "evidence": [
+          "CDN",
+          "主从复制"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ]
+  },
+  "essay": {
+    "2009下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "论文 01",
+        "label": "软件架构设计（DSSA）",
+        "evidence": [
+          "DSSA",
+          "领域分析"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "论文 16",
+        "label": "信息系统建模",
+        "evidence": [
+          "建模方法",
+          "模型"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": false,
+        "reason": "REST 本身可复用，但该篇旧参考要点含 URI 全参数/4KB 等不可靠断言；已有 2011 案例四可练 REST"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "论文 03",
+        "label": "系统可靠性设计",
+        "evidence": [
+          "可靠性",
+          "设计技术"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ],
+    "2010下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "论文 09",
+        "label": "软件架构演化与维护",
+        "evidence": [
+          "静态演化",
+          "动态演化"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": false,
+        "reason": "数据挖掘算法专题不等于大数据架构，退出本轮架构经典精选"
+      },
+      {
+        "number": "三",
+        "keep": true,
+        "tag": "论文 21",
+        "label": "分布式缓存",
+        "evidence": [
+          "缓存",
+          "工作模式"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "论文 03",
+        "label": "软件可靠性评价",
+        "evidence": [
+          "可靠性模型",
+          "数据"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ],
+    "2011下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "论文 16",
+        "label": "模型驱动与系统建模",
+        "evidence": [
+          "MDA",
+          "模型"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "论文 11",
+        "label": "企业应用集成（EAI）",
+        "evidence": [
+          "集成平台",
+          "关键技术"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": false,
+        "reason": "企业架构管理专题较宽，通用架构设计由 DSSA/ABSD/分层题覆盖"
+      },
+      {
+        "number": "四",
+        "keep": false,
+        "reason": "需求获取方法专题，退出本轮架构论文精选"
+      }
+    ],
+    "2012下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "论文 01",
+        "label": "软件架构设计（ABSD）",
+        "evidence": [
+          "ABSD",
+          "开发阶段"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "论文 20",
+        "label": "数据持久层架构",
+        "evidence": [
+          "数据持久层",
+          "数据访问"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": false,
+        "reason": "决策支持系统和模型库专题，不等于 NoSQL 架构"
+      },
+      {
+        "number": "四",
+        "keep": false,
+        "reason": "信息化规划专题，不等于企业应用集成"
+      }
+    ],
+    "2013下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "论文 01",
+        "label": "软件架构设计（4+1 视图）",
+        "evidence": [
+          "4+1",
+          "视图"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "论文 01",
+        "label": "软件架构设计（分层）",
+        "evidence": [
+          "层次",
+          "分层"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": true,
+        "tag": "论文 03",
+        "label": "系统可靠性设计",
+        "evidence": [
+          "可靠性",
+          "设计技术"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "论文 06",
+        "label": "分布式存储架构",
+        "evidence": [
+          "分布式存储",
+          "冗余"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ],
+    "2014下": [
+      {
+        "number": "一",
+        "keep": false,
+        "reason": "需求管理专题，退出本轮架构论文精选"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "论文 01",
+        "label": "软件架构设计（非功能需求）",
+        "evidence": [
+          "非功能性需求",
+          "架构"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": true,
+        "tag": "论文 03",
+        "label": "系统可靠性设计",
+        "evidence": [
+          "可靠性",
+          "设计技术"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "论文 04",
+        "label": "系统安全性与保密性设计",
+        "evidence": [
+          "安全服务",
+          "安全机制"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ],
+    "2015下": [
+      {
+        "number": "一",
+        "keep": false,
+        "reason": "应用服务器平台能力专题，通用分层/可靠性论文可替代"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "论文 01",
+        "label": "软件架构风格",
+        "evidence": [
+          "架构风格",
+          "具体含义"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": true,
+        "tag": "论文 07",
+        "label": "面向服务架构（SOA）",
+        "evidence": [
+          "SOA",
+          "服务类别"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "论文 11",
+        "label": "企业应用集成（EAI）",
+        "evidence": [
+          "集成平台",
+          "关键技术"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ],
+    "2016下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "论文 02",
+        "label": "软件架构评估（ATAM）",
+        "evidence": [
+          "架构评估",
+          "质量属性"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "论文 10",
+        "label": "设计模式在架构中的应用",
+        "evidence": [
+          "设计模式",
+          "类型"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": true,
+        "tag": "论文 20",
+        "label": "数据访问层设计",
+        "evidence": [
+          "数据访问层",
+          "封装"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "论文 05",
+        "label": "微服务架构",
+        "evidence": [
+          "微服务",
+          "单块"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ],
+    "2017下": [
+      {
+        "number": "一",
+        "keep": true,
+        "tag": "论文 01",
+        "label": "软件架构风格",
+        "evidence": [
+          "架构风格",
+          "构件"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "二",
+        "keep": true,
+        "tag": "论文 16",
+        "label": "系统建模",
+        "evidence": [
+          "建模方法",
+          "特点"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "三",
+        "keep": true,
+        "tag": "论文 13",
+        "label": "无服务器架构（Serverless）",
+        "evidence": [
+          "Serverless",
+          "功能即服务"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      },
+      {
+        "number": "四",
+        "keep": true,
+        "tag": "论文 12",
+        "label": "软件测试与质量保证",
+        "evidence": [
+          "质量保证",
+          "活动"
+        ],
+        "reason": "保留实际小问考查的可迁移架构/工程基础"
+      }
+    ]
+  }
+}

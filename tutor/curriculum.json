@@ -7,557 +7,2138 @@
     "historical_sample_years": "2018-2025（7 份可用综合卷，部分年份题目不完整）",
     "source": "past-papers/HIGH_FREQ.md",
     "comprehensive_cold_start_groups": [
-      ["K08.SOFTWARE_PROCESS_MODELS", "K16.REQUIREMENTS_MANAGEMENT", "K03.SOFTWARE_DESIGN_UML", "K06.DESIGN_DATA_VIEWS", "K05.TEST_CMMI_PATTERNS", "K15.STRUCTURED_ANALYSIS_DFD", "K23.PROJECT_MANAGEMENT_METRICS"],
-      ["K04.ARCH_STYLES_ABSD", "K11.COMPONENTS_4PLUS1", "K12.PATTERNS_SOA_MICROSERVICES", "K13.VIEWS_SOA_LAYERING", "K21.MESSAGING_CACHE", "K26.ARCH_EVOLUTION"],
-      ["K01.OS_MEMORY_KERNEL", "K18.COMPUTER_ARCH_STORAGE", "K02.NETWORK_PROTOCOLS", "K14.OS_SCHEDULING_FILES", "K07.REALTIME_EMBEDDED", "K24.INFORMATION_SYSTEMS"],
-      ["K09.QUALITY_SCENARIOS", "K19.ATAM_TACTICS", "K25.RELIABILITY_ENGINEERING"],
-      ["K17.IP_COPYRIGHT", "K22.ENGLISH_READING", "K10.DATABASE_MODELING", "K20.SECURITY_FOUNDATIONS", "K27.EMERGING_TECH", "K28.MATH_OPERATIONS"]
+      [
+        "K08.SOFTWARE_PROCESS_MODELS",
+        "K16.REQUIREMENTS_MANAGEMENT",
+        "K03.SOFTWARE_DESIGN_UML",
+        "K06.DESIGN_DATA_VIEWS",
+        "K05.TEST_CMMI_PATTERNS",
+        "K15.STRUCTURED_ANALYSIS_DFD",
+        "K23.PROJECT_MANAGEMENT_METRICS"
+      ],
+      [
+        "K04.ARCH_STYLES_ABSD",
+        "K11.COMPONENTS_4PLUS1",
+        "K12.PATTERNS_SOA_MICROSERVICES",
+        "K13.VIEWS_SOA_LAYERING",
+        "K21.MESSAGING_CACHE",
+        "K26.ARCH_EVOLUTION",
+        "K29.DESIGN_PATTERNS"
+      ],
+      [
+        "K01.OS_MEMORY_KERNEL",
+        "K18.COMPUTER_ARCH_STORAGE",
+        "K02.NETWORK_PROTOCOLS",
+        "K14.OS_SCHEDULING_FILES",
+        "K07.REALTIME_EMBEDDED",
+        "K24.INFORMATION_SYSTEMS"
+      ],
+      [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS",
+        "K25.RELIABILITY_ENGINEERING"
+      ],
+      [
+        "K17.IP_COPYRIGHT",
+        "K22.ENGLISH_READING",
+        "K10.DATABASE_MODELING",
+        "K20.SECURITY_FOUNDATIONS",
+        "K27.EMERGING_TECH",
+        "K28.MATH_OPERATIONS",
+        "K30.LANGUAGES_COMPILERS",
+        "K31.BIG_DATA_ARCHITECTURE"
+      ]
     ]
   },
   "topics": [
     {
       "id": "K01.OS_MEMORY_KERNEL",
       "name": "操作系统内核、进程与存储管理",
-      "subjects": ["comprehensive"],
-      "skills": ["recognition"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 15,
       "frequency_confidence": "medium",
       "priority_weight": 1.0,
       "quick_win": 0.72,
       "cross_subject_value": 0.2,
       "estimated_minutes": 120,
-      "raw_tags": ["§1.3"],
-      "resources": ["exam-bank/02-os-concepts.md", "cheatsheets/os-concepts.md", "past-papers/HIGH_FREQ.md"]
+      "raw_tags": [
+        "§1.3"
+      ],
+      "resources": [
+        "exam-bank/02-os-concepts.md",
+        "cheatsheets/os-concepts.md",
+        "past-papers/HIGH_FREQ.md"
+      ],
+      "domain_id": "D01"
     },
     {
       "id": "K02.NETWORK_PROTOCOLS",
       "name": "计算机网络与常用协议",
-      "subjects": ["comprehensive", "case"],
-      "skills": ["recognition", "application"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 15,
       "frequency_confidence": "medium",
       "priority_weight": 0.96,
       "quick_win": 0.8,
       "cross_subject_value": 0.55,
       "estimated_minutes": 90,
-      "raw_tags": ["§1.6", "§1.5"],
-      "resources": ["exam-bank/04-networking.md", "knowledge-index/04-networking.md", "notes/19-networking/README.md"]
+      "raw_tags": [
+        "§1.6",
+        "§1.5"
+      ],
+      "resources": [
+        "exam-bank/04-networking.md",
+        "knowledge-index/04-networking.md",
+        "notes/19-networking/README.md"
+      ],
+      "domain_id": "D01"
     },
     {
       "id": "K03.SOFTWARE_DESIGN_UML",
-      "name": "软件设计、内聚耦合与 UML 建模",
-      "subjects": ["comprehensive", "case", "essay"],
-      "skills": ["recognition", "application", "production"],
+      "name": "软件设计原则与 UML / SysML 建模",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 14,
       "frequency_confidence": "medium",
       "priority_weight": 1.0,
       "quick_win": 0.72,
       "cross_subject_value": 0.95,
       "estimated_minutes": 150,
-      "raw_tags": ["§4.5", "§4.4"],
-      "resources": ["exam-bank/05-uml.md", "knowledge-index/05-uml.md", "past-papers/case-types/04-uml-modeling.md"]
+      "raw_tags": [
+        "§4.5",
+        "§4.4"
+      ],
+      "resources": [
+        "exam-bank/05-uml.md",
+        "knowledge-index/05-uml.md",
+        "past-papers/case-types/04-uml-modeling.md"
+      ],
+      "domain_id": "D04"
     },
     {
       "id": "K04.ARCH_STYLES_ABSD",
       "name": "架构风格、ABSD 与选型",
-      "subjects": ["comprehensive", "case", "essay"],
-      "skills": ["recognition", "application", "production"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 14,
       "frequency_confidence": "high",
       "priority_weight": 1.0,
       "quick_win": 0.82,
       "cross_subject_value": 1.0,
       "estimated_minutes": 120,
-      "raw_tags": ["§6.3", "§6.7"],
-      "resources": ["exam-bank/10-architecture-styles.md", "knowledge-index/10-architecture-styles.md", "past-papers/case-types/03-style-comparison.md", "past-papers/paper-topics/01-architecture-design.md"]
+      "raw_tags": [
+        "§6.3",
+        "§6.7"
+      ],
+      "resources": [
+        "exam-bank/10-architecture-styles.md",
+        "knowledge-index/10-architecture-styles.md",
+        "past-papers/case-types/03-style-comparison.md",
+        "past-papers/paper-topics/01-architecture-design.md"
+      ],
+      "domain_id": "D06"
     },
     {
       "id": "K05.TEST_CMMI_PATTERNS",
-      "name": "软件测试、CMMI 与常见设计模式",
-      "subjects": ["comprehensive", "essay"],
-      "skills": ["recognition", "production"],
+      "name": "软件测试、质量保证与 CMMI",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 14,
       "frequency_confidence": "medium",
       "priority_weight": 0.96,
       "quick_win": 0.78,
       "cross_subject_value": 0.55,
       "estimated_minutes": 120,
-      "raw_tags": ["§4.7", "§4.9", "§4.10"],
-      "resources": ["exam-bank/07-software-engineering.md", "exam-bank/13-design-patterns.md", "cheatsheets/software-engineering-cmmi.md"]
+      "raw_tags": [
+        "§4.7",
+        "§4.9",
+        "§4.10"
+      ],
+      "resources": [
+        "exam-bank/07-software-engineering.md",
+        "cheatsheets/software-engineering-cmmi.md"
+      ],
+      "domain_id": "D04"
     },
     {
       "id": "K06.DESIGN_DATA_VIEWS",
-      "name": "概要设计、数据设计、文档与 UML 视图",
-      "subjects": ["comprehensive", "case", "essay"],
-      "skills": ["recognition", "application", "production"],
+      "name": "系统设计、架构描述与文档",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 12,
       "frequency_confidence": "medium",
       "priority_weight": 0.92,
       "quick_win": 0.66,
       "cross_subject_value": 0.9,
       "estimated_minutes": 120,
-      "raw_tags": ["§4.4"],
-      "resources": ["exam-bank/14-absd-views.md", "knowledge-index/14-absd-views.md", "cheatsheets/absd-and-adl.md"]
+      "raw_tags": [
+        "§4.4"
+      ],
+      "resources": [
+        "exam-bank/14-absd-views.md",
+        "knowledge-index/14-absd-views.md",
+        "cheatsheets/absd-and-adl.md"
+      ],
+      "domain_id": "D06"
     },
     {
       "id": "K07.REALTIME_EMBEDDED",
       "name": "实时系统、嵌入式与调度基础",
-      "subjects": ["comprehensive", "case"],
-      "skills": ["recognition", "application"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 11,
       "frequency_confidence": "medium",
       "priority_weight": 0.7,
       "quick_win": 0.48,
       "cross_subject_value": 0.5,
       "estimated_minutes": 150,
-      "raw_tags": ["§1.5", "§1.8"],
-      "resources": ["exam-bank/22-embedded.md", "knowledge-index/22-embedded.md", "past-papers/case-types/08-embedded-components.md"]
+      "raw_tags": [
+        "§1.5",
+        "§1.8"
+      ],
+      "resources": [
+        "exam-bank/22-embedded.md",
+        "knowledge-index/22-embedded.md",
+        "past-papers/case-types/08-embedded-components.md"
+      ],
+      "domain_id": "D01"
     },
     {
       "id": "K08.SOFTWARE_PROCESS_MODELS",
-      "name": "软件过程模型、敏捷与 RUP",
-      "subjects": ["comprehensive"],
-      "skills": ["recognition"],
+      "name": "软件过程、敏捷与 DevOps",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 11,
       "frequency_confidence": "high",
       "priority_weight": 0.94,
       "quick_win": 0.9,
       "cross_subject_value": 0.25,
       "estimated_minutes": 60,
-      "raw_tags": ["§4.1"],
-      "resources": ["exam-bank/07-software-engineering.md", "exam-bank/24-devops-serverless.md", "notes/04-software-engineering/README.md", "cheatsheets/software-engineering-cmmi.md"]
+      "raw_tags": [
+        "§4.1"
+      ],
+      "resources": [
+        "exam-bank/07-software-engineering.md",
+        "exam-bank/24-devops-serverless.md",
+        "notes/04-software-engineering/README.md",
+        "cheatsheets/software-engineering-cmmi.md"
+      ],
+      "domain_id": "D04"
     },
     {
       "id": "K09.QUALITY_SCENARIOS",
       "name": "质量属性六元组与质量战术",
-      "subjects": ["comprehensive", "case", "essay"],
-      "skills": ["recognition", "application", "production"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 11,
       "frequency_confidence": "high",
       "priority_weight": 1.0,
       "quick_win": 0.88,
       "cross_subject_value": 1.0,
       "estimated_minutes": 90,
-      "raw_tags": ["§7.1", "§7.2", "§7.6"],
-      "resources": ["exam-bank/11-quality-attributes.md", "knowledge-index/11-quality-attributes.md", "cheatsheets/quality-attributes.md", "past-papers/case-types/01-architecture-evaluation.md"]
+      "raw_tags": [
+        "§7.1",
+        "§7.2",
+        "§7.6"
+      ],
+      "resources": [
+        "exam-bank/11-quality-attributes.md",
+        "knowledge-index/11-quality-attributes.md",
+        "cheatsheets/quality-attributes.md",
+        "past-papers/case-types/01-architecture-evaluation.md"
+      ],
+      "domain_id": "D07"
     },
     {
       "id": "K10.DATABASE_MODELING",
-      "name": "关系数据库、范式与关系代数",
-      "subjects": ["comprehensive", "case"],
-      "skills": ["recognition", "application"],
+      "name": "数据库建模、事务与数据访问",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 10,
       "frequency_confidence": "high",
       "priority_weight": 0.96,
       "quick_win": 0.74,
       "cross_subject_value": 0.82,
       "estimated_minutes": 150,
-      "raw_tags": ["§5.1", "§5.2", "§5.3", "§5.4", "§5.5", "§5.6", "§5.7"],
-      "resources": ["exam-bank/03-database.md", "knowledge-index/03-database.md", "past-papers/case-types/02-database-design.md"]
+      "raw_tags": [
+        "§5.1",
+        "§5.2",
+        "§5.3",
+        "§5.4",
+        "§5.5",
+        "§5.6",
+        "§5.7"
+      ],
+      "resources": [
+        "exam-bank/03-database.md",
+        "knowledge-index/03-database.md",
+        "past-papers/case-types/02-database-design.md"
+      ],
+      "domain_id": "D05"
     },
     {
       "id": "K11.COMPONENTS_4PLUS1",
-      "name": "构件平台与 4+1 视图",
-      "subjects": ["comprehensive", "case", "essay"],
-      "skills": ["recognition", "application", "production"],
+      "name": "软件构件与构件平台",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 9,
       "frequency_confidence": "medium",
       "priority_weight": 0.82,
       "quick_win": 0.82,
       "cross_subject_value": 0.82,
       "estimated_minutes": 75,
-      "raw_tags": ["§6.2", "§6.8"],
-      "resources": ["exam-bank/14-absd-views.md", "knowledge-index/14-absd-views.md", "notes/06-system-architecture-design/README.md"]
+      "raw_tags": [
+        "§6.2",
+        "§6.8"
+      ],
+      "resources": [
+        "notes/06-system-architecture-design/README.md",
+        "past-papers/paper-topics/08-component-based.md"
+      ],
+      "domain_id": "D06"
     },
     {
       "id": "K12.PATTERNS_SOA_MICROSERVICES",
-      "name": "设计模式、SOA 与微服务核心概念",
-      "subjects": ["comprehensive", "case", "essay"],
-      "skills": ["recognition", "application", "production"],
+      "name": "微服务与云原生",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 9,
       "frequency_confidence": "medium",
       "priority_weight": 0.94,
       "quick_win": 0.66,
       "cross_subject_value": 1.0,
       "estimated_minutes": 150,
-      "raw_tags": ["§6.5", "§6.9", "§6.10"],
-      "resources": ["exam-bank/13-design-patterns.md", "exam-bank/15-microservice-cloud-native.md", "knowledge-index/15-microservice-cloud-native.md", "past-papers/case-types/05-microservice-refactor.md"]
+      "raw_tags": [
+        "§6.5",
+        "§6.9",
+        "§6.10"
+      ],
+      "resources": [
+        "exam-bank/15-microservice-cloud-native.md",
+        "exam-bank/24-devops-serverless.md",
+        "knowledge-index/15-microservice-cloud-native.md",
+        "past-papers/case-types/05-microservice-refactor.md"
+      ],
+      "domain_id": "D06"
     },
     {
       "id": "K13.VIEWS_SOA_LAYERING",
-      "name": "4+1 视图、SOA 与分层架构",
-      "subjects": ["comprehensive", "case", "essay"],
-      "skills": ["recognition", "application", "production"],
+      "name": "SOA 与企业应用集成",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 8,
       "frequency_confidence": "medium",
       "priority_weight": 0.84,
       "quick_win": 0.78,
       "cross_subject_value": 0.9,
       "estimated_minutes": 90,
-      "raw_tags": ["§6.4"],
-      "resources": ["exam-bank/14-absd-views.md", "exam-bank/26-soa-evolution.md", "notes/12-case-layered/README.md", "notes/14-case-soa/README.md"]
+      "raw_tags": [
+        "§6.4"
+      ],
+      "resources": [
+        "exam-bank/26-soa-evolution.md",
+        "exam-bank/25-enterprise-integration.md",
+        "notes/14-case-soa/README.md",
+        "past-papers/case-types/10-soa-integration.md"
+      ],
+      "domain_id": "D06"
     },
     {
       "id": "K14.OS_SCHEDULING_FILES",
       "name": "操作系统调度与文件系统计算",
-      "subjects": ["comprehensive"],
-      "skills": ["recognition"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 7,
       "frequency_confidence": "medium",
       "priority_weight": 0.7,
       "quick_win": 0.52,
       "cross_subject_value": 0.2,
       "estimated_minutes": 120,
-      "raw_tags": ["§1.4"],
-      "resources": ["exam-bank/02-os-concepts.md", "cheatsheets/os-concepts.md"]
+      "raw_tags": [
+        "§1.4"
+      ],
+      "resources": [
+        "exam-bank/02-os-concepts.md",
+        "cheatsheets/os-concepts.md"
+      ],
+      "domain_id": "D01"
     },
     {
       "id": "K15.STRUCTURED_ANALYSIS_DFD",
       "name": "结构化分析与 DFD",
-      "subjects": ["comprehensive", "case"],
-      "skills": ["recognition", "application"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 7,
       "frequency_confidence": "medium",
       "priority_weight": 0.76,
       "quick_win": 0.78,
       "cross_subject_value": 0.7,
       "estimated_minutes": 75,
-      "raw_tags": ["§4.3"],
-      "resources": ["exam-bank/07-software-engineering.md", "past-papers/case-types/04-uml-modeling.md"]
+      "raw_tags": [
+        "§4.3"
+      ],
+      "resources": [
+        "exam-bank/07-software-engineering.md",
+        "past-papers/case-types/14-structured-analysis-dfd.md"
+      ],
+      "domain_id": "D04"
     },
     {
       "id": "K16.REQUIREMENTS_MANAGEMENT",
       "name": "需求工程、基线与变更管理",
-      "subjects": ["comprehensive", "case"],
-      "skills": ["recognition", "application"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 7,
       "frequency_confidence": "medium",
       "priority_weight": 0.78,
       "quick_win": 0.88,
       "cross_subject_value": 0.45,
       "estimated_minutes": 60,
-      "raw_tags": ["§4.2"],
-      "resources": ["exam-bank/07-software-engineering.md", "notes/04-software-engineering/README.md"]
+      "raw_tags": [
+        "§4.2"
+      ],
+      "resources": [
+        "exam-bank/07-software-engineering.md",
+        "notes/04-software-engineering/README.md"
+      ],
+      "domain_id": "D04"
     },
     {
       "id": "K17.IP_COPYRIGHT",
       "name": "知识产权、著作权与标准化",
-      "subjects": ["comprehensive"],
-      "skills": ["recognition"],
+      "subjects": [
+        "comprehensive"
+      ],
+      "skills": [
+        "recognition"
+      ],
       "frequency_count": 7,
       "frequency_confidence": "high",
       "priority_weight": 0.9,
       "quick_win": 1.0,
       "cross_subject_value": 0.15,
       "estimated_minutes": 30,
-      "raw_tags": ["§11.1", "§11.2", "§11.3"],
-      "resources": ["exam-bank/06-ip-and-standards.md", "knowledge-index/06-ip-and-standards.md", "cheatsheets/ip-and-standards.md"]
+      "raw_tags": [
+        "§11.1",
+        "§11.2",
+        "§11.3"
+      ],
+      "resources": [
+        "exam-bank/06-ip-and-standards.md",
+        "knowledge-index/06-ip-and-standards.md",
+        "cheatsheets/ip-and-standards.md"
+      ],
+      "domain_id": "D11"
     },
     {
       "id": "K18.COMPUTER_ARCH_STORAGE",
       "name": "计算机组成与存储层次",
-      "subjects": ["comprehensive"],
-      "skills": ["recognition"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 6,
       "frequency_confidence": "medium",
       "priority_weight": 0.7,
       "quick_win": 0.62,
       "cross_subject_value": 0.15,
       "estimated_minutes": 90,
-      "raw_tags": ["§1.1", "§1.2"],
-      "resources": ["exam-bank/01-computer-systems.md", "knowledge-index/01-computer-systems.md", "cheatsheets/computer-systems-formulas.md"]
+      "raw_tags": [
+        "§1.1",
+        "§1.2"
+      ],
+      "resources": [
+        "exam-bank/01-computer-systems.md",
+        "knowledge-index/01-computer-systems.md",
+        "cheatsheets/computer-systems-formulas.md"
+      ],
+      "domain_id": "D01"
     },
     {
       "id": "K19.ATAM_TACTICS",
-      "name": "ATAM、四类点与质量属性战术",
-      "subjects": ["comprehensive", "case", "essay"],
-      "skills": ["recognition", "application", "production"],
+      "name": "架构评估方法、ATAM 与四类点",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 6,
       "frequency_confidence": "high",
       "priority_weight": 1.0,
       "quick_win": 0.9,
       "cross_subject_value": 1.0,
       "estimated_minutes": 90,
-      "raw_tags": ["§7.3", "§7.4"],
-      "resources": ["exam-bank/12-atam-evaluation.md", "knowledge-index/12-atam-evaluation.md", "cheatsheets/architecture-evaluation.md", "past-papers/case-types/01-architecture-evaluation.md"]
+      "raw_tags": [
+        "§7.3",
+        "§7.4"
+      ],
+      "resources": [
+        "exam-bank/12-atam-evaluation.md",
+        "knowledge-index/12-atam-evaluation.md",
+        "cheatsheets/architecture-evaluation.md",
+        "past-papers/case-types/01-architecture-evaluation.md"
+      ],
+      "domain_id": "D07"
     },
     {
       "id": "K20.SECURITY_FOUNDATIONS",
       "name": "CIA、安全服务、STRIDE 与等保",
-      "subjects": ["comprehensive", "case", "essay"],
-      "skills": ["recognition", "application", "production"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 6,
       "frequency_confidence": "medium",
       "priority_weight": 0.82,
       "quick_win": 0.7,
       "cross_subject_value": 0.86,
       "estimated_minutes": 120,
-      "raw_tags": ["§3.1", "§3.3", "§3.4"],
-      "resources": ["exam-bank/21-security.md", "knowledge-index/21-security.md", "past-papers/case-types/07-security-architecture.md", "past-papers/paper-topics/04-security-design.md"]
+      "raw_tags": [
+        "§3.1",
+        "§3.3",
+        "§3.4"
+      ],
+      "resources": [
+        "exam-bank/21-security.md",
+        "knowledge-index/21-security.md",
+        "past-papers/case-types/07-security-architecture.md",
+        "past-papers/paper-topics/04-security-design.md"
+      ],
+      "domain_id": "D03"
     },
     {
       "id": "K21.MESSAGING_CACHE",
-      "name": "消息中间件、缓存与一致性",
-      "subjects": ["comprehensive", "case", "essay"],
-      "skills": ["recognition", "application", "production"],
+      "name": "消息、缓存与分布式一致性",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 5,
       "frequency_confidence": "expert_estimate",
       "priority_weight": 0.9,
       "quick_win": 0.72,
       "cross_subject_value": 0.95,
       "estimated_minutes": 120,
-      "raw_tags": ["§1.7", "§6.6", "中间件/缓存"],
-      "resources": ["exam-bank/16-middleware.md", "exam-bank/17-distributed-transactions.md", "exam-bank/18-cache.md", "knowledge-index/16-middleware.md", "knowledge-index/18-cache.md", "past-papers/case-types/06-messaging-caching.md"]
+      "raw_tags": [
+        "§1.7",
+        "§6.6",
+        "中间件/缓存"
+      ],
+      "resources": [
+        "exam-bank/16-middleware.md",
+        "exam-bank/17-distributed-transactions.md",
+        "exam-bank/18-cache.md",
+        "knowledge-index/16-middleware.md",
+        "knowledge-index/18-cache.md",
+        "past-papers/case-types/06-messaging-caching.md",
+        "exam-bank/30-targeted-coverage.md"
+      ],
+      "domain_id": "D06"
     },
     {
       "id": "K22.ENGLISH_READING",
       "name": "专业英语阅读与高频词",
-      "subjects": ["comprehensive"],
-      "skills": ["recognition"],
+      "subjects": [
+        "comprehensive"
+      ],
+      "skills": [
+        "recognition"
+      ],
       "frequency_count": 23,
       "frequency_confidence": "medium",
       "priority_weight": 0.86,
       "quick_win": 0.9,
       "cross_subject_value": 0.1,
       "estimated_minutes": 75,
-      "raw_tags": ["§13"],
-      "resources": ["exam-bank/23-english-reading.md", "cheatsheets/english-reading.md", "past-papers/HIGH_FREQ.md"]
+      "raw_tags": [
+        "§13"
+      ],
+      "resources": [
+        "exam-bank/23-english-reading.md",
+        "cheatsheets/english-reading.md",
+        "past-papers/HIGH_FREQ.md"
+      ],
+      "domain_id": "D13"
     },
     {
       "id": "K23.PROJECT_MANAGEMENT_METRICS",
       "name": "项目管理、配置管理与软件度量",
-      "subjects": ["comprehensive"],
-      "skills": ["recognition"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 8,
       "frequency_confidence": "medium",
       "priority_weight": 0.82,
       "quick_win": 0.74,
       "cross_subject_value": 0.35,
       "estimated_minutes": 120,
-      "raw_tags": ["§4.6", "§4.8", "§4.12"],
-      "resources": ["exam-bank/08-project-management.md", "exam-bank/09-software-metrics.md", "knowledge-index/08-project-management.md", "knowledge-index/09-software-metrics.md", "cheatsheets/project-management-calculations.md", "cheatsheets/software-metrics.md"]
+      "raw_tags": [
+        "§4.6",
+        "§4.8",
+        "§4.12"
+      ],
+      "resources": [
+        "exam-bank/08-project-management.md",
+        "exam-bank/09-software-metrics.md",
+        "knowledge-index/08-project-management.md",
+        "knowledge-index/09-software-metrics.md",
+        "cheatsheets/project-management-calculations.md",
+        "cheatsheets/software-metrics.md"
+      ],
+      "domain_id": "D04"
     },
     {
       "id": "K24.INFORMATION_SYSTEMS",
       "name": "信息系统、ERP 与电子政务",
-      "subjects": ["comprehensive"],
-      "skills": ["recognition"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 6,
       "frequency_confidence": "medium",
       "priority_weight": 0.76,
       "quick_win": 0.88,
       "cross_subject_value": 0.55,
       "estimated_minutes": 75,
-      "raw_tags": ["§2", "§2.1", "§2.2", "§2.3", "§2.5"],
-      "resources": ["exam-bank/25-enterprise-integration.md", "exam-bank/27-information-systems.md", "notes/02-information-systems/README.md", "past-papers/SURVIVAL_CARD.md", "past-papers/comprehensive-by-year/2025上.md"]
+      "raw_tags": [
+        "§2",
+        "§2.1",
+        "§2.2",
+        "§2.3",
+        "§2.5"
+      ],
+      "resources": [
+        "exam-bank/25-enterprise-integration.md",
+        "exam-bank/27-information-systems.md",
+        "notes/02-information-systems/README.md",
+        "past-papers/SURVIVAL_CARD.md",
+        "past-papers/comprehensive-by-year/2025上.md"
+      ],
+      "domain_id": "D02"
     },
     {
       "id": "K25.RELIABILITY_ENGINEERING",
       "name": "软件可靠性工程、容错与评估",
-      "subjects": ["comprehensive", "case"],
-      "skills": ["recognition", "application"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 5,
       "frequency_confidence": "medium",
       "priority_weight": 0.9,
       "quick_win": 0.68,
       "cross_subject_value": 0.9,
       "estimated_minutes": 120,
-      "raw_tags": ["§8", "§8.1"],
-      "resources": ["exam-bank/20-reliability.md", "knowledge-index/20-reliability.md", "notes/08-software-reliability/README.md", "past-papers/case-types/13-reliability-design.md", "past-papers/paper-topics/03-reliability-design.md"]
+      "raw_tags": [
+        "§8",
+        "§8.1"
+      ],
+      "resources": [
+        "exam-bank/20-reliability.md",
+        "knowledge-index/20-reliability.md",
+        "notes/08-software-reliability/README.md",
+        "past-papers/case-types/13-reliability-design.md",
+        "past-papers/paper-topics/03-reliability-design.md"
+      ],
+      "domain_id": "D08"
     },
     {
       "id": "K26.ARCH_EVOLUTION",
       "name": "软件架构演化、迁移与维护",
-      "subjects": ["comprehensive", "case"],
-      "skills": ["recognition", "application"],
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 5,
       "frequency_confidence": "medium",
       "priority_weight": 0.88,
       "quick_win": 0.62,
       "cross_subject_value": 0.85,
       "estimated_minutes": 120,
-      "raw_tags": ["§4.11", "§9", "§9.1", "§9.2", "§9.4"],
-      "resources": ["exam-bank/26-soa-evolution.md", "notes/09-architecture-evolution/README.md", "past-papers/case-types/11-architecture-evolution.md", "past-papers/paper-topics/09-architecture-evolution.md"]
+      "raw_tags": [
+        "§4.11",
+        "§9",
+        "§9.1",
+        "§9.2",
+        "§9.4"
+      ],
+      "resources": [
+        "exam-bank/26-soa-evolution.md",
+        "notes/09-architecture-evolution/README.md",
+        "past-papers/case-types/11-architecture-evolution.md",
+        "past-papers/paper-topics/09-architecture-evolution.md"
+      ],
+      "domain_id": "D09"
     },
     {
       "id": "K27.EMERGING_TECH",
-      "name": "CPS、AI、边缘计算与数字孪生",
-      "subjects": ["comprehensive"],
-      "skills": ["recognition"],
+      "name": "人工智能、CPS 与边云技术",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
       "frequency_count": 12,
       "frequency_confidence": "medium",
       "priority_weight": 0.9,
       "quick_win": 0.8,
       "cross_subject_value": 0.65,
       "estimated_minutes": 90,
-      "raw_tags": ["§10", "§10.1", "§10.2", "§10.3", "§10.4", "§10.5", "§10.6"],
-      "resources": ["exam-bank/19-big-data.md", "exam-bank/28-emerging-tech.md", "notes/10-emerging-tech/README.md", "notes/23-frontier-tech/README.md", "past-papers/2026上-recall-signals.md", "past-papers/HIGH_FREQ.md", "past-papers/SURVIVAL_CARD.md"]
+      "raw_tags": [
+        "§10",
+        "§10.1",
+        "§10.2",
+        "§10.3",
+        "§10.4",
+        "§10.5",
+        "§10.6"
+      ],
+      "resources": [
+        "exam-bank/28-emerging-tech.md",
+        "notes/10-emerging-tech/README.md",
+        "notes/23-frontier-tech/README.md",
+        "past-papers/2026上-recall-signals.md",
+        "past-papers/HIGH_FREQ.md",
+        "past-papers/SURVIVAL_CARD.md"
+      ],
+      "domain_id": "D10"
     },
     {
       "id": "K28.MATH_OPERATIONS",
       "name": "应用数学、图论与运筹学",
-      "subjects": ["comprehensive"],
-      "skills": ["recognition"],
+      "subjects": [
+        "comprehensive"
+      ],
+      "skills": [
+        "recognition"
+      ],
       "frequency_count": 15,
       "frequency_confidence": "medium",
       "priority_weight": 0.74,
       "quick_win": 0.58,
       "cross_subject_value": 0.2,
       "estimated_minutes": 90,
-      "raw_tags": ["§12", "§12.1", "§12.2", "§12.3", "§12.4"],
-      "resources": ["exam-bank/29-applied-math.md", "notes/20-math-foundations/README.md", "past-papers/HIGH_FREQ.md", "past-papers/comprehensive-by-year/2019下.md", "past-papers/comprehensive-by-year/2025上.md"]
+      "raw_tags": [
+        "§12",
+        "§12.1",
+        "§12.2",
+        "§12.3",
+        "§12.4"
+      ],
+      "resources": [
+        "exam-bank/29-applied-math.md",
+        "notes/20-math-foundations/README.md",
+        "past-papers/HIGH_FREQ.md",
+        "past-papers/comprehensive-by-year/2019下.md",
+        "past-papers/comprehensive-by-year/2025上.md"
+      ],
+      "domain_id": "D12"
+    },
+    {
+      "id": "K29.DESIGN_PATTERNS",
+      "name": "GoF 与架构设计模式",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.85,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 90,
+      "raw_tags": [],
+      "resources": [
+        "exam-bank/13-design-patterns.md",
+        "knowledge-index/13-design-patterns.md",
+        "past-papers/case-types/15-design-patterns.md",
+        "exam-bank/30-targeted-coverage.md"
+      ],
+      "domain_id": "D06"
+    },
+    {
+      "id": "K30.LANGUAGES_COMPILERS",
+      "name": "程序语言与编译原理",
+      "subjects": [
+        "comprehensive"
+      ],
+      "skills": [
+        "recognition"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.45,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.1,
+      "estimated_minutes": 90,
+      "raw_tags": [],
+      "resources": [
+        "SYLLABUS.md",
+        "exam-bank/30-targeted-coverage.md"
+      ],
+      "domain_id": "D01"
+    },
+    {
+      "id": "K31.BIG_DATA_ARCHITECTURE",
+      "name": "大数据处理与数据架构",
+      "subjects": [
+        "comprehensive",
+        "case",
+        "essay"
+      ],
+      "skills": [
+        "recognition",
+        "application",
+        "production"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.85,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 90,
+      "raw_tags": [],
+      "resources": [
+        "exam-bank/19-big-data.md",
+        "knowledge-index/19-big-data.md",
+        "past-papers/case-types/09-big-data-architecture.md"
+      ],
+      "domain_id": "D10"
     },
     {
       "id": "C01.CASE_ATAM",
-      "name": "案例主赛道：架构评估与质量属性",
-      "subjects": ["case"],
-      "skills": ["application"],
+      "name": "案例赛道：架构评估与质量属性",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
       "frequency_count": 0,
       "frequency_confidence": "expert_estimate",
       "strategy_rank": 1,
       "case_type": "01",
-      "covered_topic_ids": ["K09.QUALITY_SCENARIOS", "K19.ATAM_TACTICS"],
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K19.ATAM_TACTICS"
+      ],
       "priority_weight": 1.0,
       "quick_win": 0.9,
-      "cross_subject_value": 1.0,
+      "cross_subject_value": 0.8,
       "estimated_minutes": 120,
-      "raw_tags": ["案例 01", "⭐⭐⭐⭐⭐"],
-      "resources": ["past-papers/CASE_SURVIVAL.md", "past-papers/case-types/01-architecture-evaluation.md"]
+      "raw_tags": [
+        "案例 01"
+      ],
+      "resources": [
+        "past-papers/case-types/01-architecture-evaluation.md"
+      ]
     },
     {
       "id": "C02.CASE_DATABASE",
-      "name": "案例主赛道：数据库设计",
-      "subjects": ["case"],
-      "skills": ["application"],
+      "name": "案例赛道：数据库设计",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
       "frequency_count": 0,
       "frequency_confidence": "expert_estimate",
       "strategy_rank": 2,
       "case_type": "02",
-      "covered_topic_ids": ["K10.DATABASE_MODELING"],
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ],
       "priority_weight": 0.96,
       "quick_win": 0.82,
-      "cross_subject_value": 0.78,
-      "estimated_minutes": 180,
-      "raw_tags": ["案例 02", "⭐⭐⭐⭐⭐"],
-      "resources": ["past-papers/CASE_SURVIVAL.md", "past-papers/case-types/02-database-design.md"]
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 02"
+      ],
+      "resources": [
+        "past-papers/case-types/02-database-design.md"
+      ]
     },
     {
       "id": "C03.CASE_MESSAGING_CACHE",
-      "name": "案例主赛道：消息与缓存",
-      "subjects": ["case"],
-      "skills": ["application"],
+      "name": "案例赛道：消息、缓存与一致性",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
       "frequency_count": 0,
       "frequency_confidence": "expert_estimate",
       "strategy_rank": 3,
       "case_type": "06",
-      "covered_topic_ids": ["K21.MESSAGING_CACHE"],
+      "covered_topic_ids": [
+        "K21.MESSAGING_CACHE",
+        "K10.DATABASE_MODELING"
+      ],
       "priority_weight": 0.9,
       "quick_win": 0.78,
-      "cross_subject_value": 0.88,
-      "estimated_minutes": 150,
-      "raw_tags": ["案例 06", "⭐⭐⭐⭐"],
-      "resources": ["past-papers/CASE_SURVIVAL.md", "past-papers/case-types/06-messaging-caching.md"]
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 06"
+      ],
+      "resources": [
+        "past-papers/case-types/06-messaging-caching.md"
+      ]
     },
     {
       "id": "C04.CASE_MICROSERVICE",
-      "name": "案例主赛道：微服务拆分与治理",
-      "subjects": ["case"],
-      "skills": ["application"],
+      "name": "案例赛道：微服务拆分与治理",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
       "frequency_count": 0,
       "frequency_confidence": "expert_estimate",
       "strategy_rank": 4,
       "case_type": "05",
-      "covered_topic_ids": ["K12.PATTERNS_SOA_MICROSERVICES"],
+      "covered_topic_ids": [
+        "K12.PATTERNS_SOA_MICROSERVICES"
+      ],
       "priority_weight": 0.88,
       "quick_win": 0.66,
-      "cross_subject_value": 0.92,
-      "estimated_minutes": 180,
-      "raw_tags": ["案例 05", "⭐⭐⭐⭐"],
-      "resources": ["past-papers/CASE_SURVIVAL.md", "past-papers/case-types/05-microservice-refactor.md"]
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 05"
+      ],
+      "resources": [
+        "past-papers/case-types/05-microservice-refactor.md"
+      ]
+    },
+    {
+      "id": "C05.CASE_ARCH_STYLES",
+      "name": "案例赛道：架构风格与选型",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "03",
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD",
+        "K09.QUALITY_SCENARIOS"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 5,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 03"
+      ],
+      "resources": [
+        "past-papers/case-types/03-style-comparison.md"
+      ]
+    },
+    {
+      "id": "C06.CASE_UML",
+      "name": "案例赛道：UML 建模",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "04",
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 6,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 04"
+      ],
+      "resources": [
+        "past-papers/case-types/04-uml-modeling.md"
+      ]
+    },
+    {
+      "id": "C07.CASE_SECURITY",
+      "name": "案例赛道：安全架构",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "07",
+      "covered_topic_ids": [
+        "K20.SECURITY_FOUNDATIONS",
+        "K09.QUALITY_SCENARIOS"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 7,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 07"
+      ],
+      "resources": [
+        "past-papers/case-types/07-security-architecture.md"
+      ]
+    },
+    {
+      "id": "C08.CASE_EMBEDDED",
+      "name": "案例赛道：嵌入式与实时系统",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "08",
+      "covered_topic_ids": [
+        "K07.REALTIME_EMBEDDED",
+        "K25.RELIABILITY_ENGINEERING"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 8,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 08"
+      ],
+      "resources": [
+        "past-papers/case-types/08-embedded-components.md"
+      ]
+    },
+    {
+      "id": "C09.CASE_BIG_DATA",
+      "name": "案例赛道：大数据架构",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "09",
+      "covered_topic_ids": [
+        "K31.BIG_DATA_ARCHITECTURE",
+        "K10.DATABASE_MODELING",
+        "K27.EMERGING_TECH"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 9,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 09"
+      ],
+      "resources": [
+        "past-papers/case-types/09-big-data-architecture.md"
+      ]
+    },
+    {
+      "id": "C10.CASE_SOA",
+      "name": "案例赛道：SOA 与企业集成",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "10",
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 10,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 10"
+      ],
+      "resources": [
+        "past-papers/case-types/10-soa-integration.md"
+      ]
+    },
+    {
+      "id": "C11.CASE_EVOLUTION",
+      "name": "案例赛道：架构演化",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "11",
+      "covered_topic_ids": [
+        "K26.ARCH_EVOLUTION",
+        "K12.PATTERNS_SOA_MICROSERVICES"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 11,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 11"
+      ],
+      "resources": [
+        "past-papers/case-types/11-architecture-evolution.md"
+      ]
+    },
+    {
+      "id": "C12.CASE_DEVOPS",
+      "name": "案例赛道：DevOps 与交付",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "12",
+      "covered_topic_ids": [
+        "K08.SOFTWARE_PROCESS_MODELS"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 12,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 12"
+      ],
+      "resources": [
+        "past-papers/case-types/12-devops-deployment.md"
+      ]
+    },
+    {
+      "id": "C13.CASE_RELIABILITY",
+      "name": "案例赛道：可靠性与容灾",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "13",
+      "covered_topic_ids": [
+        "K25.RELIABILITY_ENGINEERING",
+        "K09.QUALITY_SCENARIOS"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 13,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 13"
+      ],
+      "resources": [
+        "past-papers/case-types/13-reliability-design.md"
+      ]
+    },
+    {
+      "id": "C14.CASE_DFD",
+      "name": "案例赛道：结构化分析与 DFD",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "14",
+      "covered_topic_ids": [
+        "K15.STRUCTURED_ANALYSIS_DFD",
+        "K10.DATABASE_MODELING"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 14,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 14"
+      ],
+      "resources": [
+        "past-papers/case-types/14-structured-analysis-dfd.md"
+      ]
+    },
+    {
+      "id": "C15.CASE_PATTERNS",
+      "name": "案例赛道：设计模式应用",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "15",
+      "covered_topic_ids": [
+        "K29.DESIGN_PATTERNS",
+        "K03.SOFTWARE_DESIGN_UML"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 15,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 15"
+      ],
+      "resources": [
+        "past-papers/case-types/15-design-patterns.md"
+      ]
+    },
+    {
+      "id": "C16.CASE_IOT_EDGE",
+      "name": "案例赛道：物联网与边云架构",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "16",
+      "covered_topic_ids": [
+        "K27.EMERGING_TECH",
+        "K10.DATABASE_MODELING",
+        "K21.MESSAGING_CACHE"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 16,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 16"
+      ],
+      "resources": [
+        "notes/10-emerging-tech/README.md"
+      ]
+    },
+    {
+      "id": "C17.CASE_BLOCKCHAIN",
+      "name": "案例赛道：区块链应用",
+      "subjects": [
+        "case"
+      ],
+      "skills": [
+        "application"
+      ],
+      "case_type": "17",
+      "covered_topic_ids": [
+        "K27.EMERGING_TECH",
+        "K20.SECURITY_FOUNDATIONS"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "strategy_rank": 17,
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 120,
+      "raw_tags": [
+        "案例 17"
+      ],
+      "resources": [
+        "notes/10-emerging-tech/README.md"
+      ]
     },
     {
       "id": "P01.ESSAY_ARCHITECTURE",
       "name": "论文主题：软件架构设计",
-      "subjects": ["essay"],
-      "skills": ["production"],
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
       "frequency_count": 10,
       "frequency_confidence": "medium",
       "priority_weight": 1.0,
-      "quick_win": 0.72,
-      "cross_subject_value": 0.95,
-      "estimated_minutes": 300,
-      "raw_tags": ["论文 01", "16 年 10 次"],
-      "resources": ["past-papers/PAPER_SURVIVAL.md", "past-papers/paper-topics/01-architecture-design.md", "past-papers/paper-samples/01-architecture-design.md"]
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 01"
+      ],
+      "resources": [
+        "past-papers/paper-topics/01-architecture-design.md"
+      ],
+      "essay_type": "01",
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD",
+        "K06.DESIGN_DATA_VIEWS"
+      ]
     },
     {
       "id": "P02.ESSAY_BIG_DATA",
       "name": "论文主题：大数据与 NoSQL",
-      "subjects": ["essay"],
-      "skills": ["production"],
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
       "frequency_count": 10,
       "frequency_confidence": "medium",
       "priority_weight": 0.94,
-      "quick_win": 0.52,
-      "cross_subject_value": 0.68,
-      "estimated_minutes": 300,
-      "raw_tags": ["论文 06", "16 年 10 次"],
-      "resources": ["past-papers/PAPER_SURVIVAL.md", "past-papers/paper-topics/06-big-data-nosql.md", "past-papers/paper-samples/06-big-data-nosql.md"]
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 06"
+      ],
+      "resources": [
+        "past-papers/paper-topics/06-big-data-nosql.md"
+      ],
+      "essay_type": "06",
+      "covered_topic_ids": [
+        "K31.BIG_DATA_ARCHITECTURE",
+        "K10.DATABASE_MODELING"
+      ]
     },
     {
       "id": "P03.ESSAY_RELIABILITY",
       "name": "论文主题：可靠性与高可用",
-      "subjects": ["essay"],
-      "skills": ["production"],
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
       "frequency_count": 5,
       "frequency_confidence": "medium",
       "priority_weight": 0.9,
-      "quick_win": 0.7,
-      "cross_subject_value": 0.86,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
       "estimated_minutes": 240,
-      "raw_tags": ["论文 03", "16 年 5 次"],
-      "resources": ["past-papers/PAPER_SURVIVAL.md", "past-papers/paper-topics/03-reliability-design.md", "past-papers/paper-samples/03-reliability-design.md"]
+      "raw_tags": [
+        "论文 03"
+      ],
+      "resources": [
+        "past-papers/paper-topics/03-reliability-design.md"
+      ],
+      "essay_type": "03",
+      "covered_topic_ids": [
+        "K25.RELIABILITY_ENGINEERING",
+        "K09.QUALITY_SCENARIOS"
+      ]
     },
     {
       "id": "P04.ESSAY_MICROSERVICE",
       "name": "论文主题：微服务与云原生",
-      "subjects": ["essay"],
-      "skills": ["production"],
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
       "frequency_count": 5,
       "frequency_confidence": "medium",
       "priority_weight": 0.9,
-      "quick_win": 0.72,
-      "cross_subject_value": 0.94,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
       "estimated_minutes": 240,
-      "raw_tags": ["论文 05", "16 年 5 次"],
-      "resources": ["past-papers/PAPER_SURVIVAL.md", "past-papers/paper-topics/05-microservice-cloud-native.md", "past-papers/paper-samples/05-microservice-cloud-native.md"]
+      "raw_tags": [
+        "论文 05"
+      ],
+      "resources": [
+        "past-papers/paper-topics/05-microservice-cloud-native.md"
+      ],
+      "essay_type": "05",
+      "covered_topic_ids": [
+        "K12.PATTERNS_SOA_MICROSERVICES"
+      ]
     },
     {
       "id": "P05.ESSAY_EAI",
-      "name": "论文主题：企业应用集成 EAI",
-      "subjects": ["essay"],
-      "skills": ["production"],
+      "name": "论文主题：企业应用集成",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
       "frequency_count": 5,
       "frequency_confidence": "medium",
       "priority_weight": 0.86,
-      "quick_win": 0.58,
-      "cross_subject_value": 0.76,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
       "estimated_minutes": 240,
-      "raw_tags": ["论文 11", "16 年 5 次"],
-      "resources": ["past-papers/PAPER_SURVIVAL.md", "past-papers/paper-topics/11-enterprise-integration.md", "past-papers/paper-samples/11-enterprise-integration.md"]
+      "raw_tags": [
+        "论文 11"
+      ],
+      "resources": [
+        "past-papers/paper-topics/11-enterprise-integration.md"
+      ],
+      "essay_type": "11",
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ]
     },
     {
       "id": "P06.ESSAY_ATAM",
       "name": "论文主题：架构评估",
-      "subjects": ["essay"],
-      "skills": ["production"],
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
       "frequency_count": 3,
       "frequency_confidence": "medium",
       "priority_weight": 0.82,
-      "quick_win": 0.82,
-      "cross_subject_value": 1.0,
-      "estimated_minutes": 210,
-      "raw_tags": ["论文 02", "16 年 3 次"],
-      "resources": ["past-papers/PAPER_SURVIVAL.md", "past-papers/paper-topics/02-architecture-evaluation.md", "past-papers/paper-samples/02-architecture-evaluation.md"]
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 02"
+      ],
+      "resources": [
+        "past-papers/paper-topics/02-architecture-evaluation.md"
+      ],
+      "essay_type": "02",
+      "covered_topic_ids": [
+        "K19.ATAM_TACTICS",
+        "K09.QUALITY_SCENARIOS"
+      ]
+    },
+    {
+      "id": "P07.ESSAY_SECURITY",
+      "name": "论文主题：安全架构",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "04",
+      "covered_topic_ids": [
+        "K20.SECURITY_FOUNDATIONS"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 04"
+      ],
+      "resources": [
+        "past-papers/paper-topics/04-security-design.md"
+      ]
+    },
+    {
+      "id": "P08.ESSAY_SOA",
+      "name": "论文主题：面向服务架构",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "07",
+      "covered_topic_ids": [
+        "K13.VIEWS_SOA_LAYERING"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 07"
+      ],
+      "resources": [
+        "past-papers/paper-topics/07-soa.md"
+      ]
+    },
+    {
+      "id": "P09.ESSAY_COMPONENTS",
+      "name": "论文主题：基于构件的软件开发",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "08",
+      "covered_topic_ids": [
+        "K11.COMPONENTS_4PLUS1"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 08"
+      ],
+      "resources": [
+        "past-papers/paper-topics/08-component-based.md"
+      ]
+    },
+    {
+      "id": "P10.ESSAY_EVOLUTION",
+      "name": "论文主题：架构演化",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "09",
+      "covered_topic_ids": [
+        "K26.ARCH_EVOLUTION"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 09"
+      ],
+      "resources": [
+        "past-papers/paper-topics/09-architecture-evolution.md"
+      ]
+    },
+    {
+      "id": "P11.ESSAY_PATTERNS",
+      "name": "论文主题：设计模式",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "10",
+      "covered_topic_ids": [
+        "K29.DESIGN_PATTERNS"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 10"
+      ],
+      "resources": [
+        "past-papers/paper-topics/10-design-patterns.md"
+      ]
+    },
+    {
+      "id": "P12.ESSAY_TESTING",
+      "name": "论文主题：软件测试与质量保证",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "12",
+      "covered_topic_ids": [
+        "K05.TEST_CMMI_PATTERNS"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 12"
+      ],
+      "resources": [
+        "past-papers/paper-topics/12-testing-qa.md"
+      ]
+    },
+    {
+      "id": "P13.ESSAY_DEVOPS",
+      "name": "论文主题：DevOps 与无服务器",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "13",
+      "covered_topic_ids": [
+        "K08.SOFTWARE_PROCESS_MODELS",
+        "K12.PATTERNS_SOA_MICROSERVICES"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 13"
+      ],
+      "resources": [
+        "past-papers/paper-topics/13-devops-serverless.md"
+      ]
+    },
+    {
+      "id": "P14.ESSAY_BLOCKCHAIN",
+      "name": "论文主题：区块链应用",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "14",
+      "covered_topic_ids": [
+        "K27.EMERGING_TECH"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 14"
+      ],
+      "resources": [
+        "notes/10-emerging-tech/README.md"
+      ]
+    },
+    {
+      "id": "P15.ESSAY_EDGE_CLOUD",
+      "name": "论文主题：边云协同",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "15",
+      "covered_topic_ids": [
+        "K27.EMERGING_TECH"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 15"
+      ],
+      "resources": [
+        "notes/10-emerging-tech/README.md"
+      ]
+    },
+    {
+      "id": "P16.ESSAY_MODELING",
+      "name": "论文主题：系统建模与面向对象分析",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "16",
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML",
+        "K15.STRUCTURED_ANALYSIS_DFD"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.8,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 16"
+      ],
+      "resources": [
+        "notes/10-emerging-tech/README.md"
+      ]
+    },
+    {
+      "id": "P17.ESSAY_PROCESS",
+      "name": "论文主题：软件过程与 RUP",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "17",
+      "covered_topic_ids": [
+        "K08.SOFTWARE_PROCESS_MODELS"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.75,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 17"
+      ],
+      "resources": [
+        "past-papers/essay-by-year/README.md"
+      ]
+    },
+    {
+      "id": "P18.ESSAY_PERFORMANCE",
+      "name": "论文主题：性能与负载均衡",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "18",
+      "covered_topic_ids": [
+        "K09.QUALITY_SCENARIOS",
+        "K02.NETWORK_PROTOCOLS"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.75,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 18"
+      ],
+      "resources": [
+        "past-papers/essay-by-year/README.md"
+      ]
+    },
+    {
+      "id": "P19.ESSAY_DISTRIBUTED_TX",
+      "name": "论文主题：分布式事务",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "19",
+      "covered_topic_ids": [
+        "K21.MESSAGING_CACHE"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.75,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 19"
+      ],
+      "resources": [
+        "past-papers/essay-by-year/README.md"
+      ]
+    },
+    {
+      "id": "P20.ESSAY_DATA_ACCESS",
+      "name": "论文主题：数据访问与持久层设计",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "20",
+      "covered_topic_ids": [
+        "K10.DATABASE_MODELING"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.75,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 20"
+      ],
+      "resources": [
+        "past-papers/essay-by-year/README.md"
+      ]
+    },
+    {
+      "id": "P21.ESSAY_CACHE",
+      "name": "论文主题：分布式缓存",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "21",
+      "covered_topic_ids": [
+        "K21.MESSAGING_CACHE"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.75,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 21"
+      ],
+      "resources": [
+        "past-papers/essay-by-year/README.md"
+      ]
+    },
+    {
+      "id": "P22.ESSAY_EVENT_DRIVEN",
+      "name": "论文主题：事件驱动架构",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "22",
+      "covered_topic_ids": [
+        "K04.ARCH_STYLES_ABSD"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.75,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 22"
+      ],
+      "resources": [
+        "past-papers/essay-by-year/README.md"
+      ]
+    },
+    {
+      "id": "P23.ESSAY_AOP",
+      "name": "论文主题：面向方面编程",
+      "subjects": [
+        "essay"
+      ],
+      "skills": [
+        "production"
+      ],
+      "essay_type": "23",
+      "covered_topic_ids": [
+        "K03.SOFTWARE_DESIGN_UML",
+        "K29.DESIGN_PATTERNS"
+      ],
+      "frequency_count": 0,
+      "frequency_confidence": "expert_estimate",
+      "priority_weight": 0.75,
+      "quick_win": 0.6,
+      "cross_subject_value": 0.8,
+      "estimated_minutes": 240,
+      "raw_tags": [
+        "论文 23"
+      ],
+      "resources": [
+        "past-papers/essay-by-year/README.md"
+      ]
+    }
+  ],
+  "taxonomy_version": 2,
+  "domains": [
+    {
+      "id": "D01",
+      "name": "计算机系统",
+      "reference": "SYLLABUS.md"
+    },
+    {
+      "id": "D02",
+      "name": "信息系统",
+      "reference": "SYLLABUS.md"
+    },
+    {
+      "id": "D03",
+      "name": "信息安全",
+      "reference": "SYLLABUS.md"
+    },
+    {
+      "id": "D04",
+      "name": "软件工程",
+      "reference": "SYLLABUS.md"
+    },
+    {
+      "id": "D05",
+      "name": "数据库",
+      "reference": "SYLLABUS.md"
+    },
+    {
+      "id": "D06",
+      "name": "系统架构",
+      "reference": "SYLLABUS.md"
+    },
+    {
+      "id": "D07",
+      "name": "质量属性与评估",
+      "reference": "SYLLABUS.md"
+    },
+    {
+      "id": "D08",
+      "name": "软件可靠性",
+      "reference": "SYLLABUS.md"
+    },
+    {
+      "id": "D09",
+      "name": "架构演化",
+      "reference": "SYLLABUS.md"
+    },
+    {
+      "id": "D10",
+      "name": "未来信息综合技术",
+      "reference": "SYLLABUS.md"
+    },
+    {
+      "id": "D11",
+      "name": "标准化与知识产权",
+      "reference": "SYLLABUS.md"
+    },
+    {
+      "id": "D12",
+      "name": "应用数学",
+      "reference": "SYLLABUS.md"
+    },
+    {
+      "id": "D13",
+      "name": "专业英语",
+      "reference": "SYLLABUS.md"
     }
   ]
 }

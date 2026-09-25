@@ -32,6 +32,10 @@ SUBJECTS = {"comprehensive", "case", "essay"}
 PASS_READY_STATES = {"mastered", "pass_ready", "pass-ready", "ready"}
 
 
+def _find_module_record(status: dict, topic_id: str) -> dict:
+    return status["topics"][topic_id]
+
+
 def _run_cli(
     data_dir: Path,
     *arguments: str,
@@ -48,6 +52,7 @@ def _run_cli(
         resolved_arguments.extend(
             ["--item-id", f"test-item:{resolved_arguments[attempt_index]}"]
         )
+
     # Tests exercising full-case/essay readiness supply the new auditable contract.
     # Fragment and malformed-input coverage lives in test_training_policy.py.
     if resolved_arguments[:1] == ["record"] and "--skill" in resolved_arguments:
@@ -122,8 +127,10 @@ def _values_for_key(value: Any, wanted_key: str) -> list[Any]:
 
 
 def _find_topic_record(status: Any, topic_id: str) -> dict[str, Any]:
-    """Find a topic whether the status uses a mapping or a list schema."""
+    """Prefer module aggregates; knowledge rows reference the same module ID."""
 
+    if isinstance(status, dict) and topic_id in status.get("topics", {}):
+        return status["topics"][topic_id]
     for node in _walk(status):
         if not isinstance(node, dict):
             continue
@@ -327,6 +334,7 @@ class TutorAcceptanceTest(unittest.TestCase):
             for topic in self.topics
             if "recognition" in topic.get("skills", [])
             and "comprehensive" in topic.get("subjects", [])
+            and topic["id"] != "K22.ENGLISH_READING"  # English has a separate passage-level threshold.
         ]
         self.assertTrue(candidates, "curriculum needs a comprehensive recognition topic")
         return max(
@@ -490,7 +498,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                     "--at",
                     f"2026-08-{day:02d}T09:{number:02d}:00+08:00",
                 )
-            status = _find_topic_record(self._status(data_dir), topic_id)
+            status = _find_module_record(self._status(data_dir), topic_id)
             self.assertEqual(status["mastery"]["recognition"]["status"], "pass_ready")
             self.assertEqual(
                 status["mastery"]["recognition"]["next_review_at"],
@@ -520,7 +528,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                     "--at",
                     at,
                 )
-            maintenance = _find_topic_record(self._status(data_dir), topic_id)
+            maintenance = _find_module_record(self._status(data_dir), topic_id)
             self.assertEqual(
                 maintenance["mastery"]["recognition"]["next_review_at"],
                 "2026-09-13",
@@ -1028,7 +1036,10 @@ class TutorAcceptanceTest(unittest.TestCase):
             first = _json_output(
                 _run_cli(data_dir, "progress", "--json", "--today", "2026-09-23")
             )
-            self.assertEqual("quiz_prepare", first["next_action"]["mode"])
+            self.assertEqual("case_prepare", first["next_action"]["mode"])
+            self.assertTrue(first["next_action"]["topic_id"].startswith("C"))
+            prepared = _json_output(_run_cli(data_dir, "case-prepare", "--topic", first["next_action"]["topic_id"], "--today", "2026-09-23"))
+            self.assertIn("K03.SOFTWARE_DESIGN_UML", prepared["record"]["allowed_topic_ids"])
             _run_cli(
                 data_dir, "record", "--topic", "K09.QUALITY_SCENARIOS",
                 "--skill", "application", "--score", "0", "--max-score", "25",
@@ -1077,7 +1088,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 )
             )
             self.assertEqual("K25.RELIABILITY_ENGINEERING", payload["route_lock"]["topic_id"])
-            self.assertIsNone(payload["route_lock"]["track_id"])
+            self.assertEqual("C13.CASE_RELIABILITY", payload["route_lock"]["track_id"])
             self.assertEqual("案例 13", payload["case_type"])
             self.assertEqual("case", payload["record"]["subject"])
             self.assertEqual("application", payload["record"]["skill"])
@@ -1197,7 +1208,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 )
 
             same_day_label = _status_label(
-                _find_topic_record(self._status(data_dir), topic_id)
+                _find_module_record(self._status(data_dir), topic_id)["mastery"]["recognition"]
             )
             self.assertNotIn(same_day_label, PASS_READY_STATES)
 
@@ -1218,7 +1229,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "2026-08-12T09:00:00+08:00",
             )
             cross_day_label = _status_label(
-                _find_topic_record(self._status(data_dir), topic_id)
+                _find_module_record(self._status(data_dir), topic_id)["mastery"]["recognition"]
             )
             self.assertIn(cross_day_label, PASS_READY_STATES)
 
@@ -1240,7 +1251,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "--wrong-reason",
                 "concept_confusion",
             )
-            regressed = _find_topic_record(self._status(data_dir), topic_id)
+            regressed = _find_module_record(self._status(data_dir), topic_id)
             self.assertEqual(regressed["mastery"]["recognition"]["status"], "fragile")
             self.assertEqual(
                 regressed["mastery"]["recognition"]["next_review_at"],
@@ -1262,7 +1273,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "--at",
                 "2026-08-13T09:01:00+08:00",
             )
-            still_fragile = _find_topic_record(self._status(data_dir), topic_id)
+            still_fragile = _find_module_record(self._status(data_dir), topic_id)
             self.assertEqual(
                 still_fragile["mastery"]["recognition"]["status"], "fragile"
             )
@@ -1332,6 +1343,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                     f"2026-08-{day:02d}T09:{number:02d}:00+08:00",
                 )
             topic_record = _find_topic_record(self._status(data_dir), topic["id"])
+            self.assertEqual(_find_module_record(self._status(data_dir), topic["id"])["mastery"]["recognition"]["status"], "pass_ready")
             self.assertEqual(topic_record["mastery"]["recognition"]["status"], "pass_ready")
             self.assertNotIn(_status_label(topic_record), PASS_READY_STATES)
             self.assertNotIn("application", topic_record["mastery"])
@@ -1749,9 +1761,10 @@ class TutorAcceptanceTest(unittest.TestCase):
             )
             payload = _json_output(_run_cli(data_dir, "diagnose", "--subject", "comprehensive", "--json"))
             issues = {issue["topic_id"]: issue for issue in payload["issues"]}
-            self.assertEqual(sorted(issues), ["K08.SOFTWARE_PROCESS_MODELS", "K12.PATTERNS_SOA_MICROSERVICES"])
+            self.assertEqual(sorted(issues), ["K08.SOFTWARE_PROCESS_MODELS", "K12.PATTERNS_SOA_MICROSERVICES", "K29.DESIGN_PATTERNS"])
             self.assertEqual(len(issues["K08.SOFTWARE_PROCESS_MODELS"]["source_item_ids"]), 2)
-            self.assertEqual(len(issues["K12.PATTERNS_SOA_MICROSERVICES"]["source_item_ids"]), 2)
+            self.assertEqual(len(issues["K12.PATTERNS_SOA_MICROSERVICES"]["source_item_ids"]), 1)
+            self.assertEqual(len(issues["K29.DESIGN_PATTERNS"]["source_item_ids"]), 1)
             self.assertEqual(
                 issues["K08.SOFTWARE_PROCESS_MODELS"]["topic_name"],
                 next(topic["name"] for topic in self.topics if topic["id"] == "K08.SOFTWARE_PROCESS_MODELS"),
@@ -2130,7 +2143,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 if score == 0:
                     arguments.extend(["--wrong-reason", "recall_failure"])
                 _run_cli(data_dir, *arguments)
-                status = _find_topic_record(self._status(data_dir), topic_id)
+                status = _find_module_record(self._status(data_dir), topic_id)
                 return status["mastery"]["recognition"]["next_review_at"]
 
             self.assertEqual("2026-08-11", record(1, "2026-08-10", 0))
@@ -2843,7 +2856,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "--attempt-id",
                 "legacy-replay-001",
                 "--question-fingerprint",
-                "a" * 64,
+                json.loads((REPO_ROOT / "scripts/question_topics.json").read_text())["items"]["exam-bank/07-software-engineering.md#9"]["content_fingerprint"],
             )
             self.assertIn("幂等跳过", enriched.stdout)
 
@@ -2855,7 +2868,7 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "--attempt-id",
                 "enriched-replay-001",
                 "--question-fingerprint",
-                "b" * 64,
+                json.loads((REPO_ROOT / "scripts/question_topics.json").read_text())["items"]["exam-bank/07-software-engineering.md#9"]["content_fingerprint"],
             )
             plain = _run_cli(
                 data_dir,
@@ -3414,6 +3427,14 @@ class TutorAcceptanceTest(unittest.TestCase):
             manifest_path = data_dir / "quiz-sessions" / f"{prepared['quiz_id']}.json"
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             question = manifest["questions"][0]
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("migration_tutor", TUTOR_SCRIPT)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            source = next(row for row in module.load_quiz_question_pool(module.load_curriculum()) if row["id"] == targets["legacy-mda"])
+            question.update({key: source[key] for key in ("stem", "options", "correct", "explanation")})
+            question["question_fingerprint"] = source["question_fingerprint"]
+            question.pop("knowledge_id", None)
             question.update({
                 "item_id": targets["legacy-mda"],
                 "topic_id": "K15.STRUCTURED_ANALYSIS_DFD",
@@ -3443,7 +3464,9 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertIn("已迁移 2 条", migrated.stdout)
             self.assertEqual(logged_before, attempts_path.read_bytes())
             after = json.loads(state_path.read_text(encoding="utf-8"))
-            self.assertEqual(3, after["question_link_version"])
+            self.assertEqual(5, after["question_link_version"])
+            self.assertIn("K03.SOFTWARE_DESIGN_UML", after["topics"])
+            self.assertIn("K06.DESIGN_DATA_VIEWS", after["topics"])
             self.assertEqual(subject_state, after["subjects"])
             self.assertEqual(strategy, after["strategy"])
             self.assertEqual(state["applied_attempt_ids"], after["applied_attempt_ids"])

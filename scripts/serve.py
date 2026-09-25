@@ -22,10 +22,11 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 sys.path.insert(0, str(REPO_ROOT / "tutor"))
 
 import tutor  # noqa: E402
-from mock_paper import PAPER_ID, private_items, public_payload  # noqa: E402
+import mock_paper
+from mock_paper import PAPER_ID, PAPER_IDS, private_items, public_payload  # noqa: E402
 
 MAX_BODY_BYTES = 256 * 1024
-SESSION_ID_RE = re.compile(rf"^web-{re.escape(PAPER_ID)}-[A-Za-z0-9-]{{8,80}}$")
+SESSION_ID_RE = re.compile(r"^web-(" + "|".join(map(re.escape, PAPER_IDS)) + r")-[A-Za-z0-9-]{8,80}$")
 QUESTION_NUMBERS = {str(number) for number in range(1, 76)}
 
 
@@ -62,12 +63,12 @@ def read_body(handler: SimpleHTTPRequestHandler) -> dict[str, Any]:
     return payload
 
 
-def validate_answers(value: Any) -> dict[str, str]:
+def validate_answers(value: Any, paper_id: str = PAPER_ID) -> dict[str, str]:
     if not isinstance(value, dict) or set(value) != QUESTION_NUMBERS:
         raise RequestError("答卷必须包含 1-75 的全部题号；未答题使用空字符串")
     allowed_by_number = {
         str(item["number"]): {option["key"] for option in item["question"]["options"]}
-        for item in private_items()
+        for item in private_items(paper_id)
     }
     answers: dict[str, str] = {}
     for number, answer in value.items():
@@ -83,9 +84,17 @@ def validate_session_id(value: Any) -> str:
     return value
 
 
+def session_paper_id(session_id: str) -> str:
+    validate_session_id(session_id)
+    return SESSION_ID_RE.fullmatch(session_id).group(1)
+
+
 def public_curriculum() -> dict[str, Any]:
     """Return only the syllabus metadata needed by the local dashboard."""
     curriculum = tutor.load_curriculum()
+    frequency = tutor.runtime_frequency()
+    import paper_practice
+    routes = paper_practice.build_case_items() + paper_practice.build_essay_items()
     fields = (
         "id",
         "name",
@@ -98,21 +107,27 @@ def public_curriculum() -> dict[str, Any]:
         "cross_subject_value",
         "estimated_minutes",
         "strategy_rank",
+        "domain_id",
     )
     return {
         "schema_version": curriculum.get("schema_version"),
+        "domains": curriculum["domains"],
+        "module_capacity": tutor.module_assessment.inventory(tutor.load_quiz_question_pool(curriculum), curriculum),
+        "route_capacity": tutor.module_assessment.route_inventory([item for item in routes if paper_practice.eligible(item)], curriculum),
         "topics": [
-            {field: topic[field] for field in fields if field in topic}
+            {**{field: topic[field] for field in fields if field in topic},
+             "frequency_count": frequency["topics"].get(topic["id"]),
+             "frequency_source": frequency["active"] if topic["id"].startswith("K") else "not_estimated"}
             for topic in curriculum["topics"]
         ],
     }
 
 
-def grade_mock(answers: dict[str, str]) -> tuple[list[dict[str, Any]], int]:
+def grade_mock(answers: dict[str, str], paper_id: str = PAPER_ID) -> tuple[list[dict[str, Any]], int]:
     """Grade on the local server; answers are absent from the pre-exam payload."""
     results: list[dict[str, Any]] = []
     score = 0
-    for item in private_items():
+    for item in private_items(paper_id):
         question = item["question"]
         selected = answers[str(item["number"])]
         correct = selected == question["answer"]
@@ -133,10 +148,7 @@ def grade_mock(answers: dict[str, str]) -> tuple[list[dict[str, Any]], int]:
 
 
 def question_source(item: dict[str, Any]) -> tuple[str, str]:
-    question = item["question"]
-    source = f"exam-bank/{question['topic_file']}.md"
-    question_number = int(question["id"].rsplit("-", 1)[1])
-    return source, f"{source}#{question_number}"
+    return item["source"], item["item_id"]
 
 
 def ensure_private_data_dir(data_dir: Path) -> Path:
@@ -162,12 +174,15 @@ def require_training_ready(data_dir: Path) -> tuple[dict[str, Any], dict[str, An
     return profile, state
 
 
-def require_mock_quality(data_dir: Path) -> None:
+def require_mock_quality(data_dir: Path, paper_id: str = PAPER_ID) -> None:
     pool = tutor.load_quiz_question_pool(tutor.load_curriculum())
     by_id = {item["id"]: item for item in pool}
     blocked = tutor.quarantined_item_ids(data_dir, pool)
-    invalid = [item["item_id"] for item in private_items() if item["item_id"] in blocked
-               or by_id.get(item["item_id"], {}).get("quality_status") != "ready"]
+    blocked_fingerprints = {item.get("question_fingerprint") for item in pool if item["id"] in blocked}
+    invalid = [item["item_id"] for item in private_items(paper_id) if item["item_id"] in blocked
+               or item["question_fingerprint"] in blocked_fingerprints
+               or by_id.get(item["item_id"], {}).get("quality_status") != "ready"
+               or by_id.get(item["item_id"], {}).get("classification_status") != "reviewed"]
     if invalid:
         raise tutor.TutorError("当前模拟卷含隔离或不可用题，请先核验修复：" + "、".join(invalid))
 
@@ -179,6 +194,7 @@ def persist_events(
 ) -> dict[str, Any]:
     """Atomically classify and append one browser mock submission."""
     curriculum = tutor.load_curriculum()
+    paper_id = mock_event["item_id"]
     data_dir = ensure_private_data_dir(data_dir)
     with tutor.data_lock(data_dir):
         profile, state = tutor.load_profile_and_state(data_dir, persist_pending=False)
@@ -201,7 +217,7 @@ def persist_events(
                 raise tutor.TutorError("该场模考的整卷事件与逐题模式不一致")
         else:
             paper_measured = any(
-                event.get("event_type") == "mock" and event.get("item_id") == PAPER_ID
+                event.get("event_type") == "mock" and event.get("item_id") == paper_id
                 for event in logged
             )
             session_mode = "review" if paper_measured else "mock"
@@ -214,10 +230,8 @@ def persist_events(
         candidates = [*practice_events]
         if include_mock:
             old_mock = by_id.get(mock_event["attempt_id"])
-            seen = {identity for event in logged
-                    if not str(event.get("attempt_id", "")).startswith(mock_event["attempt_id"])
-                    for identity in (event.get("item_id"), tutor.enrich_record_event(event).get("question_fingerprint"))
-                    if identity}
+            earlier = [event for event in logged if not str(event.get("attempt_id", "")).startswith(mock_event["attempt_id"])]
+            seen = mock_paper.exposed_identities(data_dir, earlier)
             mock_event["prior_exposure_count"] = (old_mock.get("prior_exposure_count", 0) if old_mock else
                 sum((item.get("question_fingerprint") or item["item_id"]) in seen or item["item_id"] in seen
                     for item in practice_events))
@@ -257,7 +271,8 @@ def persist_postmortem(
 ) -> dict[str, Any]:
     """Append learner-supplied wrong reasons without rewriting raw answer evidence."""
     data_dir = ensure_private_data_dir(data_dir)
-    results, _ = grade_mock(answers)
+    paper_id = session_paper_id(session_id)
+    results, _ = grade_mock(answers, paper_id)
     wrong_results = {str(item["number"]): item for item in results if not item["correct"]}
     if set(reasons) != set(wrong_results):
         raise RequestError("每道错题都必须且只能提交一个主要错因")
@@ -311,7 +326,7 @@ def persist_postmortem(
             "schema_version": 1,
             "feedback_id": feedback_id,
             "mock_id": session_id,
-            "paper_id": PAPER_ID,
+            "paper_id": paper_id,
             "at": tutor.now_iso(),
             "items": items,
         }
@@ -379,7 +394,7 @@ class ExamHandler(SimpleHTTPRequestHandler):
         elif path == "/api/learning-plan":
             self._handle_learning_plan(parse_qs(parsed.query))
         elif path == "/api/mock-paper":
-            self._handle_mock_paper()
+            self._handle_mock_paper(parse_qs(parsed.query))
         elif path in {"/questions.json", "/api/questions"}:
             json_response(self, {"ok": False, "error": "答案库不向考试浏览器开放"}, 404)
         elif path.startswith("/api/"):
@@ -478,21 +493,41 @@ class ExamHandler(SimpleHTTPRequestHandler):
         except tutor.TutorError as error:
             json_response(self, {"ok": False, "error": str(error)}, 409)
 
-    def _handle_mock_paper(self) -> None:
+    def _handle_mock_paper(self, query: dict[str, list[str]]) -> None:
         try:
+            requested = query.get("paper_id", [None])[0]
+            review = query.get("mode", ["measurement"])[0] == "review"
+            if requested is not None and requested not in PAPER_IDS:
+                raise RequestError("未知模拟卷")
             with tutor.data_lock(self.data_dir):
+                state = None
                 if tutor.state_paths(self.data_dir)["state"].exists():
-                    require_training_ready(self.data_dir)
-                require_mock_quality(self.data_dir)
-            json_response(self, {"ok": True, "data": public_payload()})
+                    _, state = require_training_ready(self.data_dir)
+                inventory = mock_paper.availability(self.data_dir, state)
+                paper_id = requested or inventory["paper_id"]
+                row = next((r for r in inventory["papers"] if r["paper_id"] == paper_id), None)
+                if not paper_id or not review and not row["available"]:
+                    json_response(self, {"ok": False, "error": inventory["reason"] or "该卷已练过或不具独立测量资格，请选择新卷或显式同卷复习",
+                        "resource_unavailable": True, "papers": inventory["papers"]}, 409)
+                    return
+                require_mock_quality(self.data_dir, paper_id)
+            payload = public_payload(paper_id)
+            payload["measurement"] = row
+            payload["measurement_note"] += " 本卷符合未见题测量条件。" if row["available"] else " 本次为复习练习，保留成绩但不增加独立模考证据。"
+            json_response(self, {"ok": True, "data": payload})
+        except RequestError as error:
+            json_response(self, {"ok": False, "error": str(error)}, 400)
         except tutor.TutorError as error:
             json_response(self, {"ok": False, "error": str(error)}, 409)
         except (OSError, ValueError, KeyError) as error:
             json_response(self, {"ok": False, "error": str(error)}, 500)
 
     def _submit_mock(self, body: dict[str, Any]) -> tuple[list[dict[str, Any]], int, dict[str, Any]]:
-        answers = validate_answers(body.get("answers"))
         session_id = validate_session_id(body.get("session_id"))
+        paper_id = session_paper_id(session_id)
+        if body.get("paper_id", paper_id) != paper_id:
+            raise RequestError("答卷与会话的试卷身份不一致")
+        answers = validate_answers(body.get("answers"), paper_id)
         duration_seconds = body.get("duration_seconds")
         if not isinstance(duration_seconds, int) or isinstance(duration_seconds, bool) or not 1 <= duration_seconds <= 150 * 60:
             raise RequestError("整卷用时必须是 1-9000 秒的整数")
@@ -500,10 +535,10 @@ class ExamHandler(SimpleHTTPRequestHandler):
         durations = body.get("durations", {})
         if not isinstance(confidences, dict) or not isinstance(durations, dict):
             raise RequestError("confidence 与 durations 必须是对象")
-        results, score = grade_mock(answers)
+        results, score = grade_mock(answers, paper_id)
         finished_at = tutor.now_iso()
         practice_events: list[dict[str, Any]] = []
-        for result, item in zip(results, private_items()):
+        for result, item in zip(results, private_items(paper_id)):
             key = str(result["number"])
             confidence = confidences.get(key, "sure")
             if confidence not in {"sure", "unsure", "guess"}:
@@ -543,7 +578,7 @@ class ExamHandler(SimpleHTTPRequestHandler):
             "attempt_id": session_id,
             "event_type": "mock",
             "topic_id": None,
-            "item_id": PAPER_ID,
+            "item_id": paper_id,
             "at": finished_at,
             "subject": "comprehensive",
             "skill": "recognition",
@@ -556,7 +591,7 @@ class ExamHandler(SimpleHTTPRequestHandler):
             "confidence": "sure",
             "wrong_reasons": [],
             "source_type": "simulation",
-            "source": PAPER_ID,
+            "source": paper_id,
             "feedback_seen": True,
         }
         stored = persist_events(self.data_dir, practice_events, mock_event)
@@ -592,8 +627,11 @@ class ExamHandler(SimpleHTTPRequestHandler):
         )
 
     def _handle_mock_feedback(self, body: dict[str, Any]) -> None:
-        answers = validate_answers(body.get("answers"))
         session_id = validate_session_id(body.get("session_id"))
+        paper_id = session_paper_id(session_id)
+        if body.get("paper_id", paper_id) != paper_id:
+            raise RequestError("答卷与会话的试卷身份不一致")
+        answers = validate_answers(body.get("answers"), paper_id)
         reasons = body.get("wrong_reasons")
         if not isinstance(reasons, dict):
             raise RequestError("wrong_reasons 必须是对象")

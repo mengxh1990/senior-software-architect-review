@@ -1,0 +1,4291 @@
+{
+  "schema_version": 1,
+  "description": "可选题目笔记索引；运行时不读取此表。",
+  "items": {
+    "past-papers/comprehensive-by-year/2018下.md#1": [
+      "OS.DISK_SCHEDULING"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#2": [
+      "OS.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#3": [
+      "OS.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#4": [
+      "OS.FILE_SYSTEMS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#5": [
+      "DB.RELATIONAL_ALGEBRA"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#7": [
+      "DB.RELATIONAL_ALGEBRA"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#8": [
+      "DATA.WAREHOUSE_LAKE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#9": [
+      "HW.ARCHITECTURE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#10": [
+      "HW.ARCHITECTURE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#11": [
+      "EMBED.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#12": [
+      "HW.CPU_PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#13": [
+      "NET.CRC"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#14": [
+      "NET.DNS_DHCP"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#15": [
+      "NET.DNS_DHCP"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#16": [
+      "DB.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#17": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#18": [
+      "IS.SYSTEMS_ENGINEERING"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#19": [
+      "IS.SYSTEMS_ENGINEERING"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#20": [
+      "IS.SYSTEMS_ENGINEERING"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#21": [
+      "IS.SYSTEMS_ENGINEERING"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#23": [
+      "DOC.SOFTWARE_DOCUMENTS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#24": [
+      "REQ.CHANGE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#25": [
+      "REQ.CHANGE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#26": [
+      "PROCESS.MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#27": [
+      "PROCESS.MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#28": [
+      "PROCESS.MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#31": [
+      "DESIGN.SYSTEM_DESIGN"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#32": [
+      "DESIGN.SYSTEM_DESIGN"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#33": [
+      "DESIGN.SYSTEM_DESIGN"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#34": [
+      "DESIGN.UI"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#36": [
+      "COMPONENT.EJB"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#37": [
+      "COMPONENT.EJB"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#38": [
+      "COMPONENT.EJB"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#39": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#40": [
+      "COMPONENT.PLATFORMS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#41": [
+      "COMPONENT.PLATFORMS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#42": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#43": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#44": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#45": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#46": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#47": [
+      "EVAL.ATAM_PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#48": [
+      "EVAL.METHODS"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#49": [
+      "ARCH.REPOSITORY"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#50": [
+      "ARCH.REPOSITORY"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#51": [
+      "ARCH.INTERPRETER"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#52": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#53": [
+      "QUALITY.MODIFIABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#54": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#55": [
+      "PATTERN.BRIDGE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#56": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#57": [
+      "PATTERN.COMMAND_MEMENTO"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#58": [
+      "QUALITY.AVAILABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#59": [
+      "QUALITY.AVAILABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#61": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#62": [
+      "QUALITY.SECURITY"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#65": [
+      "SEC.PKI_SIGNATURE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#66": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#67": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#68": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#70": [
+      "MATH.OPTIMIZATION"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#71": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#72": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#73": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#74": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#75": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#1": [
+      "OS.SYNCHRONIZATION"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#2": [
+      "OS.PAGING"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#3": [
+      "OS.REPLACEMENT"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#5": [
+      "SEC.DATABASE"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#8": [
+      "DB.DISTRIBUTION"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#11": [
+      "EMBED.REALTIME"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#12": [
+      "EMBED.REALTIME"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#13": [
+      "NET.PORTS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#14": [
+      "NET.HTTP"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#15": [
+      "NET.DNS_DHCP"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#22": [
+      "PROCESS.MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#23": [
+      "PROCESS.MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#33": [
+      "ANALYSIS.STRUCTURED"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#38": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#39": [
+      "EVOLUTION.REVERSE"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#40": [
+      "EVOLUTION.REVERSE"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#41": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#42": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#43": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#58": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#59": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#60": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#61": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#62": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#63": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#65": [
+      "REL.REDUNDANCY"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#66": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#67": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#68": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#69": [
+      "MATH.OPTIMIZATION"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#70": [
+      "PM.CPM"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#71": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#72": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#73": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#74": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#75": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#1": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#2": [
+      "OS.FILE_SYSTEMS"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#3": [
+      "EMBED.REALTIME"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#4": [
+      "DB.DISTRIBUTION"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#5": [
+      "OS.KERNEL"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#6": [
+      "ARCH.LAYERED_MVC"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#7": [
+      "NEW.BLOCKCHAIN"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#10": [
+      "IS.EGOV_ECOMMERCE"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#17": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#20": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#22": [
+      "OS.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#23": [
+      "MATH.PROBABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#24": [
+      "OS.PAGING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#1": [
+      "OS.PAGING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#2": [
+      "EMBED.REALTIME"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#3": [
+      "NEW.AI_CHIPS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#4": [
+      "OS.SYNCHRONIZATION"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#5": [
+      "OS.DEADLOCK"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#6": [
+      "DB.ER_MODELING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#7": [
+      "DB.ER_MODELING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#8": [
+      "EMBED.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#9": [
+      "EMBED.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#10": [
+      "NET.ROUTING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#11": [
+      "NET.ROUTING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#12": [
+      "NET.ROUTING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#15": [
+      "IS.SYSTEMS_ENGINEERING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#16": [
+      "STANDARD.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#17": [
+      "TEST.CMMI"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#18": [
+      "PM.CONFIGURATION"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#19": [
+      "REQ.CHANGE"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#20": [
+      "REQ.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#21": [
+      "PROCESS.MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#22": [
+      "PROCESS.AGILE"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#23": [
+      "PROCESS.RUP"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#24": [
+      "PM.CONFIGURATION"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#25": [
+      "ANALYSIS.STRUCTURED"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#26": [
+      "UML.DIAGRAMS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#27": [
+      "METRIC.MCCABE"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#28": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#29": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#30": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#35": [
+      "ARCH.ABSD"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#36": [
+      "ARCH.ABSD"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#37": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#38": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#39": [
+      "ARCH.STYLES"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#40": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#41": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#42": [
+      "ARCH.STYLES"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#43": [
+      "ARCH.INTERPRETER"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#44": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#45": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#46": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#47": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#48": [
+      "DESIGN.COHESION_COUPLING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#49": [
+      "DESIGN.COHESION_COUPLING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#52": [
+      "QUALITY.AVAILABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#56": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#58": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#59": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#60": [
+      "EVAL.SENSITIVITY"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#61": [
+      "EVAL.TRADEOFF"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#62": [
+      "ARCH.LAYERED_MVC"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#63": [
+      "ARCH.LAYERED_MVC"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#64": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#65": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#66": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#67": [
+      "SEC.PKI_SIGNATURE"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#68": [
+      "SEC.PKI_SIGNATURE"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#69": [
+      "MATH.OPTIMIZATION"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#70": [
+      "PM.PERT"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#71": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#72": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#73": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#74": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#75": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#1": [
+      "NEW.CLOUD_MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#2": [
+      "OS.SYNCHRONIZATION"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#3": [
+      "OS.FILE_SYSTEMS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#4": [
+      "OS.DISK_SCHEDULING"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#5": [
+      "DB.SCHEMAS_VIEWS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#6": [
+      "DB.STORAGE_RECOVERY"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#7": [
+      "DB.KEYS_FD"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#8": [
+      "DB.RELATIONAL_ALGEBRA"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#9": [
+      "EMBED.TOOLCHAIN"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#11": [
+      "NEW.AI_CHIPS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#12": [
+      "MIDDLEWARE.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#13": [
+      "SEC.TLS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#14": [
+      "NET.PORTS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#15": [
+      "NET.PORTS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#16": [
+      "REL.METRICS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#17": [
+      "REL.METRICS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#18": [
+      "DATA.GOVERNANCE"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#19": [
+      "DATA.GOVERNANCE"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#20": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#21": [
+      "SEC.GOVERNANCE"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#22": [
+      "PROCESS.MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#23": [
+      "TEST.CMMI"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#25": [
+      "REQ.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#26": [
+      "DESIGN.OO_MODELING"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#27": [
+      "MIDDLEWARE.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#29": [
+      "PM.CONFIGURATION"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#30": [
+      "UML.DIAGRAMS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#31": [
+      "MICRO.DDD"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#32": [
+      "MICRO.SOA_COMPARISON",
+      "SOA.PRINCIPLES",
+      "MICRO.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#33": [
+      "UML.INTERACTION"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#34": [
+      "UML.INTERACTION"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#37": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#38": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#39": [
+      "METRIC.MCCABE"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#40": [
+      "TEST.CASE_DESIGN"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#41": [
+      "TEST.CASE_DESIGN"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#42": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#43": [
+      "EVOLUTION.LEGACY"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#45": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#46": [
+      "ARCH.ABSD"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#47": [
+      "ARCH.ABSD"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#48": [
+      "ARCH.PIPE_FILTER"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#49": [
+      "ARCH.INTERPRETER"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#50": [
+      "COMPONENT.REUSE"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#52": [
+      "COMPONENT.REUSE"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#53": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#54": [
+      "QUALITY.MODIFIABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#55": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#56": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#57": [
+      "QUALITY.USABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#58": [
+      "EVAL.TRADEOFF"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#59": [
+      "EVAL.UTILITY_TREE"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#60": [
+      "REL.METRICS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#61": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#63": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#65": [
+      "SEC.CRYPTOGRAPHY"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#66": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#67": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#68": [
+      "IP.TRADEMARK_SECRET"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#70": [
+      "PM.CPM"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#71": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#72": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#73": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#74": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#75": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#1-2": [
+      "METRIC.MCCABE"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#11": [
+      "UML.SYSML"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#12": [
+      "UML.SYSML"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#27": [
+      "QUALITY.ATTRIBUTES"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#28": [
+      "QUALITY.ATTRIBUTES"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#35": [
+      "NEW.CPS_IOT"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#36": [
+      "NEW.CPS_IOT"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#43": [
+      "ARCH.ABSD"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#44": [
+      "ARCH.ABSD"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#49": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#50": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#53": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#54": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#58": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#59": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#2": [
+      "OS.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#3": [
+      "UML.USE_CASE"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#4": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#5": [
+      "NEW.DIGITAL_TWIN"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#6": [
+      "NEW.CPS_IOT"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#7": [
+      "EAI.LEVELS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#9": [
+      "MATH.OPTIMIZATION"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#10": [
+      "DB.ACID"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#11": [
+      "DB.RELATIONAL_ALGEBRA"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#12": [
+      "EMBED.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#13": [
+      "PM.CPM"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#15": [
+      "REL.MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#16": [
+      "QUALITY.AVAILABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#17": [
+      "QUALITY.INTEROPERABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#18": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#19": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#20": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#21": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#22": [
+      "SOA.REST"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#23": [
+      "QUALITY.ATTRIBUTES"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#24": [
+      "COMPONENT.REUSE"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#25": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#26": [
+      "EVAL.ATAM_PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#27": [
+      "ARCH.REPOSITORY"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#28": [
+      "ARCH.LAYERED_MVC"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#29": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#30": [
+      "PROCESS.AGILE"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#32": [
+      "TEST.CLEANROOM"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#33": [
+      "OS.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#34": [
+      "NET.COMMUNICATION"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#35": [
+      "NET.COMMUNICATION"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#36": [
+      "DB.NORMAL_FORMS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#37": [
+      "DB.NORMAL_FORMS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#38": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#39": [
+      "NET.LAYERS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#40": [
+      "IP.PATENT"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#41": [
+      "IP.PATENT"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#42": [
+      "UML.DIAGRAMS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#43": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#44": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#45": [
+      "ARCH.PIPE_FILTER"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#46": [
+      "ARCH.PIPE_FILTER"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#47": [
+      "ARCH.STYLES"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#48": [
+      "ARCH.EVENT_DRIVEN"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#49": [
+      "SOA.WEB_SERVICE"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#50": [
+      "EVAL.METHODS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#51": [
+      "EVAL.METHODS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#52": [
+      "EVAL.METHODS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#53": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#54": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#55": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#56": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#57": [
+      "QUALITY.ATTRIBUTES"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#58": [
+      "ARCH.VIEWPOINT"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#59": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#60": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#61": [
+      "NEW.CLOUD_MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#62": [
+      "SEC.ACCESS_AUTH"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#64": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#65": [
+      "NEW.DIGITAL_TWIN"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#66": [
+      "MIDDLEWARE.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#67": [
+      "EMBED.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#69": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#70": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#71": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#72": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#74": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#75": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#2": [
+      "MATH.COMBINATORICS"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#4": [
+      "ARCH.REPOSITORY"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#5": [
+      "OS.DEADLOCK"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#6": [
+      "NET.LAYERS"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#7": [
+      "OS.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#8": [
+      "QUALITY.USABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#9": [
+      "IP.PATENT"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#10": [
+      "IP.PATENT"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#12": [
+      "DB.INTEGRITY"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#13": [
+      "OS.CPU_SCHEDULING"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#14": [
+      "PROCESS.RUP"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#15": [
+      "SEC.ATTACKS"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#16": [
+      "SOA.WEB_SERVICE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#17": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#18": [
+      "NET.LAYERS"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#21": [
+      "PM.CPM"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#22": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#23": [
+      "TEST.CASE_DESIGN"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#24": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#25": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#26": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#27": [
+      "DB.RELATIONAL_ALGEBRA"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#28": [
+      "DB.RELATIONAL_ALGEBRA"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#29": [
+      "DB.KEYS_FD"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#30": [
+      "ARCH.PIPE_FILTER"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#31": [
+      "EVAL.TRADEOFF"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#32": [
+      "DESIGN.UI"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#33": [
+      "ARCH.ABSD"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#35": [
+      "COMPONENT.REUSE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#36": [
+      "DESIGN.COHESION_COUPLING"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#38": [
+      "UML.USE_CASE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#39": [
+      "ARCH.STYLES"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#40": [
+      "TEST.CASE_DESIGN"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#41": [
+      "SOA.WEB_SERVICE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#42": [
+      "HW.IO_INTERRUPT"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#43": [
+      "SEC.GOVERNANCE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#44": [
+      "COMPONENT.REUSE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#45": [
+      "EVAL.UTILITY_TREE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#46": [
+      "REL.FAULT_TOLERANCE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#47": [
+      "SEC.HASH"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#48": [
+      "OS.PAGING"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#49": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#50": [
+      "ARCH.STYLES"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#51": [
+      "ARCH.EVENT_DRIVEN"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#52": [
+      "PM.CONFIGURATION"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#53": [
+      "PROCESS.MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#55": [
+      "IS.SYSTEMS_ENGINEERING"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#56": [
+      "EVAL.ATAM_PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#57": [
+      "EVAL.METHODS"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#58": [
+      "NEW.MACHINE_LEARNING"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#59": [
+      "IS.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#60": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#61": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#62": [
+      "DB.SCHEMAS_VIEWS"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#63": [
+      "ANALYSIS.DFD"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#65": [
+      "EAI.LEVELS"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#66": [
+      "TEST.QUALITY_ASSURANCE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#67": [
+      "EVAL.UTILITY_TREE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#68": [
+      "DATA.GOVERNANCE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#69": [
+      "DB.ER_MODELING"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#70": [
+      "COMPONENT.REUSE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#71": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#72": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#73": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#74": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#75": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#1": [
+      "OS.FILE_SYSTEMS"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#3": [
+      "TEST.CMMI"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#6": [
+      "DESIGN.COHESION_COUPLING"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#7": [
+      "DB.RELATIONAL_ALGEBRA"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#8": [
+      "ANALYSIS.DFD"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#10": [
+      "EMBED.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#11": [
+      "MATH.OPTIMIZATION"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#12": [
+      "MICRO.RESILIENCE"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#13": [
+      "ARCH.LAYERED_MVC"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#14": [
+      "NET.COMMUNICATION"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#15": [
+      "HW.CACHE"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#16": [
+      "EMBED.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#17": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#18": [
+      "IS.ERP_MES"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#19-20": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#21": [
+      "TEST.CLEANROOM"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#22": [
+      "OS.FILE_SYSTEMS"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#23": [
+      "OS.DEADLOCK"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#24": [
+      "NEW.LLM"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#25": [
+      "REQ.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#27-28": [
+      "DB.SCHEMAS_VIEWS"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#29": [
+      "ARCH.STYLES"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#30": [
+      "ANALYSIS.DFD"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#31": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#32": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#33": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#34": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#35": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#36": [
+      "UML.USE_CASE"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#37": [
+      "PROCESS.MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#38": [
+      "PM.CPM"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#39": [
+      "UML.RELATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#41": [
+      "SOA.REST"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#42": [
+      "EMBED.REALTIME"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#43": [
+      "PROCESS.AGILE"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#46": [
+      "PROCESS.RUP"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#47": [
+      "TEST.CASE_DESIGN"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#48": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#49": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#50": [
+      "NEW.LLM"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#52": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#53": [
+      "NEW.EDGE_CLOUD"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#54": [
+      "QUALITY.ATTRIBUTES"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#56": [
+      "ANALYSIS.STRUCTURED"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#57": [
+      "UML.STATE_ACTIVITY"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#58": [
+      "QUALITY.TESTABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#59": [
+      "SOA.WEB_SERVICE"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#60": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#61": [
+      "DB.KEYS_FD"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#62": [
+      "SOA.WEB_SERVICE"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#63": [
+      "DATA.WAREHOUSE_LAKE"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#65": [
+      "COMPONENT.REUSE"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#66": [
+      "ARCH.REPOSITORY"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#67": [
+      "MATH.COMBINATORICS"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#68": [
+      "NEW.MACHINE_LEARNING"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#69": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#70": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#72": [
+      "SOA.ESB"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#73": [
+      "DB.SCHEMAS_VIEWS"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#74": [
+      "MICRO.DDD"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#75": [
+      "QUALITY.SECURITY"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#2": [
+      "REQ.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#4": [
+      "ARCH.INTERPRETER"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#5": [
+      "IP.TRADEMARK_SECRET"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#6": [
+      "EVOLUTION.LEGACY"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#7": [
+      "HW.CACHE"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#8": [
+      "OS.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#9": [
+      "EVAL.METHODS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#10": [
+      "ANALYSIS.DFD"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#11": [
+      "QUALITY.ATTRIBUTES"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#12": [
+      "PROCESS.MODELS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#13": [
+      "TEST.CASE_DESIGN"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#14": [
+      "EMBED.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#15": [
+      "IP.PATENT"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#16": [
+      "ARCH.ABSD"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#17": [
+      "COMPONENT.EJB"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#18": [
+      "OS.DISK_SCHEDULING"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#19": [
+      "PATTERN.DECORATOR"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#20": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#21": [
+      "ARCH.LAYERED_MVC"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#22": [
+      "ANALYSIS.STRUCTURED"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#24": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#26": [
+      "NEW.AI_CHIPS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#28": [
+      "ARCH.INTERPRETER"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#32": [
+      "EVAL.SENSITIVITY"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#33": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#34": [
+      "OS.PAGING"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#35": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#36": [
+      "OS.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#37": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#38": [
+      "ARCH.REPOSITORY"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#39": [
+      "OS.PAGING"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#40": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#41": [
+      "ARCH.ADL"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#42": [
+      "OS.VIRTUAL_MEMORY"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#44": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#45": [
+      "OS.KERNEL"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#46": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#47": [
+      "IP.PATENT"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#48": [
+      "PM.CPM"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#49": [
+      "HW.CPU_PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#50": [
+      "ARCH.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#51": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#52": [
+      "REL.DISASTER_RECOVERY"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#53": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#55": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#56": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#57": [
+      "PATTERN.ARCHITECTURAL"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#58": [
+      "UML.USE_CASE"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#59": [
+      "HW.IO_INTERRUPT"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#61": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#62": [
+      "DB.KEYS_FD"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#63": [
+      "EMBED.REALTIME"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#64": [
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#65": [
+      "DESIGN.UI"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#66": [
+      "EMBED.REALTIME"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#67": [
+      "PATTERN.DECORATOR"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#68": [
+      "EVAL.TRADEOFF"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#69": [
+      "ARCH.ABSD"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#70": [
+      "OS.PAGING"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#71": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#72": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#73": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#74": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#75": [
+      "ENG.TECH_READING"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#1": [
+      "SEC.ACCESS_AUTH"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#2": [
+      "ARCH.CQRS"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#3": [
+      "SEC.TLS"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#4": [
+      "NEW.LLM"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#5": [
+      "MICRO.RESILIENCE"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#6": [
+      "NEW.MACHINE_LEARNING"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#7": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#8": [
+      "IP.COPYRIGHT"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#9": [
+      "ARCH.EVENT_DRIVEN"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#10": [
+      "DB.NORMAL_FORMS"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#11": [
+      "ARCH.STYLES"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#13": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#16": [
+      "SEC.CRYPTOGRAPHY"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#17": [
+      "TEST.CASE_DESIGN"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#18": [
+      "UML.USE_CASE"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#21": [
+      "NEW.KNOWLEDGE_GRAPH"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#23": [
+      "ARCH.INTERPRETER"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#25": [
+      "NEW.EDGE_CLOUD"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#28": [
+      "SEC.ACCESS_AUTH"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#29": [
+      "REL.METRICS"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#30": [
+      "OS.FILE_SYSTEMS"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#31": [
+      "HW.IO_INTERRUPT"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#33": [
+      "QUALITY.USABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#34": [
+      "REL.FAULT_TOLERANCE"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#35": [
+      "TEST.CASE_DESIGN"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#36": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#37": [
+      "DB.ER_MODELING"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#38": [
+      "QUALITY.ATTRIBUTES"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#39": [
+      "EMBED.REALTIME"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#40": [
+      "SEC.PKI_SIGNATURE"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#41": [
+      "DB.RELATIONAL_ALGEBRA"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#42": [
+      "PATTERN.DECORATOR"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#43": [
+      "ARCH.LAYERED_MVC"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#44": [
+      "DB.INDEX_QUERY"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#45": [
+      "IP.PATENT"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#46": [
+      "COMPONENT.REUSE"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#48": [
+      "OS.FILE_SYSTEMS"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#49": [
+      "ARCH.STYLES"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#50": [
+      "ARCH.REPOSITORY"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#51": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#52": [
+      "DB.ER_MODELING"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#53": [
+      "DB.ER_MODELING"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#54": [
+      "IP.PATENT"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#55": [
+      "ARCH.STYLES"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#56": [
+      "QUALITY.AVAILABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#57": [
+      "EVAL.ATAM_PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#58": [
+      "ANALYSIS.BEHAVIOR"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#61": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#62": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#63": [
+      "EVAL.METHODS"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#64": [
+      "MATH.PROBABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#65": [
+      "DATA.LAMBDA_KAPPA"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#66": [
+      "DATA.LAMBDA_KAPPA"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#67": [
+      "EMBED.TOOLCHAIN"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#68": [
+      "TEST.CMMI"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#69": [
+      "LANG.COMPILATION"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#70": [
+      "LANG.PARSING"
+    ],
+    "exam-bank/02-os-concepts.md#1": [
+      "OS.PROCESS"
+    ],
+    "exam-bank/02-os-concepts.md#2": [
+      "OS.DEADLOCK"
+    ],
+    "exam-bank/02-os-concepts.md#3": [
+      "OS.DEADLOCK"
+    ],
+    "exam-bank/02-os-concepts.md#4": [
+      "OS.DEADLOCK"
+    ],
+    "exam-bank/02-os-concepts.md#5": [
+      "OS.PAGING"
+    ],
+    "exam-bank/02-os-concepts.md#6": [
+      "OS.REPLACEMENT"
+    ],
+    "exam-bank/02-os-concepts.md#7": [
+      "OS.REPLACEMENT"
+    ],
+    "exam-bank/02-os-concepts.md#8": [
+      "OS.CPU_SCHEDULING"
+    ],
+    "exam-bank/02-os-concepts.md#9": [
+      "EMBED.REALTIME"
+    ],
+    "exam-bank/02-os-concepts.md#10": [
+      "OS.SYNCHRONIZATION"
+    ],
+    "exam-bank/02-os-concepts.md#11": [
+      "OS.PROCESS"
+    ],
+    "exam-bank/02-os-concepts.md#12": [
+      "OS.VIRTUAL_MEMORY"
+    ],
+    "exam-bank/02-os-concepts.md#13": [
+      "OS.VIRTUAL_MEMORY"
+    ],
+    "exam-bank/02-os-concepts.md#14": [
+      "OS.VIRTUAL_MEMORY"
+    ],
+    "exam-bank/02-os-concepts.md#15": [
+      "OS.FILE_SYSTEMS"
+    ],
+    "exam-bank/04-networking.md#1": [
+      "NET.LAYERS"
+    ],
+    "exam-bank/04-networking.md#2": [
+      "NET.LAYERS"
+    ],
+    "exam-bank/04-networking.md#3": [
+      "NET.PORTS"
+    ],
+    "exam-bank/04-networking.md#4": [
+      "NET.TCP"
+    ],
+    "exam-bank/04-networking.md#5": [
+      "NET.TCP"
+    ],
+    "exam-bank/04-networking.md#6": [
+      "NET.TCP"
+    ],
+    "exam-bank/04-networking.md#7": [
+      "NET.ADDRESSING"
+    ],
+    "exam-bank/04-networking.md#8": [
+      "NET.ADDRESSING"
+    ],
+    "exam-bank/04-networking.md#9": [
+      "NET.ARP"
+    ],
+    "exam-bank/04-networking.md#10": [
+      "NET.DNS_DHCP"
+    ],
+    "exam-bank/04-networking.md#11": [
+      "NET.HTTP"
+    ],
+    "exam-bank/04-networking.md#12": [
+      "SEC.TLS"
+    ],
+    "exam-bank/04-networking.md#13": [
+      "NET.ROUTING"
+    ],
+    "exam-bank/04-networking.md#14": [
+      "NET.ROUTING"
+    ],
+    "exam-bank/04-networking.md#15": [
+      "NET.PORTS"
+    ],
+    "exam-bank/05-uml.md#1": [
+      "UML.DIAGRAMS"
+    ],
+    "exam-bank/05-uml.md#2": [
+      "UML.DIAGRAMS"
+    ],
+    "exam-bank/05-uml.md#3": [
+      "UML.DIAGRAMS"
+    ],
+    "exam-bank/05-uml.md#4": [
+      "UML.RELATIONS"
+    ],
+    "exam-bank/05-uml.md#5": [
+      "UML.RELATIONS"
+    ],
+    "exam-bank/05-uml.md#6": [
+      "UML.RELATIONS"
+    ],
+    "exam-bank/05-uml.md#7": [
+      "UML.USE_CASE"
+    ],
+    "exam-bank/05-uml.md#8": [
+      "UML.USE_CASE"
+    ],
+    "exam-bank/05-uml.md#9": [
+      "UML.INTERACTION"
+    ],
+    "exam-bank/05-uml.md#10": [
+      "UML.STATE_ACTIVITY"
+    ],
+    "exam-bank/05-uml.md#11": [
+      "UML.DEPLOYMENT"
+    ],
+    "exam-bank/05-uml.md#12": [
+      "UML.STATE_ACTIVITY"
+    ],
+    "exam-bank/05-uml.md#13": [
+      "UML.RELATIONS"
+    ],
+    "exam-bank/05-uml.md#14": [
+      "UML.INTERACTION"
+    ],
+    "exam-bank/05-uml.md#15": [
+      "UML.DEPLOYMENT"
+    ],
+    "exam-bank/05-uml.md#16": [
+      "UML.DIAGRAMS"
+    ],
+    "exam-bank/05-uml.md#17": [
+      "UML.DIAGRAMS"
+    ],
+    "exam-bank/05-uml.md#18": [
+      "UML.DIAGRAMS"
+    ],
+    "exam-bank/10-architecture-styles.md#1": [
+      "ARCH.PIPE_FILTER"
+    ],
+    "exam-bank/10-architecture-styles.md#2": [
+      "ARCH.STYLES"
+    ],
+    "exam-bank/10-architecture-styles.md#3": [
+      "ARCH.LAYERED_MVC"
+    ],
+    "exam-bank/10-architecture-styles.md#4": [
+      "ARCH.REPOSITORY"
+    ],
+    "exam-bank/10-architecture-styles.md#5": [
+      "ARCH.EVENT_DRIVEN"
+    ],
+    "exam-bank/10-architecture-styles.md#6": [
+      "ARCH.LAYERED_MVC"
+    ],
+    "exam-bank/10-architecture-styles.md#7": [
+      "ARCH.REPOSITORY"
+    ],
+    "exam-bank/10-architecture-styles.md#8": [
+      "ARCH.MICROKERNEL"
+    ],
+    "exam-bank/10-architecture-styles.md#9": [
+      "ARCH.P2P"
+    ],
+    "exam-bank/10-architecture-styles.md#10": [
+      "ARCH.PIPE_FILTER"
+    ],
+    "exam-bank/10-architecture-styles.md#11": [
+      "ARCH.INTERPRETER"
+    ],
+    "exam-bank/10-architecture-styles.md#12": [
+      "SOA.PRINCIPLES"
+    ],
+    "exam-bank/10-architecture-styles.md#13": [
+      "COMPONENT.PLATFORMS"
+    ],
+    "exam-bank/10-architecture-styles.md#14": [
+      "ARCH.STYLES"
+    ],
+    "exam-bank/10-architecture-styles.md#15": [
+      "CLOUD.NATIVE"
+    ],
+    "exam-bank/10-architecture-styles.md#16": [
+      "MICRO.FOUNDATIONS"
+    ],
+    "exam-bank/10-architecture-styles.md#17": [
+      "CLOUD.SERVERLESS"
+    ],
+    "exam-bank/10-architecture-styles.md#18": [
+      "ARCH.STYLES"
+    ],
+    "exam-bank/10-architecture-styles.md#19": [
+      "SOA.REST"
+    ],
+    "exam-bank/10-architecture-styles.md#20": [
+      "ARCH.STYLES"
+    ],
+    "exam-bank/07-software-engineering.md#1": [
+      "PROCESS.MODELS"
+    ],
+    "exam-bank/07-software-engineering.md#2": [
+      "PROCESS.MODELS"
+    ],
+    "exam-bank/07-software-engineering.md#3": [
+      "PROCESS.MODELS"
+    ],
+    "exam-bank/07-software-engineering.md#4": [
+      "PROCESS.RUP"
+    ],
+    "exam-bank/07-software-engineering.md#5": [
+      "PROCESS.AGILE"
+    ],
+    "exam-bank/07-software-engineering.md#6": [
+      "TEST.CMMI"
+    ],
+    "exam-bank/07-software-engineering.md#7": [
+      "REQ.PROCESS"
+    ],
+    "exam-bank/07-software-engineering.md#8": [
+      "REQ.CLASSIFICATION"
+    ],
+    "exam-bank/07-software-engineering.md#9": [
+      "REQ.ELICITATION"
+    ],
+    "exam-bank/07-software-engineering.md#10": [
+      "TEST.TYPES"
+    ],
+    "exam-bank/07-software-engineering.md#11": [
+      "TEST.INTEGRATION"
+    ],
+    "exam-bank/07-software-engineering.md#12": [
+      "TEST.CASE_DESIGN"
+    ],
+    "exam-bank/07-software-engineering.md#13": [
+      "METRIC.MCCABE"
+    ],
+    "exam-bank/07-software-engineering.md#14": [
+      "EVOLUTION.TYPES"
+    ],
+    "exam-bank/07-software-engineering.md#15": [
+      "DESIGN.COHESION_COUPLING"
+    ],
+    "exam-bank/07-software-engineering.md#16": [
+      "REL.METRICS"
+    ],
+    "exam-bank/07-software-engineering.md#17": [
+      "TEST.CLEANROOM"
+    ],
+    "exam-bank/07-software-engineering.md#18": [
+      "EVOLUTION.TYPES"
+    ],
+    "exam-bank/13-design-patterns.md#1": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "exam-bank/13-design-patterns.md#2": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "exam-bank/13-design-patterns.md#3": [
+      "PATTERN.ADAPTER"
+    ],
+    "exam-bank/13-design-patterns.md#4": [
+      "PATTERN.SINGLETON"
+    ],
+    "exam-bank/13-design-patterns.md#5": [
+      "PATTERN.STRATEGY"
+    ],
+    "exam-bank/13-design-patterns.md#6": [
+      "PATTERN.PROXY"
+    ],
+    "exam-bank/13-design-patterns.md#7": [
+      "PATTERN.OBSERVER"
+    ],
+    "exam-bank/13-design-patterns.md#8": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "exam-bank/13-design-patterns.md#9": [
+      "PATTERN.CHAIN"
+    ],
+    "exam-bank/13-design-patterns.md#10": [
+      "DESIGN.SOLID"
+    ],
+    "exam-bank/13-design-patterns.md#11": [
+      "DESIGN.SOLID"
+    ],
+    "exam-bank/13-design-patterns.md#12": [
+      "PATTERN.TEMPLATE"
+    ],
+    "exam-bank/13-design-patterns.md#13": [
+      "PATTERN.DECORATOR",
+      "PATTERN.PROXY"
+    ],
+    "exam-bank/13-design-patterns.md#14": [
+      "PATTERN.ITERATOR"
+    ],
+    "exam-bank/13-design-patterns.md#15": [
+      "PATTERN.COMPOSITE"
+    ],
+    "exam-bank/13-design-patterns.md#16": [
+      "PATTERN.FACADE"
+    ],
+    "exam-bank/13-design-patterns.md#17": [
+      "PATTERN.FLYWEIGHT"
+    ],
+    "exam-bank/13-design-patterns.md#18": [
+      "DESIGN.SOLID"
+    ],
+    "exam-bank/13-design-patterns.md#19": [
+      "PATTERN.STATE",
+      "PATTERN.STRATEGY"
+    ],
+    "exam-bank/13-design-patterns.md#20": [
+      "PATTERN.CLASSIFICATION"
+    ],
+    "exam-bank/13-design-patterns.md#21": [
+      "PATTERN.COMMAND_MEMENTO"
+    ],
+    "exam-bank/13-design-patterns.md#22": [
+      "PATTERN.FACTORY_BUILDER"
+    ],
+    "exam-bank/13-design-patterns.md#23": [
+      "DESIGN.SOLID"
+    ],
+    "exam-bank/13-design-patterns.md#24": [
+      "PATTERN.COMPOSITE"
+    ],
+    "exam-bank/13-design-patterns.md#25": [
+      "PATTERN.ARCHITECTURAL"
+    ],
+    "exam-bank/14-absd-views.md#1": [
+      "ARCH.ABSD"
+    ],
+    "exam-bank/14-absd-views.md#2": [
+      "ARCH.ABSD"
+    ],
+    "exam-bank/14-absd-views.md#3": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "exam-bank/14-absd-views.md#4": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "exam-bank/14-absd-views.md#5": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "exam-bank/14-absd-views.md#6": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "exam-bank/14-absd-views.md#7": [
+      "ARCH.ADL"
+    ],
+    "exam-bank/14-absd-views.md#8": [
+      "ARCH.ADL"
+    ],
+    "exam-bank/14-absd-views.md#9": [
+      "ARCH.VIEWPOINT"
+    ],
+    "exam-bank/14-absd-views.md#10": [
+      "ARCH.ABSD"
+    ],
+    "exam-bank/14-absd-views.md#11": [
+      "ARCH.VIEWPOINT"
+    ],
+    "exam-bank/14-absd-views.md#12": [
+      "DOC.SOFTWARE_DOCUMENTS"
+    ],
+    "exam-bank/22-embedded.md#1": [
+      "EMBED.FOUNDATIONS"
+    ],
+    "exam-bank/22-embedded.md#2": [
+      "EMBED.FOUNDATIONS"
+    ],
+    "exam-bank/22-embedded.md#3": [
+      "EMBED.REALTIME"
+    ],
+    "exam-bank/22-embedded.md#4": [
+      "EMBED.REALTIME"
+    ],
+    "exam-bank/22-embedded.md#5": [
+      "EMBED.PRIORITY_INVERSION"
+    ],
+    "exam-bank/22-embedded.md#6": [
+      "EMBED.PRIORITY_INVERSION"
+    ],
+    "exam-bank/22-embedded.md#7": [
+      "EMBED.RMS"
+    ],
+    "exam-bank/22-embedded.md#8": [
+      "EMBED.RMS"
+    ],
+    "exam-bank/22-embedded.md#9": [
+      "EMBED.RMS"
+    ],
+    "exam-bank/22-embedded.md#10": [
+      "EMBED.RMS"
+    ],
+    "exam-bank/22-embedded.md#11": [
+      "EMBED.RMS"
+    ],
+    "exam-bank/22-embedded.md#12": [
+      "EMBED.RMS"
+    ],
+    "exam-bank/22-embedded.md#13": [
+      "EMBED.EDF"
+    ],
+    "exam-bank/22-embedded.md#14": [
+      "EMBED.EDF"
+    ],
+    "exam-bank/22-embedded.md#15": [
+      "EMBED.TOOLCHAIN"
+    ],
+    "exam-bank/22-embedded.md#16": [
+      "EMBED.FOUNDATIONS"
+    ],
+    "exam-bank/22-embedded.md#17": [
+      "EMBED.TOOLCHAIN"
+    ],
+    "exam-bank/22-embedded.md#18": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "exam-bank/24-devops-serverless.md#1": [
+      "DEVOPS.CULTURE"
+    ],
+    "exam-bank/24-devops-serverless.md#2": [
+      "DEVOPS.CULTURE"
+    ],
+    "exam-bank/24-devops-serverless.md#3": [
+      "DEVOPS.CICD"
+    ],
+    "exam-bank/24-devops-serverless.md#4": [
+      "DEVOPS.CICD"
+    ],
+    "exam-bank/24-devops-serverless.md#5": [
+      "DEVOPS.RELEASE"
+    ],
+    "exam-bank/24-devops-serverless.md#6": [
+      "DEVOPS.RELEASE"
+    ],
+    "exam-bank/24-devops-serverless.md#7": [
+      "DEVOPS.RELEASE"
+    ],
+    "exam-bank/24-devops-serverless.md#8": [
+      "DEVOPS.IAC_GITOPS"
+    ],
+    "exam-bank/24-devops-serverless.md#9": [
+      "DEVOPS.CICD"
+    ],
+    "exam-bank/24-devops-serverless.md#10": [
+      "DEVOPS.IAC_GITOPS"
+    ],
+    "exam-bank/24-devops-serverless.md#11": [
+      "DEVOPS.IAC_GITOPS"
+    ],
+    "exam-bank/24-devops-serverless.md#12": [
+      "DEVOPS.IAC_GITOPS"
+    ],
+    "exam-bank/24-devops-serverless.md#13": [
+      "CLOUD.CONTAINERS"
+    ],
+    "exam-bank/24-devops-serverless.md#14": [
+      "DEVOPS.IAC_GITOPS"
+    ],
+    "exam-bank/24-devops-serverless.md#15": [
+      "CLOUD.NATIVE"
+    ],
+    "exam-bank/24-devops-serverless.md#16": [
+      "CLOUD.SERVERLESS"
+    ],
+    "exam-bank/24-devops-serverless.md#17": [
+      "CLOUD.SERVERLESS"
+    ],
+    "exam-bank/24-devops-serverless.md#18": [
+      "CLOUD.KUBERNETES"
+    ],
+    "exam-bank/24-devops-serverless.md#19": [
+      "DEVOPS.METRICS"
+    ],
+    "exam-bank/11-quality-attributes.md#1": [
+      "QUALITY.SCENARIOS"
+    ],
+    "exam-bank/11-quality-attributes.md#2": [
+      "QUALITY.ATTRIBUTES"
+    ],
+    "exam-bank/11-quality-attributes.md#3": [
+      "REL.METRICS"
+    ],
+    "exam-bank/11-quality-attributes.md#4": [
+      "QUALITY.AVAILABILITY"
+    ],
+    "exam-bank/11-quality-attributes.md#5": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "exam-bank/11-quality-attributes.md#6": [
+      "QUALITY.MODIFIABILITY"
+    ],
+    "exam-bank/11-quality-attributes.md#7": [
+      "QUALITY.ATTRIBUTES"
+    ],
+    "exam-bank/11-quality-attributes.md#8": [
+      "QUALITY.ATTRIBUTES"
+    ],
+    "exam-bank/11-quality-attributes.md#9": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "exam-bank/11-quality-attributes.md#10": [
+      "QUALITY.ATTRIBUTES"
+    ],
+    "exam-bank/11-quality-attributes.md#11": [
+      "QUALITY.TESTABILITY"
+    ],
+    "exam-bank/11-quality-attributes.md#12": [
+      "QUALITY.SECURITY"
+    ],
+    "exam-bank/11-quality-attributes.md#13": [
+      "REL.METRICS"
+    ],
+    "exam-bank/11-quality-attributes.md#14": [
+      "QUALITY.AVAILABILITY"
+    ],
+    "exam-bank/11-quality-attributes.md#15": [
+      "QUALITY.INTEROPERABILITY"
+    ],
+    "exam-bank/03-database.md#1": [
+      "DB.KEYS_FD"
+    ],
+    "exam-bank/03-database.md#2": [
+      "DB.NORMAL_FORMS"
+    ],
+    "exam-bank/03-database.md#3": [
+      "DB.DECOMPOSITION"
+    ],
+    "exam-bank/03-database.md#4": [
+      "DB.ACID"
+    ],
+    "exam-bank/03-database.md#5": [
+      "DB.ISOLATION_LOCKING"
+    ],
+    "exam-bank/03-database.md#6": [
+      "DB.SCHEMAS_VIEWS"
+    ],
+    "exam-bank/03-database.md#7": [
+      "DB.ER_MODELING"
+    ],
+    "exam-bank/03-database.md#8": [
+      "DB.INDEX_QUERY"
+    ],
+    "exam-bank/03-database.md#9": [
+      "DIST.CAP"
+    ],
+    "exam-bank/03-database.md#10": [
+      "DB.NOSQL"
+    ],
+    "exam-bank/03-database.md#11": [
+      "DATA.WAREHOUSE_LAKE"
+    ],
+    "exam-bank/03-database.md#12": [
+      "DB.INTEGRITY"
+    ],
+    "exam-bank/03-database.md#13": [
+      "DB.NORMAL_FORMS"
+    ],
+    "exam-bank/03-database.md#14": [
+      "DB.ISOLATION_LOCKING"
+    ],
+    "exam-bank/03-database.md#15": [
+      "DB.RELATIONAL_ALGEBRA"
+    ],
+    "exam-bank/03-database.md#16": [
+      "DIST.TWO_PHASE_COMMIT"
+    ],
+    "exam-bank/03-database.md#17": [
+      "DIST.TCC"
+    ],
+    "exam-bank/03-database.md#18": [
+      "DB.SCHEMAS_VIEWS"
+    ],
+    "exam-bank/03-database.md#19": [
+      "DATA.OLAP_MODELING"
+    ],
+    "exam-bank/03-database.md#20": [
+      "DB.STORAGE_RECOVERY"
+    ],
+    "exam-bank/03-database.md#21": [
+      "DB.STORAGE_RECOVERY"
+    ],
+    "exam-bank/03-database.md#22": [
+      "DB.DISTRIBUTION"
+    ],
+    "exam-bank/03-database.md#23": [
+      "DB.INDEX_QUERY"
+    ],
+    "exam-bank/03-database.md#24": [
+      "DB.ISOLATION_LOCKING"
+    ],
+    "exam-bank/03-database.md#25": [
+      "DIST.BASE"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#1": [
+      "MICRO.FOUNDATIONS"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#2": [
+      "MICRO.DDD"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#3": [
+      "CLOUD.NATIVE"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#4": [
+      "CLOUD.KUBERNETES"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#5": [
+      "MICRO.MESH"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#6": [
+      "MICRO.MESH"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#7": [
+      "CLOUD.KUBERNETES"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#8": [
+      "MICRO.RESILIENCE"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#9": [
+      "MICRO.GATEWAY"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#10": [
+      "CLOUD.NATIVE"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#11": [
+      "CLOUD.KUBERNETES"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#12": [
+      "CLOUD.SERVERLESS"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#13": [
+      "MICRO.DDD"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#14": [
+      "CLOUD.KUBERNETES"
+    ],
+    "exam-bank/15-microservice-cloud-native.md#15": [
+      "MICRO.SOA_COMPARISON",
+      "SOA.PRINCIPLES",
+      "MICRO.FOUNDATIONS"
+    ],
+    "exam-bank/26-soa-evolution.md#1": [
+      "SOA.PRINCIPLES"
+    ],
+    "exam-bank/26-soa-evolution.md#2": [
+      "SOA.PRINCIPLES"
+    ],
+    "exam-bank/26-soa-evolution.md#3": [
+      "SOA.PRINCIPLES"
+    ],
+    "exam-bank/26-soa-evolution.md#4": [
+      "SOA.WEB_SERVICE"
+    ],
+    "exam-bank/26-soa-evolution.md#5": [
+      "SOA.WEB_SERVICE"
+    ],
+    "exam-bank/26-soa-evolution.md#6": [
+      "SOA.ESB"
+    ],
+    "exam-bank/26-soa-evolution.md#7": [
+      "SOA.ORCHESTRATION"
+    ],
+    "exam-bank/26-soa-evolution.md#8": [
+      "SOA.ORCHESTRATION"
+    ],
+    "exam-bank/26-soa-evolution.md#9": [
+      "MICRO.SOA_COMPARISON",
+      "SOA.PRINCIPLES",
+      "MICRO.FOUNDATIONS"
+    ],
+    "exam-bank/26-soa-evolution.md#10": [
+      "MICRO.SOA_COMPARISON",
+      "SOA.PRINCIPLES",
+      "MICRO.FOUNDATIONS"
+    ],
+    "exam-bank/26-soa-evolution.md#11": [
+      "MICRO.SOA_COMPARISON",
+      "SOA.PRINCIPLES",
+      "MICRO.FOUNDATIONS"
+    ],
+    "exam-bank/26-soa-evolution.md#12": [
+      "MICRO.SOA_COMPARISON",
+      "SOA.PRINCIPLES",
+      "MICRO.FOUNDATIONS"
+    ],
+    "exam-bank/26-soa-evolution.md#13": [
+      "MICRO.FOUNDATIONS"
+    ],
+    "exam-bank/26-soa-evolution.md#14": [
+      "EVOLUTION.STRANGLER"
+    ],
+    "exam-bank/26-soa-evolution.md#15": [
+      "MICRO.DDD"
+    ],
+    "exam-bank/26-soa-evolution.md#16": [
+      "EVOLUTION.CLOUD_MIGRATION"
+    ],
+    "exam-bank/26-soa-evolution.md#17": [
+      "EVOLUTION.CLOUD_MIGRATION"
+    ],
+    "exam-bank/26-soa-evolution.md#18": [
+      "EVOLUTION.TYPES"
+    ],
+    "exam-bank/26-soa-evolution.md#19": [
+      "EVOLUTION.LEGACY"
+    ],
+    "exam-bank/26-soa-evolution.md#20": [
+      "DB.DISTRIBUTION"
+    ],
+    "exam-bank/06-ip-and-standards.md#1": [
+      "IP.COPYRIGHT"
+    ],
+    "exam-bank/06-ip-and-standards.md#2": [
+      "IP.PATENT"
+    ],
+    "exam-bank/06-ip-and-standards.md#3": [
+      "IP.TRADEMARK_SECRET"
+    ],
+    "exam-bank/06-ip-and-standards.md#4": [
+      "IP.COPYRIGHT"
+    ],
+    "exam-bank/06-ip-and-standards.md#5": [
+      "STANDARD.TYPES"
+    ],
+    "exam-bank/06-ip-and-standards.md#6": [
+      "STANDARD.TYPES"
+    ],
+    "exam-bank/06-ip-and-standards.md#7": [
+      "IP.COPYRIGHT"
+    ],
+    "exam-bank/06-ip-and-standards.md#8": [
+      "IP.COPYRIGHT"
+    ],
+    "exam-bank/06-ip-and-standards.md#9": [
+      "IP.COPYRIGHT"
+    ],
+    "exam-bank/06-ip-and-standards.md#10": [
+      "IP.TRADEMARK_SECRET"
+    ],
+    "exam-bank/06-ip-and-standards.md#11": [
+      "TEST.QUALITY_ASSURANCE"
+    ],
+    "exam-bank/06-ip-and-standards.md#12": [
+      "SEC.GOVERNANCE"
+    ],
+    "exam-bank/06-ip-and-standards.md#13": [
+      "IP.COPYRIGHT"
+    ],
+    "exam-bank/06-ip-and-standards.md#14": [
+      "IP.COPYRIGHT"
+    ],
+    "exam-bank/06-ip-and-standards.md#15": [
+      "STANDARD.TYPES"
+    ],
+    "exam-bank/06-ip-and-standards.md#16": [
+      "IP.PATENT"
+    ],
+    "exam-bank/06-ip-and-standards.md#17": [
+      "IP.PATENT"
+    ],
+    "exam-bank/06-ip-and-standards.md#18": [
+      "IP.COPYRIGHT"
+    ],
+    "exam-bank/06-ip-and-standards.md#19": [
+      "IP.TRADEMARK_SECRET"
+    ],
+    "exam-bank/06-ip-and-standards.md#20": [
+      "IP.COPYRIGHT"
+    ],
+    "exam-bank/06-ip-and-standards.md#21": [
+      "SEC.GOVERNANCE"
+    ],
+    "exam-bank/06-ip-and-standards.md#22": [
+      "TEST.CMMI"
+    ],
+    "exam-bank/06-ip-and-standards.md#23": [
+      "TEST.QUALITY_MODEL"
+    ],
+    "exam-bank/06-ip-and-standards.md#24": [
+      "STANDARD.TYPES"
+    ],
+    "exam-bank/06-ip-and-standards.md#25": [
+      "IP.COPYRIGHT"
+    ],
+    "exam-bank/01-computer-systems.md#1": [
+      "HW.CPU_PERFORMANCE"
+    ],
+    "exam-bank/01-computer-systems.md#2": [
+      "HW.PIPELINE"
+    ],
+    "exam-bank/01-computer-systems.md#3": [
+      "HW.CACHE"
+    ],
+    "exam-bank/01-computer-systems.md#4": [
+      "HW.REPRESENTATION"
+    ],
+    "exam-bank/01-computer-systems.md#5": [
+      "HW.HAMMING"
+    ],
+    "exam-bank/01-computer-systems.md#6": [
+      "HW.CACHE"
+    ],
+    "exam-bank/01-computer-systems.md#7": [
+      "HW.INSTRUCTION_SET"
+    ],
+    "exam-bank/01-computer-systems.md#8": [
+      "HW.CACHE"
+    ],
+    "exam-bank/01-computer-systems.md#9": [
+      "HW.PIPELINE"
+    ],
+    "exam-bank/01-computer-systems.md#10": [
+      "HW.REPRESENTATION"
+    ],
+    "exam-bank/01-computer-systems.md#11": [
+      "HW.ARCHITECTURE"
+    ],
+    "exam-bank/01-computer-systems.md#12": [
+      "HW.INSTRUCTION_SET"
+    ],
+    "exam-bank/01-computer-systems.md#13": [
+      "HW.IO_INTERRUPT"
+    ],
+    "exam-bank/01-computer-systems.md#14": [
+      "HW.IO_INTERRUPT"
+    ],
+    "exam-bank/01-computer-systems.md#15": [
+      "HW.ARCHITECTURE"
+    ],
+    "exam-bank/12-atam-evaluation.md#1": [
+      "EVAL.ATAM_PROCESS"
+    ],
+    "exam-bank/12-atam-evaluation.md#2": [
+      "EVAL.ATAM_PROCESS"
+    ],
+    "exam-bank/12-atam-evaluation.md#3": [
+      "EVAL.SENSITIVITY"
+    ],
+    "exam-bank/12-atam-evaluation.md#4": [
+      "EVAL.TRADEOFF"
+    ],
+    "exam-bank/12-atam-evaluation.md#5": [
+      "EVAL.ATAM_PROCESS"
+    ],
+    "exam-bank/12-atam-evaluation.md#6": [
+      "QUALITY.SCENARIOS"
+    ],
+    "exam-bank/12-atam-evaluation.md#7": [
+      "EVAL.RISK"
+    ],
+    "exam-bank/12-atam-evaluation.md#8": [
+      "EVAL.TRADEOFF"
+    ],
+    "exam-bank/12-atam-evaluation.md#9": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "exam-bank/12-atam-evaluation.md#10": [
+      "EVAL.ATAM_PROCESS"
+    ],
+    "exam-bank/12-atam-evaluation.md#11": [
+      "EVAL.UTILITY_TREE"
+    ],
+    "exam-bank/12-atam-evaluation.md#12": [
+      "EVAL.RISK"
+    ],
+    "exam-bank/12-atam-evaluation.md#13": [
+      "EVAL.SENSITIVITY"
+    ],
+    "exam-bank/12-atam-evaluation.md#14": [
+      "EVAL.METHODS"
+    ],
+    "exam-bank/12-atam-evaluation.md#15": [
+      "EVAL.ATAM_PROCESS"
+    ],
+    "exam-bank/21-security.md#1": [
+      "SEC.CIA"
+    ],
+    "exam-bank/21-security.md#2": [
+      "SEC.STRIDE"
+    ],
+    "exam-bank/21-security.md#3": [
+      "SEC.CRYPTOGRAPHY"
+    ],
+    "exam-bank/21-security.md#4": [
+      "SEC.CRYPTOGRAPHY"
+    ],
+    "exam-bank/21-security.md#5": [
+      "SEC.PKI_SIGNATURE"
+    ],
+    "exam-bank/21-security.md#6": [
+      "SEC.GOVERNANCE"
+    ],
+    "exam-bank/21-security.md#7": [
+      "SEC.STRIDE"
+    ],
+    "exam-bank/21-security.md#8": [
+      "SEC.TLS"
+    ],
+    "exam-bank/21-security.md#9": [
+      "SEC.PKI_SIGNATURE"
+    ],
+    "exam-bank/21-security.md#10": [
+      "SEC.ATTACKS"
+    ],
+    "exam-bank/21-security.md#11": [
+      "SEC.ATTACKS"
+    ],
+    "exam-bank/21-security.md#12": [
+      "SEC.ACCESS_AUTH"
+    ],
+    "exam-bank/21-security.md#13": [
+      "SEC.ACCESS_AUTH"
+    ],
+    "exam-bank/21-security.md#14": [
+      "SEC.ATTACKS"
+    ],
+    "exam-bank/21-security.md#15": [
+      "SEC.HASH"
+    ],
+    "exam-bank/21-security.md#16": [
+      "SEC.GOVERNANCE"
+    ],
+    "exam-bank/21-security.md#17": [
+      "SEC.ATTACKS"
+    ],
+    "exam-bank/21-security.md#18": [
+      "SEC.GOVERNANCE"
+    ],
+    "exam-bank/21-security.md#19": [
+      "SEC.CRYPTOGRAPHY"
+    ],
+    "exam-bank/21-security.md#20": [
+      "SEC.GOVERNANCE"
+    ],
+    "exam-bank/21-security.md#21": [
+      "SEC.CIA"
+    ],
+    "exam-bank/16-middleware.md#1": [
+      "MIDDLEWARE.TYPES"
+    ],
+    "exam-bank/16-middleware.md#2": [
+      "MIDDLEWARE.TYPES"
+    ],
+    "exam-bank/16-middleware.md#3": [
+      "MQ.PROTOCOLS"
+    ],
+    "exam-bank/16-middleware.md#4": [
+      "MQ.PROTOCOLS"
+    ],
+    "exam-bank/16-middleware.md#5": [
+      "MIDDLEWARE.TYPES"
+    ],
+    "exam-bank/16-middleware.md#6": [
+      "COMPONENT.PLATFORMS"
+    ],
+    "exam-bank/16-middleware.md#7": [
+      "SOA.ESB"
+    ],
+    "exam-bank/16-middleware.md#8": [
+      "SOA.ESB",
+      "MICRO.GATEWAY"
+    ],
+    "exam-bank/16-middleware.md#9": [
+      "MQ.KAFKA"
+    ],
+    "exam-bank/16-middleware.md#10": [
+      "MQ.DELIVERY"
+    ],
+    "exam-bank/16-middleware.md#11": [
+      "MQ.DELIVERY"
+    ],
+    "exam-bank/16-middleware.md#12": [
+      "MIDDLEWARE.TYPES"
+    ],
+    "exam-bank/17-distributed-transactions.md#1": [
+      "DIST.CAP"
+    ],
+    "exam-bank/17-distributed-transactions.md#2": [
+      "DIST.BASE"
+    ],
+    "exam-bank/17-distributed-transactions.md#3": [
+      "DIST.TWO_PHASE_COMMIT"
+    ],
+    "exam-bank/17-distributed-transactions.md#4": [
+      "DIST.TWO_PHASE_COMMIT"
+    ],
+    "exam-bank/17-distributed-transactions.md#5": [
+      "DIST.TCC"
+    ],
+    "exam-bank/17-distributed-transactions.md#6": [
+      "DIST.SAGA"
+    ],
+    "exam-bank/17-distributed-transactions.md#7": [
+      "DIST.OUTBOX"
+    ],
+    "exam-bank/17-distributed-transactions.md#8": [
+      "MQ.DELIVERY"
+    ],
+    "exam-bank/17-distributed-transactions.md#9": [
+      "DIST.LOCKS"
+    ],
+    "exam-bank/17-distributed-transactions.md#10": [
+      "DIST.TX_SELECTION"
+    ],
+    "exam-bank/17-distributed-transactions.md#11": [
+      "MQ.DELIVERY"
+    ],
+    "exam-bank/17-distributed-transactions.md#12": [
+      "MQ.DELIVERY"
+    ],
+    "exam-bank/17-distributed-transactions.md#13": [
+      "DIST.TX_SELECTION"
+    ],
+    "exam-bank/17-distributed-transactions.md#14": [
+      "DIST.TWO_PHASE_COMMIT"
+    ],
+    "exam-bank/17-distributed-transactions.md#15": [
+      "DIST.TX_SELECTION"
+    ],
+    "exam-bank/18-cache.md#1": [
+      "CACHE.PENETRATION"
+    ],
+    "exam-bank/18-cache.md#2": [
+      "CACHE.BREAKDOWN"
+    ],
+    "exam-bank/18-cache.md#3": [
+      "CACHE.AVALANCHE"
+    ],
+    "exam-bank/18-cache.md#4": [
+      "CACHE.ASIDE_CONSISTENCY"
+    ],
+    "exam-bank/18-cache.md#5": [
+      "CACHE.ASIDE_CONSISTENCY"
+    ],
+    "exam-bank/18-cache.md#6": [
+      "CACHE.REDIS_STORAGE"
+    ],
+    "exam-bank/18-cache.md#7": [
+      "CACHE.REDIS_STORAGE"
+    ],
+    "exam-bank/18-cache.md#8": [
+      "CACHE.BREAKDOWN"
+    ],
+    "exam-bank/18-cache.md#9": [
+      "CACHE.REDIS_STORAGE"
+    ],
+    "exam-bank/18-cache.md#10": [
+      "CACHE.ASIDE_CONSISTENCY"
+    ],
+    "exam-bank/18-cache.md#11": [
+      "CACHE.CLUSTER"
+    ],
+    "exam-bank/18-cache.md#12": [
+      "CACHE.WARMUP"
+    ],
+    "exam-bank/23-english-reading.md#1": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#2": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#3": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#4": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#5": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#6": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#7": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#8": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#9": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#10": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#11": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#12": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#13": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#14": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#15": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#16": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#17": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#18": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#19": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#20": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#21": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#22": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#23": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#24": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#25": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#26": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#27": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#28": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#29": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/23-english-reading.md#30": [
+      "ENG.TECH_READING"
+    ],
+    "exam-bank/08-project-management.md#1": [
+      "PM.PROCESSES"
+    ],
+    "exam-bank/08-project-management.md#2": [
+      "PM.CPM"
+    ],
+    "exam-bank/08-project-management.md#3": [
+      "PM.CPM"
+    ],
+    "exam-bank/08-project-management.md#4": [
+      "PM.PERT"
+    ],
+    "exam-bank/08-project-management.md#5": [
+      "PM.EVM"
+    ],
+    "exam-bank/08-project-management.md#6": [
+      "PM.RISK_COST"
+    ],
+    "exam-bank/08-project-management.md#7": [
+      "PM.RISK_COST"
+    ],
+    "exam-bank/08-project-management.md#8": [
+      "PM.CPM"
+    ],
+    "exam-bank/08-project-management.md#9": [
+      "PM.CPM"
+    ],
+    "exam-bank/08-project-management.md#10": [
+      "PM.CPM"
+    ],
+    "exam-bank/08-project-management.md#11": [
+      "PM.PROCESSES"
+    ],
+    "exam-bank/08-project-management.md#12": [
+      "TEST.QUALITY_ASSURANCE"
+    ],
+    "exam-bank/08-project-management.md#13": [
+      "METRIC.FUNCTION_POINTS"
+    ],
+    "exam-bank/08-project-management.md#14": [
+      "PM.CONFIGURATION"
+    ],
+    "exam-bank/08-project-management.md#15": [
+      "PM.PROCESSES"
+    ],
+    "exam-bank/08-project-management.md#16": [
+      "PM.PROCESSES"
+    ],
+    "exam-bank/08-project-management.md#17": [
+      "PM.CONFIGURATION"
+    ],
+    "exam-bank/08-project-management.md#18": [
+      "PM.PROCESSES"
+    ],
+    "exam-bank/09-software-metrics.md#1": [
+      "METRIC.FUNCTION_POINTS"
+    ],
+    "exam-bank/09-software-metrics.md#2": [
+      "METRIC.FUNCTION_POINTS"
+    ],
+    "exam-bank/09-software-metrics.md#3": [
+      "METRIC.MCCABE"
+    ],
+    "exam-bank/09-software-metrics.md#4": [
+      "METRIC.MCCABE"
+    ],
+    "exam-bank/09-software-metrics.md#5": [
+      "METRIC.HALSTEAD"
+    ],
+    "exam-bank/09-software-metrics.md#6": [
+      "DESIGN.COHESION_COUPLING"
+    ],
+    "exam-bank/09-software-metrics.md#7": [
+      "DESIGN.COHESION_COUPLING"
+    ],
+    "exam-bank/09-software-metrics.md#8": [
+      "METRIC.QUALITY"
+    ],
+    "exam-bank/09-software-metrics.md#9": [
+      "METRIC.QUALITY"
+    ],
+    "exam-bank/09-software-metrics.md#10": [
+      "METRIC.QUALITY"
+    ],
+    "exam-bank/09-software-metrics.md#11": [
+      "PM.RISK_COST"
+    ],
+    "exam-bank/09-software-metrics.md#12": [
+      "PROCESS.PSP_TSP"
+    ],
+    "exam-bank/25-enterprise-integration.md#1": [
+      "EAI.LEVELS"
+    ],
+    "exam-bank/25-enterprise-integration.md#2": [
+      "EAI.LEVELS"
+    ],
+    "exam-bank/25-enterprise-integration.md#3": [
+      "EAI.LEVELS"
+    ],
+    "exam-bank/25-enterprise-integration.md#4": [
+      "SOA.ESB"
+    ],
+    "exam-bank/25-enterprise-integration.md#5": [
+      "SOA.ESB"
+    ],
+    "exam-bank/25-enterprise-integration.md#6": [
+      "SOA.ESB"
+    ],
+    "exam-bank/25-enterprise-integration.md#7": [
+      "MICRO.SOA_COMPARISON",
+      "SOA.PRINCIPLES",
+      "MICRO.FOUNDATIONS"
+    ],
+    "exam-bank/25-enterprise-integration.md#8": [
+      "MIDDLEWARE.TYPES"
+    ],
+    "exam-bank/25-enterprise-integration.md#9": [
+      "COMPONENT.PLATFORMS"
+    ],
+    "exam-bank/25-enterprise-integration.md#10": [
+      "MIDDLEWARE.TYPES"
+    ],
+    "exam-bank/25-enterprise-integration.md#11": [
+      "SOA.WEB_SERVICE"
+    ],
+    "exam-bank/25-enterprise-integration.md#12": [
+      "SOA.REST"
+    ],
+    "exam-bank/25-enterprise-integration.md#13": [
+      "EAI.PATTERNS"
+    ],
+    "exam-bank/25-enterprise-integration.md#14": [
+      "EAI.PATTERNS"
+    ],
+    "exam-bank/25-enterprise-integration.md#15": [
+      "EAI.PATTERNS"
+    ],
+    "exam-bank/25-enterprise-integration.md#16": [
+      "EAI.LEVELS"
+    ],
+    "exam-bank/25-enterprise-integration.md#17": [
+      "EVOLUTION.LEGACY"
+    ],
+    "exam-bank/25-enterprise-integration.md#18": [
+      "EAI.LEVELS"
+    ],
+    "exam-bank/27-information-systems.md#1": [
+      "IS.LIFECYCLE"
+    ],
+    "exam-bank/27-information-systems.md#2": [
+      "IS.LIFECYCLE"
+    ],
+    "exam-bank/27-information-systems.md#3": [
+      "IS.TYPES"
+    ],
+    "exam-bank/27-information-systems.md#4": [
+      "IS.TYPES"
+    ],
+    "exam-bank/27-information-systems.md#5": [
+      "IS.TYPES"
+    ],
+    "exam-bank/27-information-systems.md#6": [
+      "IS.ERP_MES"
+    ],
+    "exam-bank/27-information-systems.md#7": [
+      "IS.EGOV_ECOMMERCE"
+    ],
+    "exam-bank/27-information-systems.md#8": [
+      "PROCESS.MODELS"
+    ],
+    "exam-bank/27-information-systems.md#9": [
+      "IS.ERP_MES"
+    ],
+    "exam-bank/27-information-systems.md#10": [
+      "IS.ERP_MES"
+    ],
+    "exam-bank/27-information-systems.md#11": [
+      "IS.EGOV_ECOMMERCE"
+    ],
+    "exam-bank/27-information-systems.md#12": [
+      "PROCESS.MODELS"
+    ],
+    "exam-bank/20-reliability.md#1": [
+      "REL.METRICS"
+    ],
+    "exam-bank/20-reliability.md#2": [
+      "REL.METRICS"
+    ],
+    "exam-bank/20-reliability.md#3": [
+      "REL.METRICS"
+    ],
+    "exam-bank/20-reliability.md#4": [
+      "REL.METRICS"
+    ],
+    "exam-bank/20-reliability.md#5": [
+      "REL.METRICS"
+    ],
+    "exam-bank/20-reliability.md#6": [
+      "REL.SERIES_PARALLEL"
+    ],
+    "exam-bank/20-reliability.md#7": [
+      "REL.SERIES_PARALLEL"
+    ],
+    "exam-bank/20-reliability.md#8": [
+      "REL.SERIES_PARALLEL"
+    ],
+    "exam-bank/20-reliability.md#9": [
+      "REL.SERIES_PARALLEL"
+    ],
+    "exam-bank/20-reliability.md#10": [
+      "REL.FAULT_TOLERANCE"
+    ],
+    "exam-bank/20-reliability.md#11": [
+      "REL.FAULT_TOLERANCE"
+    ],
+    "exam-bank/20-reliability.md#12": [
+      "REL.REDUNDANCY"
+    ],
+    "exam-bank/20-reliability.md#13": [
+      "REL.FAULT_TOLERANCE"
+    ],
+    "exam-bank/20-reliability.md#14": [
+      "REL.RATE_LIMIT"
+    ],
+    "exam-bank/20-reliability.md#15": [
+      "MICRO.RESILIENCE"
+    ],
+    "exam-bank/20-reliability.md#16": [
+      "MICRO.RESILIENCE"
+    ],
+    "exam-bank/20-reliability.md#17": [
+      "MICRO.RESILIENCE"
+    ],
+    "exam-bank/20-reliability.md#18": [
+      "MICRO.RESILIENCE"
+    ],
+    "exam-bank/20-reliability.md#19": [
+      "REL.DISASTER_RECOVERY"
+    ],
+    "exam-bank/20-reliability.md#20": [
+      "REL.DISASTER_RECOVERY"
+    ],
+    "exam-bank/20-reliability.md#21": [
+      "REL.REDUNDANCY"
+    ],
+    "exam-bank/20-reliability.md#22": [
+      "REL.REDUNDANCY"
+    ],
+    "exam-bank/19-big-data.md#1": [
+      "DATA.HDFS"
+    ],
+    "exam-bank/19-big-data.md#2": [
+      "DATA.HDFS"
+    ],
+    "exam-bank/19-big-data.md#3": [
+      "DATA.MAPREDUCE_YARN"
+    ],
+    "exam-bank/19-big-data.md#4": [
+      "DATA.MAPREDUCE_YARN"
+    ],
+    "exam-bank/19-big-data.md#5": [
+      "DATA.HIVE_HBASE"
+    ],
+    "exam-bank/19-big-data.md#6": [
+      "DATA.HIVE_HBASE"
+    ],
+    "exam-bank/19-big-data.md#7": [
+      "DATA.SPARK_STREAM"
+    ],
+    "exam-bank/19-big-data.md#8": [
+      "DATA.SPARK_STREAM"
+    ],
+    "exam-bank/19-big-data.md#9": [
+      "DATA.SPARK_STREAM"
+    ],
+    "exam-bank/19-big-data.md#10": [
+      "MQ.KAFKA"
+    ],
+    "exam-bank/19-big-data.md#11": [
+      "DATA.LAMBDA_KAPPA"
+    ],
+    "exam-bank/19-big-data.md#12": [
+      "DATA.LAMBDA_KAPPA"
+    ],
+    "exam-bank/19-big-data.md#13": [
+      "DATA.WAREHOUSE_LAKE"
+    ],
+    "exam-bank/19-big-data.md#14": [
+      "DATA.WAREHOUSE_LAKE"
+    ],
+    "exam-bank/19-big-data.md#15": [
+      "DATA.WAREHOUSE_LAKE"
+    ],
+    "exam-bank/19-big-data.md#16": [
+      "DATA.OLAP_MODELING"
+    ],
+    "exam-bank/19-big-data.md#17": [
+      "DATA.OLAP_MODELING"
+    ],
+    "exam-bank/19-big-data.md#18": [
+      "DATA.ETL"
+    ],
+    "exam-bank/19-big-data.md#19": [
+      "DB.NOSQL"
+    ],
+    "exam-bank/19-big-data.md#20": [
+      "DIST.CAP"
+    ],
+    "exam-bank/28-emerging-tech.md#1": [
+      "NEW.FRONTIERS"
+    ],
+    "exam-bank/28-emerging-tech.md#2": [
+      "NEW.CPS_IOT"
+    ],
+    "exam-bank/28-emerging-tech.md#3": [
+      "NEW.CPS_IOT"
+    ],
+    "exam-bank/28-emerging-tech.md#4": [
+      "NEW.EDGE_CLOUD"
+    ],
+    "exam-bank/28-emerging-tech.md#5": [
+      "NEW.EDGE_CLOUD"
+    ],
+    "exam-bank/28-emerging-tech.md#6": [
+      "NEW.DIGITAL_TWIN"
+    ],
+    "exam-bank/28-emerging-tech.md#7": [
+      "NEW.DIGITAL_TWIN"
+    ],
+    "exam-bank/28-emerging-tech.md#8": [
+      "NEW.MACHINE_LEARNING"
+    ],
+    "exam-bank/28-emerging-tech.md#9": [
+      "NEW.LLM"
+    ],
+    "exam-bank/28-emerging-tech.md#10": [
+      "NEW.ROBOTICS"
+    ],
+    "exam-bank/28-emerging-tech.md#11": [
+      "DATA.LAMBDA_KAPPA"
+    ],
+    "exam-bank/28-emerging-tech.md#12": [
+      "DATA.LAMBDA_KAPPA"
+    ],
+    "exam-bank/29-applied-math.md#1": [
+      "MATH.GRAPHS"
+    ],
+    "exam-bank/29-applied-math.md#2": [
+      "MATH.GRAPHS"
+    ],
+    "exam-bank/29-applied-math.md#3": [
+      "MATH.GRAPHS"
+    ],
+    "exam-bank/29-applied-math.md#4": [
+      "PM.CPM"
+    ],
+    "exam-bank/29-applied-math.md#5": [
+      "PM.CPM"
+    ],
+    "exam-bank/29-applied-math.md#6": [
+      "MATH.OPTIMIZATION"
+    ],
+    "exam-bank/29-applied-math.md#7": [
+      "MATH.ALGORITHMS"
+    ],
+    "exam-bank/29-applied-math.md#8": [
+      "MATH.ALGORITHMS"
+    ],
+    "exam-bank/29-applied-math.md#9": [
+      "MATH.QUEUEING"
+    ],
+    "exam-bank/29-applied-math.md#10": [
+      "MATH.PROBABILITY"
+    ],
+    "exam-bank/29-applied-math.md#11": [
+      "PM.PERT"
+    ],
+    "exam-bank/29-applied-math.md#12": [
+      "MATH.PROBABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#6": [
+      "DB.RELATIONAL_ALGEBRA"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#22": [
+      "PM.CPM"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#29": [
+      "PROCESS.TOOL_INTEGRATION"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#30": [
+      "PROCESS.TOOL_INTEGRATION"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#35": [
+      "COMPONENT.REUSE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#60": [
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#63": [
+      "QUALITY.SECURITY"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#64": [
+      "SEC.HASH"
+    ],
+    "past-papers/comprehensive-by-year/2018下.md#69": [
+      "MATH.OPTIMIZATION"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#4": [
+      "SEC.ACCESS_AUTH"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#16": [
+      "HW.BENCHMARK"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#17": [
+      "HW.BENCHMARK"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#18": [
+      "IS.SYSTEMS_ENGINEERING"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#19": [
+      "IS.SYSTEMS_ENGINEERING"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#34": [
+      "DESIGN.COHESION_COUPLING"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#35": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#36": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#37": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#51": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#52": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#53": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2019下.md#64": [
+      "SEC.TLS"
+    ],
+    "past-papers/comprehensive-by-year/2020.md#8": [
+      "NET.PERFORMANCE"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#13": [
+      "IS.LIFECYCLE"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#14": [
+      "IS.SYSTEMS_ENGINEERING"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#31": [
+      "SEC.ATTACKS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#32": [
+      "SEC.ATTACKS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#33": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#34": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#50": [
+      "COMPONENT.PLATFORMS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#51": [
+      "COMPONENT.PLATFORMS"
+    ],
+    "past-papers/comprehensive-by-year/2021.md#57": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#10": [
+      "HW.ARCHITECTURE"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#24": [
+      "DB.ER_MODELING"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#28": [
+      "UML.STATE_ACTIVITY"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#35": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#36": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#44": [
+      "ARCH.VIEWPOINT"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#51": [
+      "COMPONENT.REUSE"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#62": [
+      "SEC.CIA"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#64": [
+      "NET.WIRELESS_5G"
+    ],
+    "past-papers/comprehensive-by-year/2022.md#69": [
+      "MATH.PROBABILITY"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#24": [
+      "REL.METRICS"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#25": [
+      "REL.METRICS"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#63": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#64": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#68": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2023下.md#69": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#1": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#8": [
+      "IP.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#14": [
+      "SEC.GOVERNANCE"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#31": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2024上.md#63": [
+      "SEC.GOVERNANCE"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#20": [
+      "MATH.COMBINATORICS"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#37": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2024下.md#54": [
+      "NET.COMMUNICATION"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#2": [
+      "NET.COMMUNICATION"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#4": [
+      "IP.CLASSIFIED_INFORMATION"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#5": [
+      "NET.COMMUNICATION"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#9": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#26": [
+      "EVOLUTION.REVERSE"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#40": [
+      "MATH.COMBINATORICS"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#44": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#45": [
+      "PM.PROCESSES"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#51": [
+      "PM.SUPERVISION"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#55": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#64": [
+      "OS.PROCESS"
+    ],
+    "past-papers/comprehensive-by-year/2025上.md#71": [
+      "TEST.QUALITY_MODEL"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#1": [
+      "MATH.COMBINATORICS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#3": [
+      "PM.SCOPE"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#23": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#25": [
+      "EAI.LEVELS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#27": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#29": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#30": [
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#31": [
+      "HW.BENCHMARK"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#43": [
+      "HW.ARCHITECTURE"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#54": [
+      "PM.SCOPE"
+    ],
+    "past-papers/comprehensive-by-year/2025下.md#60": [
+      "MATH.MODELING"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#12": [
+      "NEW.KNOWLEDGE_REPRESENTATION"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#14": [
+      "NEW.MULTIMODAL"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#15": [
+      "MATH.FUNCTIONS"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#19": [
+      "OS.VIRTUAL_MEMORY"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#20": [
+      "NEW.WORLD_MODEL"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#22": [
+      "MATH.WORK_RATE"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#26": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#27": [
+      "NET.WIRELESS_5G"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#32": [
+      "TEST.TYPES"
+    ],
+    "past-papers/comprehensive-by-year/2026上.md#47": [
+      "SEC.AI_ATTACKS"
+    ],
+    "exam-bank/30-targeted-coverage.md#1": [
+      "PATTERN.STRATEGY"
+    ],
+    "exam-bank/30-targeted-coverage.md#2": [
+      "PATTERN.TEMPLATE"
+    ],
+    "exam-bank/30-targeted-coverage.md#3": [
+      "PATTERN.STATE"
+    ],
+    "exam-bank/30-targeted-coverage.md#4": [
+      "CACHE.PENETRATION"
+    ],
+    "exam-bank/30-targeted-coverage.md#5": [
+      "CACHE.AVALANCHE"
+    ],
+    "exam-bank/30-targeted-coverage.md#6": [
+      "LANG.COMPILATION"
+    ],
+    "exam-bank/30-targeted-coverage.md#7": [
+      "LANG.PARSING"
+    ],
+    "past-papers/case-by-year/2009下-原卷.md#试题一": [
+      "QUALITY.ATTRIBUTES",
+      "QUALITY.PERFORMANCE",
+      "QUALITY.AVAILABILITY",
+      "QUALITY.MODIFIABILITY"
+    ],
+    "past-papers/case-by-year/2009下-原卷.md#试题二": [
+      "ANALYSIS.DFD",
+      "ANALYSIS.STRUCTURED"
+    ],
+    "past-papers/case-by-year/2009下-原卷.md#试题四": [
+      "ARCH.CONTROL_LOOP",
+      "ARCH.STYLES"
+    ],
+    "past-papers/case-by-year/2009下-原卷.md#试题五": [
+      "SEC.ACCESS_AUTH",
+      "SEC.CIA"
+    ],
+    "past-papers/case-by-year/2009下.md#试题一": [
+      "QUALITY.ATTRIBUTES",
+      "QUALITY.PERFORMANCE",
+      "QUALITY.AVAILABILITY",
+      "QUALITY.MODIFIABILITY"
+    ],
+    "past-papers/case-by-year/2009下.md#试题二": [
+      "ANALYSIS.DFD",
+      "ANALYSIS.STRUCTURED"
+    ],
+    "past-papers/case-by-year/2009下.md#试题四": [
+      "ARCH.CONTROL_LOOP",
+      "ARCH.STYLES"
+    ],
+    "past-papers/case-by-year/2009下.md#试题五": [
+      "SEC.ACCESS_AUTH",
+      "SEC.CIA"
+    ],
+    "past-papers/case-by-year/2010下-原卷.md#试题一": [
+      "ARCH.PIPE_FILTER",
+      "ARCH.STYLES"
+    ],
+    "past-papers/case-by-year/2010下-原卷.md#试题二": [
+      "DB.DISTRIBUTION",
+      "DB.ACID"
+    ],
+    "past-papers/case-by-year/2010下-原卷.md#试题四": [
+      "SOA.ESB",
+      "EAI.LEVELS",
+      "DESIGN.COHESION_COUPLING"
+    ],
+    "past-papers/case-by-year/2010下-原卷.md#试题五": [
+      "REL.SERIES_PARALLEL",
+      "REL.FAULT_TOLERANCE"
+    ],
+    "past-papers/case-by-year/2010下.md#试题一": [
+      "ARCH.PIPE_FILTER",
+      "ARCH.STYLES"
+    ],
+    "past-papers/case-by-year/2010下.md#试题二": [
+      "DB.DISTRIBUTION",
+      "DB.ACID"
+    ],
+    "past-papers/case-by-year/2010下.md#试题四": [
+      "SOA.ESB",
+      "EAI.LEVELS",
+      "DESIGN.COHESION_COUPLING"
+    ],
+    "past-papers/case-by-year/2010下.md#试题五": [
+      "REL.SERIES_PARALLEL",
+      "REL.FAULT_TOLERANCE"
+    ],
+    "past-papers/case-by-year/2011下-原卷.md#试题一": [
+      "EVAL.UTILITY_TREE",
+      "EVAL.SENSITIVITY",
+      "EVAL.TRADEOFF",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/case-by-year/2011下-原卷.md#试题二": [
+      "DB.DENORMALIZATION",
+      "DB.ER_MODELING"
+    ],
+    "past-papers/case-by-year/2011下-原卷.md#试题四": [
+      "SOA.REST",
+      "SOA.PRINCIPLES",
+      "SOA.WEB_SERVICE"
+    ],
+    "past-papers/case-by-year/2011下-原卷.md#试题五": [
+      "SEC.CRYPTOGRAPHY",
+      "SEC.PKI_SIGNATURE",
+      "SEC.ACCESS_AUTH"
+    ],
+    "past-papers/case-by-year/2011下.md#试题一": [
+      "EVAL.UTILITY_TREE",
+      "EVAL.SENSITIVITY",
+      "EVAL.TRADEOFF",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/case-by-year/2011下.md#试题二": [
+      "DB.DENORMALIZATION",
+      "DB.ER_MODELING"
+    ],
+    "past-papers/case-by-year/2011下.md#试题四": [
+      "SOA.REST",
+      "SOA.PRINCIPLES",
+      "SOA.WEB_SERVICE"
+    ],
+    "past-papers/case-by-year/2011下.md#试题五": [
+      "SEC.CRYPTOGRAPHY",
+      "SEC.PKI_SIGNATURE",
+      "SEC.ACCESS_AUTH"
+    ],
+    "past-papers/case-by-year/2012下-原卷.md#试题一": [
+      "ARCH.PIPE_FILTER",
+      "ARCH.REPOSITORY"
+    ],
+    "past-papers/case-by-year/2012下-原卷.md#试题四": [
+      "PATTERN.STRATEGY",
+      "PATTERN.ADAPTER"
+    ],
+    "past-papers/case-by-year/2012下-原卷.md#试题五": [
+      "DB.NOSQL"
+    ],
+    "past-papers/case-by-year/2012下.md#试题一": [
+      "ARCH.PIPE_FILTER",
+      "ARCH.REPOSITORY"
+    ],
+    "past-papers/case-by-year/2012下.md#试题四": [
+      "PATTERN.STRATEGY",
+      "PATTERN.ADAPTER"
+    ],
+    "past-papers/case-by-year/2012下.md#试题五": [
+      "DB.NOSQL"
+    ],
+    "past-papers/case-by-year/2013下-原卷.md#试题一": [
+      "SOA.ESB",
+      "SOA.PRINCIPLES",
+      "SOA.ORCHESTRATION"
+    ],
+    "past-papers/case-by-year/2013下-原卷.md#试题四": [
+      "ARCH.LAYERED_MVC",
+      "ARCH.INTERPRETER"
+    ],
+    "past-papers/case-by-year/2013下-原卷.md#试题五": [
+      "SEC.PKI_SIGNATURE",
+      "SEC.CRYPTOGRAPHY",
+      "SEC.ACCESS_AUTH"
+    ],
+    "past-papers/case-by-year/2013下.md#试题一": [
+      "SOA.ESB",
+      "SOA.PRINCIPLES",
+      "SOA.ORCHESTRATION"
+    ],
+    "past-papers/case-by-year/2013下.md#试题四": [
+      "ARCH.LAYERED_MVC",
+      "ARCH.INTERPRETER"
+    ],
+    "past-papers/case-by-year/2013下.md#试题五": [
+      "SEC.PKI_SIGNATURE",
+      "SEC.CRYPTOGRAPHY",
+      "SEC.ACCESS_AUTH"
+    ],
+    "past-papers/case-by-year/2014下-原卷.md#试题一": [
+      "ARCH.LAYERED_MVC",
+      "DESIGN.SOLID"
+    ],
+    "past-papers/case-by-year/2014下-原卷.md#试题二": [
+      "ANALYSIS.DFD",
+      "ANALYSIS.STRUCTURED"
+    ],
+    "past-papers/case-by-year/2014下-原卷.md#试题四": [
+      "EVAL.UTILITY_TREE",
+      "EVAL.SENSITIVITY",
+      "EVAL.TRADEOFF",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/case-by-year/2014下.md#试题一": [
+      "ARCH.LAYERED_MVC",
+      "DESIGN.SOLID"
+    ],
+    "past-papers/case-by-year/2014下.md#试题二": [
+      "ANALYSIS.DFD",
+      "ANALYSIS.STRUCTURED"
+    ],
+    "past-papers/case-by-year/2014下.md#试题四": [
+      "EVAL.UTILITY_TREE",
+      "EVAL.SENSITIVITY",
+      "EVAL.TRADEOFF",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/case-by-year/2015下-原卷.md#试题一": [
+      "EVAL.UTILITY_TREE",
+      "EVAL.SENSITIVITY",
+      "EVAL.TRADEOFF",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/case-by-year/2015下-原卷.md#试题二": [
+      "UML.STATE_ACTIVITY"
+    ],
+    "past-papers/case-by-year/2015下-原卷.md#试题三": [
+      "REL.FAULT_TOLERANCE",
+      "REL.SERIES_PARALLEL"
+    ],
+    "past-papers/case-by-year/2015下.md#试题一": [
+      "EVAL.UTILITY_TREE",
+      "EVAL.SENSITIVITY",
+      "EVAL.TRADEOFF",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/case-by-year/2015下.md#试题二": [
+      "UML.STATE_ACTIVITY"
+    ],
+    "past-papers/case-by-year/2015下.md#试题三": [
+      "REL.FAULT_TOLERANCE",
+      "REL.SERIES_PARALLEL"
+    ],
+    "past-papers/case-by-year/2016下-原卷.md#试题一": [
+      "ARCH.PIPE_FILTER",
+      "QUALITY.ATTRIBUTES",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/case-by-year/2016下-原卷.md#试题二": [
+      "UML.USE_CASE",
+      "UML.RELATIONS"
+    ],
+    "past-papers/case-by-year/2016下-原卷.md#试题三": [
+      "EMBED.REALTIME",
+      "REL.FAULT_TOLERANCE"
+    ],
+    "past-papers/case-by-year/2016下.md#试题一": [
+      "ARCH.PIPE_FILTER",
+      "QUALITY.ATTRIBUTES",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/case-by-year/2016下.md#试题二": [
+      "UML.USE_CASE",
+      "UML.RELATIONS"
+    ],
+    "past-papers/case-by-year/2016下.md#试题三": [
+      "EMBED.REALTIME",
+      "REL.FAULT_TOLERANCE"
+    ],
+    "past-papers/case-by-year/2017下-原卷.md#试题一": [
+      "EVAL.UTILITY_TREE",
+      "EVAL.SENSITIVITY",
+      "EVAL.TRADEOFF",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/case-by-year/2017下-原卷.md#试题四": [
+      "DB.ACCESS_LAYER",
+      "DB.RELATIONAL_ALGEBRA"
+    ],
+    "past-papers/case-by-year/2017下-原卷.md#试题五": [
+      "NET.CDN",
+      "DB.DISTRIBUTION",
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/case-by-year/2017下.md#试题一": [
+      "EVAL.UTILITY_TREE",
+      "EVAL.SENSITIVITY",
+      "EVAL.TRADEOFF",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/case-by-year/2017下.md#试题四": [
+      "DB.ACCESS_LAYER",
+      "DB.RELATIONAL_ALGEBRA"
+    ],
+    "past-papers/case-by-year/2017下.md#试题五": [
+      "NET.CDN",
+      "DB.DISTRIBUTION",
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/case-by-year/2018下.md#试题一": [
+      "EVAL.UTILITY_TREE",
+      "EVAL.SENSITIVITY",
+      "EVAL.TRADEOFF",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/case-by-year/2018下.md#试题二": [
+      "DB.ER_MODELING",
+      "DB.NORMAL_FORMS"
+    ],
+    "past-papers/case-by-year/2018下.md#试题三": [
+      "EMBED.REALTIME",
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/case-by-year/2018下.md#试题四": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/case-by-year/2018下.md#试题五": [
+      "SOA.PRINCIPLES",
+      "SOA.ESB"
+    ],
+    "past-papers/case-by-year/2019下.md#试题一": [
+      "EVAL.UTILITY_TREE",
+      "ARCH.STYLES",
+      "QUALITY.ATTRIBUTES"
+    ],
+    "past-papers/case-by-year/2019下.md#试题二": [
+      "ANALYSIS.DFD",
+      "ANALYSIS.STRUCTURED"
+    ],
+    "past-papers/case-by-year/2019下.md#试题三": [
+      "EMBED.REALTIME",
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/case-by-year/2019下.md#试题四": [
+      "MIDDLEWARE.TYPES",
+      "DB.DISTRIBUTION",
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/case-by-year/2019下.md#试题五": [
+      "CACHE.REDIS_STORAGE",
+      "MQ.KAFKA",
+      "DB.NOSQL"
+    ],
+    "past-papers/case-by-year/2020.md#试题一": [
+      "ARCH.REPOSITORY",
+      "QUALITY.ATTRIBUTES"
+    ],
+    "past-papers/case-by-year/2020.md#试题二": [
+      "DB.ER_MODELING"
+    ],
+    "past-papers/case-by-year/2020.md#试题四": [
+      "CACHE.REDIS_STORAGE",
+      "SOA.WEB_SERVICE"
+    ],
+    "past-papers/case-by-year/2021.md#试题一": [
+      "EVAL.UTILITY_TREE",
+      "QUALITY.ATTRIBUTES"
+    ],
+    "past-papers/case-by-year/2021.md#试题二": [
+      "UML.USE_CASE",
+      "UML.RELATIONS"
+    ],
+    "past-papers/case-by-year/2021.md#试题三": [
+      "DB.ER_MODELING"
+    ],
+    "past-papers/case-by-year/2021.md#试题四": [
+      "DB.NOSQL",
+      "DB.DISTRIBUTION"
+    ],
+    "past-papers/case-by-year/2021.md#试题五": [
+      "EMBED.REALTIME",
+      "COMPONENT.FOUNDATIONS"
+    ],
+    "past-papers/case-by-year/2022.md#试题一": [
+      "QUALITY.ATTRIBUTES",
+      "EVAL.UTILITY_TREE",
+      "ARCH.INTERPRETER"
+    ],
+    "past-papers/case-by-year/2022.md#试题二": [
+      "ANALYSIS.DFD",
+      "DB.ER_MODELING",
+      "ANALYSIS.STRUCTURED"
+    ],
+    "past-papers/case-by-year/2022.md#试题三": [
+      "QUALITY.AVAILABILITY",
+      "REL.FAULT_TOLERANCE",
+      "EMBED.FOUNDATIONS"
+    ],
+    "past-papers/case-by-year/2022.md#试题四": [
+      "CACHE.ASIDE_CONSISTENCY",
+      "CACHE.CLUSTER",
+      "CACHE.PENETRATION"
+    ],
+    "past-papers/case-by-year/2022.md#试题五": [
+      "NEW.EDGE_CLOUD",
+      "MQ.MQTT",
+      "NEW.CPS_IOT"
+    ],
+    "past-papers/case-by-year/2023下.md#试题一": [
+      "DATA.LAMBDA_KAPPA",
+      "DATA.HDFS",
+      "DATA.MAPREDUCE_YARN",
+      "DATA.SPARK_STREAM",
+      "MQ.KAFKA"
+    ],
+    "past-papers/case-by-year/2023下.md#试题二": [
+      "UML.SYSML",
+      "UML.USE_CASE"
+    ],
+    "past-papers/case-by-year/2023下.md#试题三": [
+      "DB.DISTRIBUTION",
+      "CACHE.ASIDE_CONSISTENCY"
+    ],
+    "past-papers/case-by-year/2023下.md#试题四": [
+      "DB.ACCESS_LAYER",
+      "SEC.ACCESS_AUTH"
+    ],
+    "past-papers/case-by-year/2023下.md#试题五": [
+      "NEW.DIGITAL_TWIN"
+    ],
+    "past-papers/case-by-year/2024上.md#试题一": [
+      "MICRO.FOUNDATIONS",
+      "EVAL.UTILITY_TREE",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/case-by-year/2024上.md#试题二": [
+      "UML.INTERACTION"
+    ],
+    "past-papers/case-by-year/2024上.md#试题三": [
+      "DIST.LOCKS",
+      "CACHE.REDIS_STORAGE"
+    ],
+    "past-papers/case-by-year/2024上.md#试题四": [
+      "EMBED.FOUNDATIONS"
+    ],
+    "past-papers/case-by-year/2024上.md#试题五": [
+      "DB.NOSQL",
+      "DATA.WAREHOUSE_LAKE"
+    ],
+    "past-papers/case-by-year/2024下.md#试题一": [
+      "QUALITY.ATTRIBUTES",
+      "QUALITY.AVAILABILITY"
+    ],
+    "past-papers/case-by-year/2024下.md#试题二": [
+      "CACHE.ASIDE_CONSISTENCY"
+    ],
+    "past-papers/case-by-year/2024下.md#试题三": [
+      "EMBED.TOOLCHAIN"
+    ],
+    "past-papers/case-by-year/2024下.md#试题四": [
+      "SOA.REST",
+      "DATA.ETL",
+      "DB.INDEX_QUERY"
+    ],
+    "past-papers/case-by-year/2024下.md#试题五": [
+      "SEC.GOVERNANCE",
+      "UML.RELATIONS"
+    ],
+    "past-papers/case-by-year/2025上.md#试题一": [
+      "QUALITY.SCENARIOS",
+      "ARCH.INTERPRETER"
+    ],
+    "past-papers/case-by-year/2025上.md#试题二": [
+      "NEW.KNOWLEDGE_GRAPH",
+      "HW.IO_INTERRUPT"
+    ],
+    "past-papers/case-by-year/2025上.md#试题三": [
+      "DB.DISTRIBUTION",
+      "CACHE.REDIS_STORAGE"
+    ],
+    "past-papers/case-by-year/2025上.md#试题四": [
+      "NEW.EDGE_CLOUD",
+      "NEW.CLOUD_MODELS"
+    ],
+    "past-papers/case-by-year/2025上.md#试题五": [
+      "NEW.BLOCKCHAIN"
+    ],
+    "past-papers/case-by-year/2025下.md#批次1-试题一": [
+      "EMBED.REALTIME",
+      "REL.FAULT_TOLERANCE"
+    ],
+    "past-papers/case-by-year/2025下.md#批次1-试题二": [
+      "EMBED.TOOLCHAIN",
+      "REQ.CLASSIFICATION",
+      "DESIGN.COHESION_COUPLING"
+    ],
+    "past-papers/case-by-year/2025下.md#批次1-试题三": [
+      "PROCESS.AGILE",
+      "ARCH.LAYERED_MVC"
+    ],
+    "past-papers/case-by-year/2025下.md#批次1-试题四": [
+      "CACHE.REDIS_STORAGE"
+    ],
+    "past-papers/case-by-year/2025下.md#批次1-试题五": [
+      "UML.STATE_ACTIVITY"
+    ],
+    "past-papers/case-by-year/2025下.md#批次2-试题一": [
+      "QUALITY.SCENARIOS",
+      "EVAL.TRADEOFF",
+      "QUALITY.SECURITY",
+      "QUALITY.PERFORMANCE"
+    ],
+    "past-papers/case-by-year/2025下.md#批次2-试题二": [
+      "MICRO.DDD",
+      "DIST.TX_SELECTION",
+      "DIST.OUTBOX",
+      "MQ.DELIVERY"
+    ],
+    "past-papers/case-by-year/2025下.md#批次2-试题三": [
+      "CACHE.BREAKDOWN",
+      "DIST.LOCKS"
+    ],
+    "past-papers/case-by-year/2026上.md#试题一": [
+      "NEW.CPS_IOT",
+      "DB.TIME_SERIES",
+      "MQ.MQTT"
+    ],
+    "past-papers/case-by-year/2026上.md#试题二": [
+      "NEW.MACHINE_LEARNING",
+      "NEW.KNOWLEDGE_GRAPH"
+    ],
+    "past-papers/case-by-year/2026上.md#试题三": [
+      "DB.ISOLATION_LOCKING",
+      "DIST.LOCKS",
+      "CACHE.BREAKDOWN",
+      "CACHE.REDIS_STORAGE"
+    ],
+    "past-papers/case-by-year/2026上.md#试题四": [
+      "NEW.CPS_IOT",
+      "NEW.EDGE_CLOUD",
+      "QUALITY.ATTRIBUTES"
+    ],
+    "past-papers/case-by-year/2026上.md#试题五": [
+      "QUALITY.ATTRIBUTES",
+      "QUALITY.SCENARIOS",
+      "ARCH.PIPE_FILTER"
+    ],
+    "past-papers/essay-by-year/2009下.md#试题一": [
+      "ARCH.DSSA"
+    ],
+    "past-papers/essay-by-year/2009下.md#试题二": [
+      "DESIGN.OO_MODELING",
+      "ANALYSIS.STRUCTURED",
+      "UML.DIAGRAMS"
+    ],
+    "past-papers/essay-by-year/2009下.md#试题四": [
+      "REL.FAULT_TOLERANCE"
+    ],
+    "past-papers/essay-by-year/2010下.md#试题一": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/essay-by-year/2010下.md#试题三": [
+      "CACHE.ASIDE_CONSISTENCY"
+    ],
+    "past-papers/essay-by-year/2010下.md#试题四": [
+      "REL.MODELS"
+    ],
+    "past-papers/essay-by-year/2011下.md#试题一": [
+      "DESIGN.OO_MODELING"
+    ],
+    "past-papers/essay-by-year/2011下.md#试题二": [
+      "EAI.LEVELS",
+      "SOA.ESB"
+    ],
+    "past-papers/essay-by-year/2012下.md#试题一": [
+      "ARCH.ABSD"
+    ],
+    "past-papers/essay-by-year/2012下.md#试题二": [
+      "DB.ACCESS_LAYER"
+    ],
+    "past-papers/essay-by-year/2013下.md#试题一": [
+      "ARCH.VIEWS_4PLUS1"
+    ],
+    "past-papers/essay-by-year/2013下.md#试题二": [
+      "ARCH.LAYERED_MVC"
+    ],
+    "past-papers/essay-by-year/2013下.md#试题三": [
+      "REL.FAULT_TOLERANCE"
+    ],
+    "past-papers/essay-by-year/2013下.md#试题四": [
+      "DATA.DISTRIBUTED_STORAGE"
+    ],
+    "past-papers/essay-by-year/2014下.md#试题二": [
+      "REQ.CLASSIFICATION",
+      "QUALITY.ATTRIBUTES"
+    ],
+    "past-papers/essay-by-year/2014下.md#试题三": [
+      "REL.FAULT_TOLERANCE"
+    ],
+    "past-papers/essay-by-year/2014下.md#试题四": [
+      "SEC.CIA",
+      "SEC.GOVERNANCE",
+      "SEC.ACCESS_AUTH"
+    ],
+    "past-papers/essay-by-year/2015下.md#试题二": [
+      "ARCH.STYLES"
+    ],
+    "past-papers/essay-by-year/2015下.md#试题三": [
+      "SOA.PRINCIPLES",
+      "SOA.ESB"
+    ],
+    "past-papers/essay-by-year/2015下.md#试题四": [
+      "EAI.LEVELS",
+      "EAI.PATTERNS"
+    ],
+    "past-papers/essay-by-year/2016下.md#试题一": [
+      "EVAL.METHODS",
+      "EVAL.ATAM_PROCESS",
+      "QUALITY.SCENARIOS"
+    ],
+    "past-papers/essay-by-year/2016下.md#试题二": [
+      "PATTERN.ADAPTER",
+      "PATTERN.ARCHITECTURAL",
+      "PATTERN.BRIDGE",
+      "PATTERN.CHAIN",
+      "PATTERN.CLASSIFICATION",
+      "PATTERN.COMMAND_MEMENTO",
+      "PATTERN.COMPOSITE",
+      "PATTERN.DECORATOR",
+      "PATTERN.FACADE",
+      "PATTERN.FACTORY_BUILDER",
+      "PATTERN.FLYWEIGHT",
+      "PATTERN.ITERATOR",
+      "PATTERN.OBSERVER",
+      "PATTERN.PROXY",
+      "PATTERN.SINGLETON",
+      "PATTERN.STATE",
+      "PATTERN.STRATEGY",
+      "PATTERN.TEMPLATE"
+    ],
+    "past-papers/essay-by-year/2016下.md#试题三": [
+      "DB.ACCESS_LAYER"
+    ],
+    "past-papers/essay-by-year/2016下.md#试题四": [
+      "MICRO.FOUNDATIONS",
+      "MICRO.DDD",
+      "MICRO.GATEWAY"
+    ],
+    "past-papers/essay-by-year/2017下.md#试题一": [
+      "ARCH.STYLES"
+    ],
+    "past-papers/essay-by-year/2017下.md#试题二": [
+      "DESIGN.OO_MODELING",
+      "ANALYSIS.STRUCTURED"
+    ],
+    "past-papers/essay-by-year/2017下.md#试题三": [
+      "CLOUD.SERVERLESS"
+    ],
+    "past-papers/essay-by-year/2017下.md#试题四": [
+      "TEST.QUALITY_ASSURANCE"
+    ],
+    "past-papers/essay-by-year/2018下.md#试题一": [
+      "PROCESS.RUP"
+    ],
+    "past-papers/essay-by-year/2018下.md#试题二": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/essay-by-year/2018下.md#试题三": [
+      "SOA.PRINCIPLES",
+      "SOA.WEB_SERVICE"
+    ],
+    "past-papers/essay-by-year/2018下.md#试题四": [
+      "DB.NOSQL"
+    ],
+    "past-papers/essay-by-year/2019下.md#试题一": [
+      "QUALITY.LOAD_BALANCING"
+    ],
+    "past-papers/essay-by-year/2019下.md#试题二": [
+      "DATA.WAREHOUSE_LAKE"
+    ],
+    "past-papers/essay-by-year/2019下.md#试题三": [
+      "EVAL.METHODS",
+      "EVAL.ATAM_PROCESS"
+    ],
+    "past-papers/essay-by-year/2019下.md#试题四": [
+      "DESIGN.OO_MODELING",
+      "ANALYSIS.STRUCTURED",
+      "DESIGN.SYSTEM_DESIGN"
+    ],
+    "past-papers/essay-by-year/2020.md#试题一": [
+      "DB.DISTRIBUTION"
+    ],
+    "past-papers/essay-by-year/2020.md#试题二": [
+      "CLOUD.NATIVE",
+      "CLOUD.CONTAINERS",
+      "CLOUD.SERVERLESS"
+    ],
+    "past-papers/essay-by-year/2020.md#试题三": [
+      "TEST.DEFECT_MANAGEMENT"
+    ],
+    "past-papers/essay-by-year/2020.md#试题四": [
+      "EAI.LEVELS",
+      "SOA.ESB"
+    ],
+    "past-papers/essay-by-year/2021.md#试题一": [
+      "DESIGN.AOP",
+      "PATTERN.PROXY"
+    ],
+    "past-papers/essay-by-year/2021.md#试题二": [
+      "SEC.CIA",
+      "SEC.GOVERNANCE",
+      "SEC.ACCESS_AUTH"
+    ],
+    "past-papers/essay-by-year/2021.md#试题三": [
+      "EAI.LEVELS",
+      "EAI.PATTERNS"
+    ],
+    "past-papers/essay-by-year/2021.md#试题四": [
+      "MICRO.FOUNDATIONS",
+      "MICRO.DDD"
+    ],
+    "past-papers/essay-by-year/2022.md#试题一": [
+      "COMPONENT.FOUNDATIONS",
+      "COMPONENT.REUSE"
+    ],
+    "past-papers/essay-by-year/2022.md#试题二": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/essay-by-year/2022.md#试题三": [
+      "NEW.BLOCKCHAIN"
+    ],
+    "past-papers/essay-by-year/2022.md#试题四": [
+      "DATA.WAREHOUSE_LAKE"
+    ],
+    "past-papers/essay-by-year/2023下.md#试题一": [
+      "REL.MODELS"
+    ],
+    "past-papers/essay-by-year/2023下.md#试题二": [
+      "DESIGN.OO_MODELING",
+      "UML.USE_CASE"
+    ],
+    "past-papers/essay-by-year/2023下.md#试题三": [
+      "DATA.ETL",
+      "EAI.LEVELS"
+    ],
+    "past-papers/essay-by-year/2023下.md#试题四": [
+      "NEW.EDGE_CLOUD"
+    ],
+    "past-papers/essay-by-year/2024下.md#试题一": [
+      "EVOLUTION.TYPES"
+    ],
+    "past-papers/essay-by-year/2024下.md#试题二": [
+      "SOA.PRINCIPLES",
+      "SOA.WEB_SERVICE"
+    ],
+    "past-papers/essay-by-year/2024下.md#试题三": [
+      "DATA.ETL",
+      "EAI.LEVELS"
+    ],
+    "past-papers/essay-by-year/2024下.md#试题四": [
+      "DIST.TX_SELECTION",
+      "DIST.TWO_PHASE_COMMIT",
+      "DIST.TCC",
+      "DIST.SAGA",
+      "DIST.OUTBOX"
+    ],
+    "past-papers/essay-by-year/2025上.md#试题一": [
+      "TEST.TYPES",
+      "TEST.CASE_DESIGN"
+    ],
+    "past-papers/essay-by-year/2025上.md#试题二": [
+      "DB.NOSQL"
+    ],
+    "past-papers/essay-by-year/2025上.md#试题三": [
+      "ARCH.EVENT_DRIVEN"
+    ],
+    "past-papers/essay-by-year/2025上.md#试题四": [
+      "QUALITY.LOAD_BALANCING"
+    ]
+  }
+}

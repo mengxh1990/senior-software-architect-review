@@ -1,132 +1,63 @@
 #!/usr/bin/env python3
-"""Generate ``tutor/topic-map.md`` from ``tutor/curriculum.json``.
-
-The topic map is a reference the coach reads before recommending questions:
-
-* which stable topic ID maps to which exam-bank / cheatsheet files.
-
-Keeping the map generated (rather than hand-written) prevents drift the next
-time ``curriculum.json`` gains a new topic.
-
-Usage::
-
-    python3 scripts/gen_topic_map.py            # rewrite tutor/topic-map.md
-    python3 scripts/gen_topic_map.py --check    # exit 1 if out of date (for CI)
-"""
+"""Generate the two-level curriculum and usable module coverage report."""
 from __future__ import annotations
-
 import argparse
 import json
-import sys
 from pathlib import Path
-from typing import Iterable
+import audit_taxonomy
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-CURRICULUM = REPO_ROOT / "tutor" / "curriculum.json"
-OUTPUT = REPO_ROOT / "tutor" / "topic-map.md"
-
-
-def _resource_kind(path: str) -> str:
-    if path.startswith("exam-bank/"):
-        return "exam-bank"
-    if path.startswith("cheatsheets/"):
-        return "cheatsheet"
-    if path.startswith("notes/"):
-        return "notes"
-    if path.startswith("past-papers/"):
-        return "past-papers"
-    if path.startswith("knowledge-index/"):
-        return "knowledge-index"
-    return "other"
-
-
-def _has_bank_items(resources: Iterable[str]) -> bool:
-    return any(r.startswith("exam-bank/") for r in resources)
+CURRICULUM = REPO_ROOT/'tutor/curriculum.json'
+OUTPUT = REPO_ROOT/'tutor/topic-map.md'
 
 
 def render(curriculum: dict) -> str:
-    topics = curriculum.get("topics", [])
-    lines: list[str] = []
-    lines.append("# Topic Map（由脚本生成，请勿手改）")
-    lines.append("")
-    lines.append(
-        "> 由 `python3 scripts/gen_topic_map.py` 从 "
-        "[`tutor/curriculum.json`](./curriculum.json) 生成。"
-        "若要修改，请改 curriculum.json 后重跑该脚本。"
-    )
-    lines.append("")
-    lines.append("## 1. 所有考点 → 资源映射")
-    lines.append("")
-    lines.append("| Topic ID | 名称 | 科目 | 频次 | 时长(分钟) | 有 exam-bank 题 | 主要资源 |")
-    lines.append("|---|---|---|---|---|---|---|")
-    for t in topics:
-        subjects = "/".join(t.get("subjects", []))
-        freq = t.get("frequency_count", "—")
-        est = t.get("estimated_minutes", "—")
-        resources = t.get("resources", []) or []
-        has_bank = "✅" if _has_bank_items(resources) else "⚠️ 无"
-        # Show up to 3 resources for readability
-        shown = ", ".join(f"`{r}`" for r in resources[:3])
-        if len(resources) > 3:
-            shown += f" (+{len(resources) - 3})"
-        lines.append(
-            f"| `{t['id']}` | {t['name']} | {subjects} | {freq} | {est} | {has_bank} | {shown} |"
-        )
-    lines.append("")
-
-    # Group orphaned topics (no exam-bank items) — these need self-authored
-    # questions and must be tagged with ``--source-type self_authored``.
-    no_bank = [t for t in topics if not _has_bank_items(t.get("resources", []) or [])]
-    if no_bank:
-        lines.append("## 2. 无 exam-bank 题的考点（自编题时 `--source-type self_authored`）")
-        lines.append("")
-        for t in no_bank:
-            lines.append(f"- `{t['id']}` — {t['name']}")
-        lines.append("")
-
-    lines.append("## 3. exam-bank 文件 → topic 反查")
-    lines.append("")
-    # Build reverse index for the exam-bank/ resources
-    reverse: dict[str, list[str]] = {}
-    for t in topics:
-        for r in t.get("resources", []) or []:
-            if r.startswith("exam-bank/"):
-                reverse.setdefault(r, []).append(t["id"])
-    for path in sorted(reverse):
-        topics_str = ", ".join(f"`{tid}`" for tid in sorted(reverse[path]))
-        lines.append(f"- `{path}` → {topics_str}")
-    lines.append("")
-
-    return "\n".join(lines) + "\n"
+    report = audit_taxonomy.audit()
+    counts = {row['topic_id']: row for row in report['topics']}
+    lines = ['# 知识域与 K 模块分类', '', '> 自动生成：`python3 scripts/gen_topic_map.py`。数量来自已复核直接模块映射与出题门禁。', '',
+             f"训练分类只有两层：{report['domains']} 个知识域 → {report['modules']} 个 K 模块。题目直接归属 K；C/P 是案例和论文练习入口。", '',
+             '每个普通模块至少6道不同内容、跨2天、近期加权正确率≥80%才可能抽样达标。英语至少10题、2份可追溯阅读材料、跨2天。抽样达标不代表模块所有内容掌握。', '']
+    for domain in curriculum['domains']:
+        lines += [f"## {domain['id']} · {domain['name']}", '', '| K 模块 | 名称 | 自编可用题 | 历年可用题 | 不同题面 | 测量容量 |', '|---|---|---:|---:|---:|---|']
+        for t in curriculum['topics']:
+            if t.get('domain_id') != domain['id']:
+                continue
+            row = counts[t['id']]; resource = row['resource']
+            label = {'available':'足够','insufficient':'不足','missing':'缺题'}[resource['resource_status']]
+            lines.append(f"| `{t['id']}` | {t['name']} | {row['bank_ready']} | {row['past_ready']} | {resource['distinct_items']} | {label} |")
+        lines.append('')
+    lines += ['## 案例与论文练习入口', '', '| ID | 名称 | 完整可用题 | 独立测量容量 |', '|---|---|---:|---|']
+    for t in curriculum['topics']:
+        if not t['id'].startswith('K'):
+            resource = counts[t['id']]['resource']
+            label = {'available':'足够','insufficient':'不足','missing':'缺题'}[resource['resource_status']]
+            lines.append(f"| `{t['id']}` | {t['name']} | {resource['distinct_items']} | {label}（至少{resource['requirements']['distinct_items']}题） |")
+    lines += ['', '## 笔记标签与资源缺口', '',
+              '原细知识点已改为可选笔记标签：`note-tags.json` 与 `question-note-tags.json`。没有标签成绩、覆盖率、复习队列或训练单元；标签增删不会改变训练结果。', '',
+              '下面的缺口属于题库或材料，不代表考生薄弱：', '']
+    for row in report['topics']:
+        if row['resource'] and row['resource']['resource_status'] != 'available':
+            lines.append(f"- `{row['topic_id']}`：{row['resource']['distinct_items']} 道不同题面，低于独立测量门槛（至少{row['resource']['requirements']['distinct_items']}题），需补充材料；已有题可练习，重复不增加独立题量。")
+        elif not row['resource'] and not row['subjective_ready']:
+            lines.append(f"- `{row['topic_id']}`：暂无完整盲练材料，自动排课暂不选择。")
+    lines += ['', '容量尚未扣除个人当天曝光、冷却与隔离。详细报告：`python3 scripts/audit_taxonomy.py --json`。', '']
+    return '\n'.join(lines)
 
 
-def main(argv: list[str]) -> int:
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="exit 1 if the generated map differs from the file on disk",
-    )
+    parser.add_argument('--check', action='store_true')
     args = parser.parse_args(argv)
-
-    curriculum = json.loads(CURRICULUM.read_text(encoding="utf-8"))
-    rendered = render(curriculum)
-
+    content = render(json.loads(CURRICULUM.read_text(encoding='utf-8')))
     if args.check:
-        current = OUTPUT.read_text(encoding="utf-8") if OUTPUT.exists() else ""
-        if current != rendered:
-            print(
-                f"error: {OUTPUT.relative_to(REPO_ROOT)} is out of date; "
-                "run `python3 scripts/gen_topic_map.py`",
-                file=sys.stderr,
-            )
+        if not OUTPUT.exists() or OUTPUT.read_text(encoding='utf-8') != content:
+            print('error: tutor/topic-map.md is out of date; run scripts/gen_topic_map.py')
             return 1
         return 0
-
-    OUTPUT.write_text(rendered, encoding="utf-8")
-    print(f"wrote {OUTPUT.relative_to(REPO_ROOT)} ({len(rendered)} bytes)")
+    OUTPUT.write_text(content, encoding='utf-8')
+    print('wrote tutor/topic-map.md')
     return 0
 
 
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+if __name__ == '__main__':
+    raise SystemExit(main())

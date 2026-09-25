@@ -28,12 +28,14 @@ from pathlib import Path
 from typing import Any, Iterable, Iterator
 
 import question_registry
+import knowledge_taxonomy
+import module_assessment
 import sanitize_bank
 
 
 SCHEMA_VERSION = 1
-QUESTION_LINK_VERSION = 3
-EVIDENCE_POLICY_VERSION = 2
+QUESTION_LINK_VERSION = 5
+EVIDENCE_POLICY_VERSION = 5
 SUBJECT_TIME_LIMITS = {"comprehensive": 9000, "case": 5400, "essay": 7200}
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CURRICULUM_PATH = REPO_ROOT / "tutor" / "curriculum.json"
@@ -222,7 +224,6 @@ def load_curriculum() -> dict[str, Any]:
     ):
         raise TutorError("课程表冷启动分组包含重复或未知考点 ID")
     case_type_ids: set[str] = set()
-    covered_case_topics: set[str] = set()
     for topic in curriculum["topics"]:
         case_type = topic.get("case_type")
         covered_topic_ids = topic.get("covered_topic_ids", [])
@@ -237,18 +238,15 @@ def load_curriculum() -> dict[str, Any]:
             or len(covered_topic_ids) != len(set(covered_topic_ids))
         ):
             raise TutorError(f"课程表考点 {topic['id']} covered_topic_ids 无效")
-        if covered_topic_ids and not str(topic["id"]).startswith("C"):
+        if covered_topic_ids and not str(topic["id"]).startswith(("C", "P")):
             raise TutorError(f"课程表考点 {topic['id']} 不能声明案例路线覆盖")
         if case_type is not None and str(topic["id"]).startswith("C"):
             if str(case_type) in case_type_ids:
                 raise TutorError(f"课程表案例题型重复：{case_type}")
             case_type_ids.add(str(case_type))
-        duplicate_coverage = covered_case_topics.intersection(covered_topic_ids)
-        if duplicate_coverage:
-            raise TutorError(
-                "课程表案例路线重复覆盖考点：" + ", ".join(sorted(duplicate_coverage))
-            )
-        covered_case_topics.update(covered_topic_ids)
+    errors = knowledge_taxonomy.validate_catalog(curriculum)
+    if errors:
+        raise TutorError("知识分类无效：" + "；".join(errors))
     return curriculum
 
 
@@ -298,6 +296,7 @@ def new_state(curriculum: dict[str, Any], created_at: str) -> dict[str, Any]:
         },
         "subjects": {subject: blank_subject() for subject in SUBJECTS},
         "topics": {},
+        "taxonomy_version": knowledge_taxonomy.TAXONOMY_VERSION,
         "applied_attempt_ids": [],
         "created_at": created_at,
         "last_session_at": None,
@@ -415,7 +414,13 @@ def validate_state(state: Any) -> dict[str, Any]:
             if mock.get("complete") is not True:
                 raise TutorError(f"state.json 模考 {mock['mock_id']} 不是完整证据")
 
-    for topic_id, topic in state["topics"].items():
+    evidence_records = list(state["topics"].items())
+    for collection in ("knowledge", "unclassified_topics"):
+        value = state.get(collection, {})
+        if not isinstance(value, dict):
+            raise TutorError(f"state.json {collection} 必须是对象")
+        evidence_records.extend(value.items())
+    for topic_id, topic in evidence_records:
         if not isinstance(topic_id, str) or not isinstance(topic, dict):
             raise TutorError("state.json topics 包含无效考点")
         mastery = topic.get("mastery")
@@ -492,6 +497,16 @@ def validate_state(state: Any) -> dict[str, Any]:
             if not isinstance(recent, list) or any(not isinstance(item, dict) or not isinstance(item.get("identity"), str)
                 or not isinstance(item.get("weighted_ratio"), (int, float)) or not 0 <= item["weighted_ratio"] <= 1 for item in recent):
                 raise TutorError("近期证据无效")
+            measured = record.get("measurement_items", {})
+            if not isinstance(measured, dict):
+                raise TutorError("模块测量证据必须为对象")
+            for identity, item in measured.items():
+                if not isinstance(identity, str) or not identity or not isinstance(item, dict):
+                    raise TutorError("模块测量证据无效")
+                for field in ("first_at", "at"):
+                    if not isinstance(item.get(field), str):
+                        raise TutorError("模块测量证据缺少时间")
+                    parse_datetime(item[field])
             if record.get("last_attempt_at") is not None:
                 parse_datetime(record["last_attempt_at"])
             if record.get("next_review_at") is not None:
@@ -544,9 +559,6 @@ def load_profile_and_state(
         curriculum = load_curriculum()
         for event in pending:
             apply_event_to_state(state, event, curriculum)
-    # Project the current topic-level mastery rule in memory. Older private
-    # states may have been evaluated against subtopic coverage requirements;
-    # reading progress must not require rewriting their answer ledger.
     curriculum = load_curriculum()
     topics = topic_map(curriculum)
     safe_target = float(state.get("strategy", {}).get("safe_target", 52))
@@ -555,8 +567,9 @@ def load_profile_and_state(
         if topic is None:
             continue
         for skill, record in topic_record.get("mastery", {}).items():
-            if isinstance(record, dict):
-                record["status"] = skill_status(skill, record, safe_target)
+            record["status"] = skill_status(skill, record, safe_target)
+            if skill == "recognition":
+                record.update(module_assessment.evidence_summary(record, topic_id))
         refresh_topic_status(topic_record, topic.get("skills", []))
     if pending and persist_pending:
         save_state_bundle(data_dir, profile, state, backup=True)
@@ -734,6 +747,7 @@ def status_payload(profile: dict[str, Any], state: dict[str, Any]) -> dict[str, 
         "strategy": state.get("strategy", {}),
         "subjects": subjects,
         "topics": topics,
+        "taxonomy_version": knowledge_taxonomy.TAXONOMY_VERSION,
         "last_session_at": state.get("last_session_at"),
     }
 
@@ -771,7 +785,7 @@ def render_dashboard(profile: dict[str, Any], state: dict[str, Any]) -> str:
             )
         )
 
-    lines.extend(["", "## 已产生证据的考点", ""])
+    lines.extend(["", "## 已产生证据的考点", "", "综合识别的模块抽样达标不代表模块全部内容掌握；题库缺题和证据不足不等于薄弱。", ""])
     if not payload["topics"]:
         lines.append("尚无有效作答，不能判断掌握度。")
     else:
@@ -786,6 +800,9 @@ def render_dashboard(profile: dict[str, Any], state: dict[str, Any]) -> str:
 
             def dimension_status(skill: str) -> str:
                 value = mastery.get(skill)
+                if skill == "recognition" and isinstance(value, dict) and value.get("evidence_scope") == "module_sample":
+                    return {"sample_ready": "模块抽样达标", "needs_practice": "需巩固",
+                            "evidence_insufficient": "证据不足", "unmeasured": "未测"}[value["learning_status"]]
                 return value.get("status", "unseen") if isinstance(value, dict) else "unseen"
 
             lines.append(
@@ -894,14 +911,15 @@ def skill_status(
 
     if skill == "recognition":
         if (
-            len(unique_items) >= 6
+            len(unique_items) >= module_assessment.requirements(record.get("topic_id", ""))["distinct_items"]
             and len(dates) >= 2
             and accuracy >= 0.8
+            and module_assessment.evidence_summary(record, record.get("topic_id", ""))["measurement_status"] == "sufficient"
         ):
             return "pass_ready"
     elif skill == "application":
         timed_items = [
-            (item.get("item_id"), parse_datetime(item["at"]))
+            (item.get("question_fingerprint") or item.get("item_id"), parse_datetime(item["at"]))
             for item in evidence
             if item.get("item_id") and item.get("at")
         ]
@@ -919,7 +937,7 @@ def skill_status(
     elif skill == "production":
         safe_ratio = safe_target / 75.0
         if any(
-            item.get("mode") == "full_timed"
+            (item.get("mode") == "full_timed" or record.get("evidence_scope") == "module_sample" and item.get("point_evidence"))
             and (
                 float(item.get("score", 0)) / float(item.get("max_score", 1))
                 if float(item.get("max_score", 0)) > 0
@@ -1046,8 +1064,14 @@ def enrich_record_event(event: dict[str, Any]) -> dict[str, Any]:
     event = dict(question_registry.canonicalize_public_event(event))
     if str(event.get("item_id", "")).startswith(("exam-bank/", "past-papers/comprehensive")):
         canonical = public_question_fingerprints().get(event["item_id"])
-        if canonical:
+        if canonical and not event.get("question_fingerprint"):
             event["question_fingerprint"] = canonical
+    objective = knowledge_taxonomy.objective_metadata(str(event.get("item_id") or ""))
+    if objective and objective.get("reading_context_id"):
+        event["context_id"] = objective["reading_context_id"]
+    metadata = knowledge_taxonomy.subjective_metadata(str(event.get("item_id") or ""))
+    if metadata and not event.get("question_fingerprint"):
+        event["question_fingerprint"] = hashlib.sha256(("subjective:" + metadata["canonical_item_id"]).encode()).hexdigest()
     return event
 
 
@@ -1055,8 +1079,13 @@ def rebuild_evidence(profile: dict[str, Any], current: dict[str, Any], attempts:
     rebuilt = new_state(load_curriculum(), str(profile.get("created_at") or current["created_at"]))
     rebuilt["strategy"] = copy.deepcopy(current["strategy"])
     for event in sorted(attempts, key=lambda item: parse_datetime(item.get("at"))):
-        apply_event_to_state(rebuilt, event, load_curriculum())
+        apply_event_to_state(rebuilt, knowledge_taxonomy.migrate_legacy_assessments(event), load_curriculum())
     return rebuilt
+
+
+def allowed_assessment_topics(event: dict[str, Any], topic: dict[str, Any]) -> set[str]:
+    metadata = knowledge_taxonomy.subjective_metadata(str(event.get("item_id") or ""))
+    return set(metadata.get("covered_topic_ids", [])) if metadata else set(topic.get("covered_topic_ids", [])) | {topic["id"]}
 
 
 def validate_record_event(event: dict[str, Any], curriculum: dict[str, Any]) -> None:
@@ -1144,6 +1173,10 @@ def validate_record_event(event: dict[str, Any], curriculum: dict[str, Any]) -> 
             raise TutorError(f"{key} 必须是非空字符串")
     if (event.get("assessment_scope") or "fragment") not in {"fragment", "case", "essay"}:
         raise TutorError("assessment_scope 无效")
+    if event.get("assessment_scope") in {"case", "essay"} and str(event.get("item_id", "")).startswith("past-papers/"):
+        metadata = knowledge_taxonomy.subjective_metadata(event["item_id"])
+        if metadata and metadata.get("complete") is False:
+            raise TutorError("题面材料不完整，只能按片段训练，不能记完整测量")
     if event.get("assessment_scope") == "case" and (skill != "application" or maximum != 25 or event.get("complete") is not True):
         raise TutorError("完整案例须为 application、25 分制并标记 complete")
     assessed = event.get("assessed_topics", [])
@@ -1151,7 +1184,7 @@ def validate_record_event(event: dict[str, Any], curriculum: dict[str, Any]) -> 
         raise TutorError("assessed_topics 必须是数组")
     seen_topics = set()
     for point in assessed:
-        if not isinstance(point, dict) or point.get("topic_id") not in topic.get("covered_topic_ids", []):
+        if not isinstance(point, dict) or point.get("topic_id") not in allowed_assessment_topics(event, topic):
             raise TutorError("逐点评分只能关联当前案例赛道覆盖的考点")
         if point["topic_id"] in seen_topics:
             raise TutorError("逐点评分考点重复")
@@ -1163,6 +1196,8 @@ def validate_record_event(event: dict[str, Any], curriculum: dict[str, Any]) -> 
             raise TutorError("逐点评分需要作答依据 evidence")
     if sum(point["max_score"] for point in assessed) > maximum or sum(point["score"] for point in assessed) > score:
         raise TutorError("逐点评分不能超过整题得分与总分")
+    if event.get("assessed_knowledge"):
+        raise TutorError("细知识点不再参与评分；请按 topic_id 提供 assessed_topics")
     if skill == "production" and event.get("mode") == "full_timed":
         if event.get("complete") is not True:
             raise TutorError("完整限时论文必须显式传入 --complete")
@@ -1196,19 +1231,12 @@ def apply_record_event(
     subject = event["subject"]
 
     topic_record = state["topics"].setdefault(
-        event["topic_id"],
-        {
-            "topic_id": event["topic_id"],
-            "name": topic["name"],
-            "status": "unseen",
-            "required_skills": topic.get("skills", []),
-            "mastery": {},
-            "wrong_reason_counts": {},
-            "last_attempt_at": None,
-            "next_review_at": None,
-        },
-    )
+        topic["id"], {"topic_id": topic["id"], "name": topic["name"], "status": "unseen",
+                      "required_skills": topic.get("skills", []), "mastery": {},
+                      "wrong_reason_counts": {}, "last_attempt_at": None, "next_review_at": None})
     record = topic_record["mastery"].setdefault(skill, new_skill_record())
+    record["evidence_scope"] = "module_sample" if topic["id"].startswith("K") else "route"
+    record["topic_id"] = topic["id"]
     previous_status = record.get("status")
     record["attempt_count"] = int(record.get("attempt_count", 0)) + 1
     record["score_sum"] = round(float(record.get("score_sum", 0)) + score, 4)
@@ -1221,7 +1249,7 @@ def apply_record_event(
     previous_due = record.get("next_review_at")
     is_latest = not previous_last or attempted_at >= parse_datetime(previous_last)
     is_mastery_assessment = (
-        skill == "recognition"
+        skill == "recognition" or event.get("_point_evidence")
         or skill == "application" and (event.get("assessment_scope") == "case" or ratio < 0.6 or event.get("confidence") != "sure")
         or skill == "production" and event.get("mode") == "full_timed"
     )
@@ -1235,12 +1263,12 @@ def apply_record_event(
         "production": safe_target / 75,
     }[skill]
     qualifies = (
-        ratio >= threshold
+        ratio >= threshold and event.get("classification_reason") != "historical_content_changed"
         and event.get("confidence") == "sure"
-        and (skill != "application" or event.get("assessment_scope") == "case"
+        and (skill != "application" or event.get("_point_evidence") or event.get("assessment_scope") == "case"
              and maximum == 25 and event.get("complete") is True)
         and (
-            skill != "production"
+            skill != "production" or event.get("_point_evidence")
             or (
                 event.get("mode") == "full_timed"
                 and event.get("complete") is True
@@ -1277,6 +1305,7 @@ def apply_record_event(
                 "variant_of": event.get("variant_of"),
                 "confidence": event.get("confidence"),
                 "assessment_scope": event.get("assessment_scope"),
+                "point_evidence": bool(event.get("_point_evidence")),
             }
         )
         dates = set(record.get("successful_dates", []))
@@ -1309,15 +1338,22 @@ def apply_record_event(
             record.get("unclassified_wrong_count", 0)
         ) + 1
 
-    evidence_target = {"recognition": 6, "application": 2, "production": 1}[skill]
+    evidence_target = module_assessment.requirements(topic["id"])["distinct_items"] if skill == "recognition" else 2 if skill == "application" else 1
     confidence_weight = {"sure": 1.0, "unsure": 0.5, "guess": 0.0}.get(event.get("confidence"), 0.0)
     recent = record.setdefault("recent_evidence", [])
     identity = event.get("question_fingerprint") or event["item_id"]
     recent[:] = [item for item in recent if item["identity"] != identity]
-    recent.append({"identity": identity, "at": attempted_iso, "weighted_ratio": ratio * confidence_weight})
+    if skill == "recognition":
+        measured = record.setdefault("measurement_items", {})
+        first_at = min(measured.get(identity, {}).get("first_at", attempted_iso), attempted_iso)
+        last_at = max(measured.get(identity, {}).get("at", attempted_iso), attempted_iso)
+        measured[identity] = {"first_at": first_at, "at": last_at, "context_id": event.get("context_id")}
+    recent.append({"identity": identity, "item_id": event["item_id"], "context_id": event.get("context_id"),
+                   "at": attempted_iso, "weighted_ratio": ratio * confidence_weight})
     recent.sort(key=lambda item: item["at"])
     del recent[:-12]
-    evidence_factor = min(1.0, len(recent) / evidence_target)
+    qualified_count = len({item.get("question_fingerprint") or item["item_id"] for item in record.get("qualified_evidence", [])})
+    evidence_factor = min(1.0, (len(recent) if skill == "recognition" else qualified_count) / evidence_target)
     record["mastery"] = round(sum(item["weighted_ratio"] for item in recent) / len(recent) * evidence_factor, 4)
     record["status"] = skill_status(
         skill, record, safe_target
@@ -1325,6 +1361,8 @@ def apply_record_event(
     if record["status"] == "pass_ready":
         record["ever_pass_ready"] = True
         record["regression_active"] = False
+    if skill == "recognition":
+        record.update(module_assessment.evidence_summary(record, topic["id"]))
 
     stable_success = (qualifies or skill == "application" and ratio >= 0.6) and event.get("confidence") == "sure"
     next_review = scheduled_review_date(
@@ -1360,16 +1398,20 @@ def apply_record_event(
         state["last_session_at"] = attempted_iso
     state["applied_attempt_ids"].append(attempt_id)
     record_training_time(state, event)
-    if skill == "application":
-        for point in event.get("assessed_topics", []):
-            linked = {**event, "topic_id": point["topic_id"], "score": point["score"],
-                      "max_score": point["max_score"], "assessment_scope": "fragment",
-                      "assessed_topics": [], "_derived": True, "attempt_id": attempt_id + ":" + point["topic_id"],
-                      "duration_seconds": None}
-            apply_record_event(state, linked, curriculum)
-            # Derived topic evidence, not another independent learner event or unit of time.
-            state["applied_attempt_ids"].remove(linked["attempt_id"])
-            state["subjects"][subject]["evidence_count"] -= 1
+    for point in event.get("assessed_topics", []):
+        if point["topic_id"] == topic["id"]:
+            continue  # The module already received the whole event; never double count it.
+        linked = {**event, "topic_id": point["topic_id"], "score": point["score"],
+                  "max_score": point["max_score"], "assessment_scope": "fragment", "mode": "practice",
+                  "assessed_topics": [], "_derived": True,
+                  "_point_evidence": bool(event.get("complete") and (
+                      skill == "application" and event.get("assessment_scope") == "case"
+                      or skill == "production" and event.get("mode") == "full_timed"
+                      and int(event.get("duration_seconds") or 0) <= SUBJECT_TIME_LIMITS["essay"])),
+                  "attempt_id": attempt_id + ":" + point["topic_id"], "duration_seconds": None}
+        apply_record_event(state, linked, curriculum)
+        state["applied_attempt_ids"].remove(linked["attempt_id"])
+        state["subjects"][subject]["evidence_count"] -= 1
     if skill == "production" and event.get("mode") == "full_timed":
         mock = {**event, "attempt_id": attempt_id + ":measurement", "event_type": "mock"}
         apply_mock_event(state, mock)
@@ -1395,6 +1437,8 @@ def apply_record_event(
 # still the same answer, so ``None`` on either side must stay compatible.
 DERIVED_EVENT_KEYS = (
     "question_fingerprint",
+    "knowledge_id",
+    "taxonomy_version",
     "variant_of",
 )
 
@@ -1421,10 +1465,10 @@ def events_conflict(existing: dict[str, Any], candidate: dict[str, Any], *, comp
         "question_id",
         "selected_answer",
         "correct_answer",
-        "assessment_scope", "assessed_topics", "rubric", "response_text",
+        "assessment_scope", "assessed_topics", "assessed_knowledge", "rubric", "response_text",
     )
-    if any((existing.get(key) or None if key == "assessed_topics" else existing.get(key)) !=
-           (candidate.get(key) or None if key == "assessed_topics" else candidate.get(key)) for key in keys):
+    if any((existing.get(key) or None if key in {"assessed_topics", "assessed_knowledge"} else existing.get(key)) !=
+           (candidate.get(key) or None if key in {"assessed_topics", "assessed_knowledge"} else candidate.get(key)) for key in keys):
         return True
     if any(
         existing.get(key) is not None
@@ -1477,6 +1521,11 @@ def cmd_record(args: argparse.Namespace) -> int:
     fingerprint = args.question_fingerprint or (registered or {}).get(
         "question_fingerprint"
     )
+    public_metadata = knowledge_taxonomy.objective_metadata(args.item_id)
+    if public_metadata:
+        if fingerprint and fingerprint != public_metadata["content_fingerprint"]:
+            raise TutorError("公共题指纹与已核对题面不一致，不能覆盖题目身份")
+        fingerprint = public_metadata["content_fingerprint"]
     variant_of = args.variant_of or (registered or {}).get("variant_of")
     if fingerprint:
         duplicate = next(
@@ -1528,6 +1577,31 @@ def cmd_record(args: argparse.Namespace) -> int:
             raise TutorError("rubric 逐点得分与总分必须等于本次记录分数")
         if args.skill == "production":
             event["word_count"] = len(re.sub(r"\s+", "", assessment["response_text"]))
+    if assessment:
+        if assessment.get("assessed_knowledge") or any(point.get("knowledge_id") for point in assessment["rubric"]["points"]):
+            raise TutorError("细知识点只作笔记标签；评分请使用 topic_id 或 assessed_topics")
+        metadata = knowledge_taxonomy.subjective_metadata(args.item_id)
+        if event.get("assessment_scope") in {"case", "essay"} and metadata and not metadata.get("complete"):
+            raise TutorError("当前题面未通过完整训练门禁；可按已恢复的小问记录片段，不能记完整案例/论文")
+        grouped = {}
+        subquestions = {q["id"]: q for q in (metadata or {}).get("subquestions", [])}
+        for point in assessment["rubric"]["points"]:
+            tid = point.get("topic_id")
+            if not tid:
+                continue
+            if tid not in allowed_assessment_topics(event, topic):
+                raise TutorError("rubric 模块不在本题考查范围内")
+            subquestion = subquestions.get(str(point.get("subquestion_id", "")))
+            if subquestion and subquestion.get("topic_ids") and tid not in subquestion["topic_ids"]:
+                raise TutorError("rubric 模块与指定小问不一致")
+            row = grouped.setdefault(tid, {"topic_id": tid, "score": 0, "max_score": 0, "evidence": ""})
+            row["score"] += point["score"]
+            row["max_score"] += point["max_score"]
+            row["evidence"] += str(point["evidence"]) + "\n"
+        if grouped:
+            if event["assessed_topics"]:
+                raise TutorError("rubric 已标模块，不要再提供 assessed_topics 重复评分")
+            event["assessed_topics"] = list(grouped.values())
     corrected = question_registry.canonicalize_public_event(event)
     if corrected["topic_id"] != event["topic_id"]:
         raise TutorError(
@@ -1626,6 +1700,8 @@ def apply_mock_event(state: dict[str, Any], event: dict[str, Any]) -> dict[str, 
     score_75 = score / maximum * 75
     subject = state["subjects"][subject_name]
     ineligible = []
+    if event["item_id"] in {"hf-pass-mock-01-v2", "hf-pass-mock-01"}:
+        ineligible.append("limited_curriculum_coverage")
     if any(item["paper_id"] == event["item_id"] for item in subject["mock_scores"]):
         ineligible.append("repeated_paper")
     if int(event["duration_seconds"]) > SUBJECT_TIME_LIMITS[subject_name]:
@@ -1720,9 +1796,9 @@ def cmd_mock(args: argparse.Namespace) -> int:
     if args.subject == "comprehensive":
         sys.path.insert(0, str(REPO_ROOT / "tutor"))
         import mock_paper
-        if args.paper_id == mock_paper.PAPER_ID:
-            seen = {identity for item in attempts for identity in (item.get("item_id"), enrich_record_event(item).get("question_fingerprint")) if identity}
-            event["prior_exposure_count"] = sum(item["question_fingerprint"] in seen or item["item_id"] in seen for item in mock_paper.private_items())
+        if args.paper_id in mock_paper.PAPER_IDS:
+            seen = mock_paper.exposed_identities(args.data_dir, attempts)
+            event["prior_exposure_count"] = sum(item["question_fingerprint"] in seen or item["item_id"] in seen for item in mock_paper.private_items(args.paper_id))
     write_attempts(paths["attempts"], [*attempts, event])
     result = apply_mock_event(state, event)
     save_state_bundle(args.data_dir, profile, state, backup=True)
@@ -1791,7 +1867,7 @@ def case_track_by_supporting_topic(
         if not str(topic.get("id", "")).startswith("C"):
             continue
         for topic_id in topic.get("covered_topic_ids", []):
-            result[topic_id] = topic["id"]
+            result.setdefault(topic_id, topic["id"])
     return result
 
 
@@ -1889,7 +1965,7 @@ def manual_trigger_subjects(state: dict[str, Any]) -> set[str]:
 
 
 def record_training_time(state: dict[str, Any], event: dict[str, Any], *, mock: bool = False) -> None:
-    if event.get("_derived") or not mock and event.get("mode") == "mock":
+    if event.get("_derived") or event.get("_point_evidence") or not mock and event.get("mode") == "mock":
         return
     if mock and event.get("mode") == "full_timed":
         return  # essay practice already accounted for the same work
@@ -1917,6 +1993,8 @@ def next_training_action(
     quiz_id: str | None = None,
     variant_count: int = 0,
     profile: dict[str, Any] | None = None,
+    data_dir: Path | None = None,
+    mock_availability: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return one deterministic next route without changing learner state."""
 
@@ -1949,9 +2027,15 @@ def next_training_action(
     last_measurement = state["subjects"][subject].get("last_measured_at")
     needs_measurement = not last_measurement or (today-parse_datetime(last_measurement).date()).days >= 7
     if budget and needs_measurement and budget["remaining_seconds"] >= SUBJECT_TIME_LIMITS[subject]:
-        return {"mode": "mock_manual_flow", "subject": subject, "command": "serve.py" if subject == "comprehensive" else None,
-                "reason": "有整块时间且缺少近期独立模考，优先测量再排课", "budget": budget,
-                "estimated_minutes": SUBJECT_TIME_LIMITS[subject] // 60}
+        if subject == "comprehensive" and mock_availability is None and data_dir is not None:
+            sys.path.insert(0, str(REPO_ROOT / "tutor"))
+            import mock_paper
+            mock_availability = mock_paper.availability(data_dir, state)
+        if subject != "comprehensive" or mock_availability and mock_availability["available"]:
+            return {"mode": "mock_manual_flow", "subject": subject, "command": "serve.py" if subject == "comprehensive" else None,
+                    "paper_id": (mock_availability or {}).get("paper_id"),
+                    "reason": "有整块时间且缺少近期独立模考，优先测量再排课", "budget": budget,
+                    "estimated_minutes": SUBJECT_TIME_LIMITS[subject] // 60}
     if subject != "comprehensive" and budget and budget["remaining_seconds"] < 1500:
         return {"mode": "targeted_fragment", "subject": subject, "command": None,
                 "reason": "剩余时间不足完整训练，做已学考点的短答或骨架回忆；按片段记录", "budget": budget}
@@ -1963,13 +2047,14 @@ def next_training_action(
         command = "case-prepare"
     else:
         mode = "essay_manual_flow"
-        command = "paper_practice --subject essay"
+        command = "essay-prepare"
     task_kind = "targeted_practice"
     if subject == "comprehensive":
         curriculum = load_curriculum()
         core = [item for group in curriculum.get("strategy", {}).get("comprehensive_cold_start_groups", []) for item in group]
         missing = [topic_id for topic_id in core if not state.get("topics", {}).get(topic_id, {}).get("mastery", {}).get("recognition", {}).get("attempt_count")]
-        due = any(record.get("next_review_at") and parse_date(record["next_review_at"]) <= today and record.get("status") != "pass_ready"
+        due = any(record.get("next_review_at") and parse_date(record["next_review_at"]) <= today
+                  and (record.get("learning_status") == "needs_practice" if "learning_status" in record else record.get("status") != "pass_ready")
                   for topic in state.get("topics", {}).values() for skill, record in topic.get("mastery", {}).items() if skill == "recognition")
         if missing:
             task_kind = "diagnostic"
@@ -2098,6 +2183,8 @@ def learning_diagnosis(
                 (topic_id, skill),
                 {
                     "topic_id": topic_id,
+
+
                     "topic_name": topics[topic_id]["name"],
                     "subject": subject,
                     "skill": skill,
@@ -2137,27 +2224,35 @@ def learning_diagnosis(
             or event.get("confidence") != "sure"
         ):
             continue
-        key = (event.get("topic_id"), event.get("skill"))
+        key = (str(event.get("topic_id")), event.get("skill"))
         if key in grouped:
             strong_by_topic.setdefault(key, []).append((parse_datetime(event["at"]), event))
     for key, issue in grouped.items():
         source_items = set(issue["source_item_ids"])
         source_at = parse_datetime(issue["source_at"])
+        failures = [parse_datetime(event["at"]) for raw_event in attempts
+                    for event in [question_registry.canonicalize_public_event(raw_event)]
+                    if event.get("event_type") == "practice" and event.get("topic_id") == issue["topic_id"]
+                    and event.get("skill") == issue["skill"] and event.get("subject") == subject
+                    and event.get("at") and (_event_ratio(event) < 0.8 or event.get("confidence") != "sure")]
+        recovery_after = max([source_at, *failures])
         remedies = [
             {
                 "attempt_id": event.get("attempt_id"),
                 "item_id": event.get("item_id"),
                 "at": event.get("at"),
+                "question_fingerprint": event.get("question_fingerprint"),
             }
             for attempted_at, event in strong_by_topic.get(key, [])
-            if attempted_at > source_at and event.get("item_id") not in source_items
+            if attempted_at > recovery_after and event.get("item_id") not in source_items
         ]
         distinct_items = {item["item_id"] for item in remedies if item.get("item_id")}
+        independent = {item.get("question_fingerprint") or item["item_id"] for item in remedies}
         dates = {
             parse_datetime(item["at"]).date().isoformat()
             for item in remedies if item.get("at")
         }
-        verified = len(distinct_items) >= 2 and len(dates) >= 2
+        verified = len(independent) >= 2 and len(dates) >= 2
         last_remedy_date = max((parse_date(value) for value in dates), default=None)
         review_date = last_remedy_date + timedelta(days=1) if last_remedy_date else today
         if verified:
@@ -2176,7 +2271,7 @@ def learning_diagnosis(
             "pending_remediation": "模考该考点有失分，优先安排新题练习",
             "due_review": "该考点已到跨日复测日",
             "awaiting_review": "该考点等待跨日复测",
-            "verified": "该考点已有不同题目和不同日期的确定作答证据",
+            "verified": "该模块已有不同题目和不同日期的复测证据；原题错因仍保留",
         }[status]
 
     priority = {
@@ -2488,6 +2583,21 @@ def cmd_weakpoints(args: argparse.Namespace) -> int:
     return 0
 
 
+def runtime_frequency() -> dict[str, Any]:
+    try:
+        snapshot = knowledge_taxonomy.read(FREQUENCY_SNAPSHOT_PATH)
+    except (OSError, ValueError):
+        return {"active": "curriculum_fallback", "snapshot_is_advisory": True, "reason": "missing_snapshot", "topics": {}}
+    valid = (snapshot.get("policy_version") == 3 and snapshot.get("mode") == "runtime_ready"
+             and snapshot.get("taxonomy_version") == knowledge_taxonomy.TAXONOMY_VERSION
+             and snapshot.get("source_digest") == knowledge_taxonomy.source_digest())
+    return {"active": "audited_snapshot" if valid else "curriculum_fallback",
+            "snapshot_is_advisory": not valid, "as_of": snapshot.get("as_of"),
+            "reason": None if valid else "stale_or_insufficient_snapshot",
+            "topics": {row["topic_id"]: row["weighted_questions_per_paper"] for row in snapshot.get("topics", [])} if valid else {},
+            }
+
+
 def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
     """Build one compact, read-only coaching overview."""
 
@@ -2500,7 +2610,10 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
         item["needs_remeasurement"] = stamp is None or item["measurement_age_days"] >= 7
     raw_allocations, allocations = effective_subject_allocations(state, today)
     paused = manual_trigger_subjects(state)
-    next_action = next_training_action(state, today, profile=profile)
+    sys.path.insert(0, str(REPO_ROOT / "tutor"))
+    import mock_paper
+    mock_availability = mock_paper.availability(args.data_dir, state)
+    next_action = next_training_action(state, today, profile=profile, data_dir=args.data_dir, mock_availability=mock_availability)
     recommendation_args = argparse.Namespace(
         data_dir=args.data_dir,
         subject=next_action["subject"],
@@ -2547,7 +2660,7 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
         )
 
     recommendations = plan.get("recommendations") or []
-    if not recommendations and next_action.get("mode") in {"quiz_prepare", "case_prepare"}:
+    if not recommendations and next_action.get("mode") in {"quiz_prepare", "case_prepare", "essay_manual_flow"}:
         next_action = {**next_action, "mode": "survival_review" if plan.get("crunch_mode") else "resources_unavailable",
                        "command": None, "reason": "当前没有可执行的新训练；复习已学骨架或维护材料"}
     if recommendations and next_action["mode"] in {"quiz_prepare", "case_prepare", "essay_manual_flow"}:
@@ -2568,12 +2681,13 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
             first = recommendations[0]
             topic_id = first["topic_id"]
         command = next_action["command"]
-        if next_action["mode"] in {"quiz_prepare", "case_prepare"} and next_action.get("task_kind") != "mixed_check":
+        if next_action["mode"] in {"quiz_prepare", "case_prepare", "essay_manual_flow"} and next_action.get("task_kind") != "mixed_check":
             command = f"{command} --topic {topic_id}"
         if next_action["mode"] == "quiz_prepare":
             command += f" --limit {len(selected)}"
         next_action = {
             **next_action,
+
             "topic_id": topic_id,
             "topic_name": first.get("name"),
             "skill": first.get("skill"),
@@ -2581,6 +2695,12 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
             "estimated_minutes": len(selected) if next_action["mode"] == "quiz_prepare" else (25 if next_action["mode"] == "case_prepare" else first.get("estimated_minutes")),
             "command": command,
         }
+    capacity = module_assessment.inventory(load_quiz_question_pool(load_curriculum()), load_curriculum())
+    module_weakpoints = sorted(active_rows.values(), key=weakpoint_key)
+    for row in module_weakpoints:
+        if row["skill"] == "recognition":
+            evidence = state.get("topics", {}).get(row["topic_id"], {}).get("mastery", {}).get("recognition", {})
+            row.update(module_assessment.evidence_summary(evidence, row["topic_id"]))
     exam_date = profile.get("exam_date")
     return {
         "today": today.isoformat(),
@@ -2593,12 +2713,22 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
         },
         "pass_line": state.get("strategy", {}).get("pass_line", 45),
         "safe_target": state.get("strategy", {}).get("safe_target", 52),
-        "frequency_model": {"active": "curriculum_curated", "snapshot_is_advisory": True},
+        "frequency_model": {key: value for key, value in runtime_frequency().items() if key not in {"topics", "knowledge"}},
         "measurement_tasks": [{"subject": subject, "mode": "full_mock", "required_minutes": SUBJECT_TIME_LIMITS[subject] // 60,
                                "can_start_with_daily_budget": profile.get("daily_minutes", 45)*60 >= SUBJECT_TIME_LIMITS[subject],
-                               "reason": "缺少近期独立整卷证据；安排整块时间"}
+                               "available": mock_availability["available"] if subject == "comprehensive" else None,
+                               "status": "available" if subject != "comprehensive" or mock_availability["available"] else "resources_unavailable",
+                               "paper_id": mock_availability["paper_id"] if subject == "comprehensive" else None,
+                               "reason": (mock_availability["reason"] or "缺少近期独立整卷证据；安排整块时间") if subject == "comprehensive" else "缺少近期独立整卷证据；安排整块时间"}
                               for subject in SUBJECTS if subject not in paused and status["subjects"][subject]["needs_remeasurement"]],
-        "diagnostic_coverage": {"uncovered_core_topics": [topic_id for group in load_curriculum().get("strategy", {}).get("comprehensive_cold_start_groups", []) for topic_id in group
+        "module_progress": [{"topic_id": topic["id"], "domain_id": topic["domain_id"], "name": topic["name"],
+                             **module_assessment.evidence_summary(state.get("topics", {}).get(topic["id"], {}).get("mastery", {}).get("recognition", {}), topic["id"]),
+                             "resource": capacity[topic["id"]]}
+                            for topic in load_curriculum()["topics"] if topic["id"].startswith("K")],
+        "resource_gaps": [tid for tid, row in capacity.items() if row["resource_status"] != "available"],
+        "route_resource_gaps": plan.get("resource_gaps", []),
+        "mock_availability": mock_availability,
+        "diagnostic_coverage": {"scope": "module_sample", "note": "模块初筛不等于模块全部内容掌握", "uncovered_core_topics": [topic_id for group in load_curriculum().get("strategy", {}).get("comprehensive_cold_start_groups", []) for topic_id in group
                                   if not state.get("topics", {}).get(topic_id, {}).get("mastery", {}).get("recognition", {}).get("attempt_count")]},
         "subjects": status["subjects"],
         "focus_subject": next_action["subject"],
@@ -2615,9 +2745,11 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
             for subject in SUBJECTS
             if subject in paused
         ],
-        "weakpoints": sorted(active_rows.values(), key=weakpoint_key)[: args.limit],
+        "weakpoints": [row for row in module_weakpoints if row.get("learning_status") == "needs_practice"
+                       or row["skill"] != "recognition" and row.get("recent_accuracy") is not None and row["recent_accuracy"] < .6][:args.limit],
+        "measurement_gaps": [row for row in module_weakpoints if row.get("learning_status") == "evidence_insufficient"][:args.limit],
         "due_reviews": sorted(due_rows.values(), key=weakpoint_key)[: args.limit],
-        "weakpoint_counts": per_subject,
+        "weaktype_counts": per_subject,
         "next_action": next_action,
     }
 
@@ -2879,6 +3011,41 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         for topic_id in topic_ids
     }
 
+    objective_pool = load_quiz_question_pool(curriculum)
+    attempts = load_attempts(state_paths(args.data_dir)["attempts"])
+    blocked = (quiz_questions_served_on(args.data_dir, today)
+               | recently_mastered_item_ids(attempts, today)
+               | recently_served_variant_item_ids(args.data_dir, today)
+               | quarantined_item_ids(args.data_dir, objective_pool))
+    blocked.update(event.get("item_id") for event in attempts if event.get("at") and parse_datetime(event["at"]).date() == today)
+    available_modules = {raw["candidate_topics"][0] for raw in objective_pool
+                         if raw["id"] not in blocked and raw.get("candidate_topics")
+                         and raw.get("quality_status") == "ready" and raw.get("teaching_status") == "ready"
+                         and raw.get("classification_status") == "reviewed"}
+    import paper_practice
+    subjective_pool = paper_practice.build_case_items() + paper_practice.build_essay_items()
+    eligible_subjective = [item for item in subjective_pool if paper_practice.eligible(item)]
+    route_capacity = module_assessment.route_inventory(eligible_subjective, curriculum)
+    blocked_routes = set()
+    for tid, resource in route_capacity.items():
+        if not tid.startswith("C") or resource["resource_status"] != "insufficient":
+            continue
+        record = state.get("topics", {}).get(tid, {}).get("mastery", {}).get("application", {})
+        stock = {hashlib.sha256(("subjective:" + (item.get("canonical_item_id") or item["id"])).encode()).hexdigest()
+                 for item in eligible_subjective if item["topic_id"] == tid}
+        passed = {e.get("question_fingerprint") for e in record.get("qualified_evidence", [])}
+        supporting = {kid for item in eligible_subjective if item["topic_id"] == tid for kid in item.get("covered_topic_ids", [])}
+        records = [record] + [state.get("topics", {}).get(kid, {}).get("mastery", {}).get("application", {}) for kid in supporting]
+        needs_correction = any(r.get("regression_active") or r.get("latest_ratio", 1) < .6
+                               or r.get("latest_confidence", "sure") != "sure" for r in records)
+        if stock and stock <= passed and not needs_correction:
+            blocked_routes.add(tid)
+    available_routes = {item.get("topic_id") for item in eligible_subjective} - blocked_routes
+    route_modules: dict[str, set[str]] = {}
+    for item in subjective_pool:
+        if paper_practice.eligible(item):
+            route_modules.setdefault(item["topic_id"], set()).update(item.get("covered_topic_ids", []))
+    frequencies = runtime_frequency()["topics"]
     ranked: list[dict[str, Any]] = []
     for topic in curriculum["topics"]:
         if topic["id"] in strategic_skips:
@@ -2917,6 +3084,10 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         # may only be selected directly through case-prepare --topic.
         if chosen_subject == "case" and not topic["id"].startswith("C"):
             continue
+        if chosen_subject in {"case", "essay"}:
+            expected = "C" if chosen_subject == "case" else "P"
+            if not topic["id"].startswith(expected) or topic["id"] not in available_routes:
+                continue
         skill = {
             "comprehensive": "recognition",
             "case": "application",
@@ -2924,19 +3095,18 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         }[chosen_subject]
         if skill not in topic.get("skills", []):
             continue
+        if chosen_subject == "comprehensive" and topic["id"] not in available_modules:
+            continue
         mastery = topic_mastery(state, topic["id"], skill)
-        supporting_topic_ids = list(topic.get("covered_topic_ids", []))
-        supporting_masteries = [
-            topic_mastery(state, topic_id, "application")
-            for topic_id in supporting_topic_ids
-            if isinstance(
-                state.get("topics", {})
-                .get(topic_id, {})
-                .get("mastery", {})
-                .get("application"),
-                dict,
-            )
-        ]
+        supporting_topic_ids = sorted(route_modules.get(topic["id"], set()))
+        supporting_records = [(tid, state.get("topics", {}).get(tid, {}).get("mastery", {}).get(skill, {}))
+                              for tid in supporting_topic_ids]
+        supporting_records = [(tid, record) for tid, record in supporting_records if record.get("attempt_count")]
+        supporting_masteries = [1.0 if record.get("status") == "pass_ready" else record.get("mastery", 0)
+                                for _, record in supporting_records]
+        focus_module = min(supporting_records, key=lambda pair: (
+            not bool(pair[1].get("next_review_at") and parse_date(pair[1]["next_review_at"]) <= today),
+            pair[1].get("mastery", 0), pair[0]))[0] if supporting_records else None
         need = max(
             [0.08, 1.0 - mastery]
             + [1.0 - supporting_mastery for supporting_mastery in supporting_masteries]
@@ -2963,49 +3133,23 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
                     )
                     <= today
                 )
-                urgent_due = due and skill_progress.get("status") != "pass_ready"
+                urgent_due = due and (module_assessment.evidence_summary(skill_progress, topic["id"])["learning_status"] == "needs_practice"
+                                      if chosen_subject == "comprehensive" else skill_progress.get("status") != "pass_ready")
                 maintenance_due = due and not urgent_due
             except TutorError:
                 due = True
                 urgent_due = True
         supporting_due_names: list[str] = []
-        for supporting_topic_id in supporting_topic_ids:
-            supporting_progress = state.get("topics", {}).get(supporting_topic_id, {})
-            supporting_record = supporting_progress.get("mastery", {}).get(
-                "application", {}
-            )
-            supporting_review_at = (
-                supporting_record.get("next_review_at")
-                if isinstance(supporting_record, dict)
-                else None
-            )
-            if not supporting_review_at:
-                continue
-            try:
-                supporting_is_due = (
-                    parse_date(
-                        effective_review_date(
-                            supporting_review_at,
-                            supporting_record.get("last_attempt_at"),
-                            minimum_interval,
-                            supporting_record.get("status"),
-                        )
-                    )
-                    <= today
-                )
-            except TutorError:
-                supporting_is_due = True
-            if supporting_is_due:
+        for supporting_module_id, supporting_record in supporting_records:
+            supporting_review_at = effective_review_date(supporting_record.get("next_review_at"),
+                supporting_record.get("last_attempt_at"), minimum_interval, supporting_record.get("status"))
+            if supporting_review_at and parse_date(supporting_review_at) <= today:
                 due = True
                 if supporting_record.get("status") == "pass_ready":
                     maintenance_due = True
                 else:
                     urgent_due = True
-                supporting_due_names.append(
-                    topics[supporting_topic_id]["name"]
-                    if supporting_topic_id in topics
-                    else supporting_topic_id
-                )
+                supporting_due_names.append(topics[supporting_module_id]["name"])
         due_factor = 1.7 if urgent_due else (1.15 if maintenance_due else 1.0)
         supporting_topics = [
             topics[topic_id]
@@ -3013,9 +3157,9 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
             if topic_id in topics
         ]
         frequency = max(
-            [max(0.0, float(topic.get("frequency_count", 0)))]
+            [max(0.0, float(frequencies.get(topic["id"], 0)))]
             + [
-                max(0.0, float(supporting_topic.get("frequency_count", 0)))
+                max(0.0, float(frequencies.get(supporting_topic["id"], 0)))
                 for supporting_topic in supporting_topics
             ]
         )
@@ -3077,7 +3221,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         if crunch_mode:
             reasons.append("考前 3 天，只做错题、保命卡或答题骨架")
         if frequency >= 6:
-            reasons.append(f"历年高频证据 {int(frequency)} 次")
+            reasons.append(f"综合题样本平均 {frequency:.1f} 题/卷" if chosen_subject == "comprehensive" else f"关联综合知识考频 {frequency:.1f}，仅用于路线排序")
         if float(topic.get("cross_subject_value", 0)) >= 0.8:
             reasons.append("三科复用价值高")
         if not reasons:
@@ -3085,6 +3229,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         ranked.append(
             {
                 "topic_id": topic["id"],
+
                 "name": topic["name"],
                 "subject": chosen_subject,
                 "skill": skill,
@@ -3096,6 +3241,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
                 "reason": "；".join(reasons),
                 "resources": topic.get("resources", []),
                 "supporting_topic_ids": supporting_topic_ids,
+                "supporting_topic_id": focus_module,
                 "_gate": gate,
                 "_track_gate": track_gate,
                 "_strategy_rank": int(topic.get("strategy_rank", 999)),
@@ -3133,16 +3279,16 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         issue = dict(issue)
         original_topic_id = issue["topic_id"]
         if target_subject == "case":
-            track_id = (
-                original_topic_id
-                if original_topic_id.startswith("C")
-                else case_support_map.get(original_topic_id)
-            )
+            matches = [route_id for route_id, kids in route_modules.items()
+                       if route_id.startswith("C") and original_topic_id in kids
+                       and (not strategy.get("case_tracks_configured") or route_id in configured_case_tracks)]
+            track_id = original_topic_id if original_topic_id.startswith("C") else (
+                min(matches) if matches else case_support_map.get(original_topic_id))
             if track_id is None:
                 continue
             issue["topic_id"] = track_id
             issue["supporting_topic_id"] = original_topic_id
-        if issue["topic_id"] in strategic_skips:
+        if issue["topic_id"] in strategic_skips or issue["topic_id"] in blocked_routes:
             continue
         if (
             issue["topic_id"].startswith("C")
@@ -3160,6 +3306,7 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
     diagnostic_items = [
         {
             "topic_id": issue["topic_id"],
+
             "name": issue["topic_name"],
             "subject": issue["subject"],
             "skill": issue["skill"],
@@ -3179,12 +3326,11 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         for index, issue in enumerate(active_diagnostics)
     ]
     selected = diagnostic_items[: args.limit]
-    diagnostic_topics = {item["topic_id"] for item in selected}
     if len(selected) < args.limit:
         selected.extend(
             item
             for item in ranked
-            if item["topic_id"] not in diagnostic_topics
+            if item["topic_id"] not in {d["topic_id"] for d in selected}
         )
         selected = selected[: args.limit]
     if maintenance_subject and args.limit >= 2 and not any(
@@ -3222,6 +3368,10 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         "raw_subject_allocation": raw_allocations,
         "suppressed_subjects": sorted(paused_subjects),
         "recommendations": recommendations,
+        "resource_gaps": [{"topic_id": tid, "name": topics[tid]["name"], **resource,
+                           "measurement_blocked": tid in blocked_routes,
+                           "reason": "完整题库不足独立测量；已完成现有题可显式复习，自动训练不重复等待达标" if tid in blocked_routes else "完整题库不足独立测量，需补充材料"}
+                          for tid, resource in route_capacity.items() if resource["resource_status"] != "available"],
         "diagnosis_error": diagnosis_error,
         "profile": {
             "exam_date": profile.get("exam_date"),
@@ -3369,11 +3519,22 @@ def cmd_case_prepare(args: argparse.Namespace) -> int:
         if topic is None:
             continue
         case_type = case_type_for_topic(topic)
-        if case_type is None:
+        module_request = topic["id"].startswith("K")
+        if case_type is None and not module_request:
             continue
         candidates: list[tuple[dict[str, Any], list[str], list[str]]] = []
         for item in case_items:
-            if item.get("tag") != case_type or item.get("practice_mode") != "blind":
+            if item.get("practice_mode") != "blind":
+                continue
+            if module_request:
+                if topic["id"] not in item.get("covered_topic_ids", []):
+                    continue
+            elif item.get("tag") != case_type:
+                continue
+            if not paper_practice.eligible(item, allow_missing_figures=args.allow_missing_figures):
+                skipped_incomplete += 1
+                continue
+            if recommendation.get("supporting_topic_id") and recommendation["supporting_topic_id"] not in item.get("covered_topic_ids", []):
                 continue
             assets, missing_assets = case_figure_assets(item)
             complete = not item.get("missing_figure") and not missing_assets
@@ -3404,7 +3565,7 @@ def cmd_case_prepare(args: argparse.Namespace) -> int:
             candidates, key=candidate_key
         )
         chosen_recommendation = recommendation
-        chosen_case_type = case_type
+        chosen_case_type = chosen_item["tag"]
         break
 
     if chosen_item is None or chosen_recommendation is None or chosen_case_type is None:
@@ -3423,7 +3584,7 @@ def cmd_case_prepare(args: argparse.Namespace) -> int:
     )
     public_item["coach_note"] = (
         "只呈现 stem，不展示答案；若 figure_assets 非空，按顺序查看后用文字准确描述图意，"
-        "不要向考生输出本地路径；作答后再按 year + numeral 调用 paper_practice --reveal。"
+        "不要向考生输出本地路径；作答后按精确 item_id 调用 paper_practice --reveal。"
     )
     selected_topic_definition = topics[chosen_recommendation["topic_id"]]
     track_id = (
@@ -3433,10 +3594,16 @@ def cmd_case_prepare(args: argparse.Namespace) -> int:
             chosen_recommendation["topic_id"]
         )
     )
-    supporting_topic_ids = list(
-        selected_topic_definition.get("covered_topic_ids", [])
-    )
+    source_definition = knowledge_taxonomy.subjective_metadata(public_item["id"]) or {}
+    track_id = source_definition.get("topic_id") or track_id
+    supporting_topic_ids = source_definition.get("covered_topic_ids", [])
+    resource = module_assessment.route_inventory([item for item in case_items if paper_practice.eligible(item)], curriculum)[track_id]
+    _, learner_state = load_profile_and_state(args.data_dir, persist_pending=False)
+    qualified = learner_state.get("topics", {}).get(track_id, {}).get("mastery", {}).get("application", {}).get("qualified_evidence", [])
+    selected_identity = hashlib.sha256(("subjective:" + public_item["canonical_item_id"]).encode()).hexdigest()
     payload = {
+        "resource": resource,
+        "assessment_note": "题库不足两道独立案例；本题可以练习，重复成功不增加独立题量" if resource["resource_status"] != "available" else "按完整案例与跨日独立证据评估",
         "route_lock": {
             "mode": "case_start",
             "subject": "case",
@@ -3463,20 +3630,25 @@ def cmd_case_prepare(args: argparse.Namespace) -> int:
         "selection": {
             "policy": "adaptive_recommendation_then_curriculum_case_type",
             "fresh_item": public_item["id"] not in last_attempt_by_item,
+            "adds_independent_item": selected_identity not in {e.get("question_fingerprint") for e in qualified},
             "skipped_incomplete_items": skipped_incomplete,
             "allow_missing_figures": bool(args.allow_missing_figures),
         },
         "reveal": {
+            "item_id": public_item["id"],
             "year": public_item["year"],
+            "batch": public_item.get("batch"),
             "numeral": public_item["numeral"],
         },
         "record": {
-            "topic_id": chosen_recommendation["topic_id"],
+            "topic_id": track_id or chosen_recommendation["topic_id"],
             "skill": "application",
             "subject": "case",
-            "assessment_scope": "case",
+            "assessment_scope": "case" if public_item.get("complete") else "fragment",
             "max_score": 25,
-            "complete": True,
+            "complete": bool(public_item.get("complete")),
+            "allowed_topic_ids": source_definition.get("covered_topic_ids", []),
+            "subquestions": source_definition.get("subquestions", []),
             "assessed_topics_required_for": supporting_topic_ids,
             "item_id": public_item["id"],
             "source_type": public_item["source_type"],
@@ -3484,6 +3656,35 @@ def cmd_case_prepare(args: argparse.Namespace) -> int:
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
+
+
+def cmd_essay_prepare(args: argparse.Namespace) -> int:
+    import paper_practice
+    curriculum = load_curriculum()
+    topics = topic_map(curriculum)
+    requested = args.topic
+    if requested and (requested not in topics or not requested.startswith("P")):
+        raise TutorError("论文入口需要有效的 P 主题 ID")
+    today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
+    plan = build_recommendation_payload(argparse.Namespace(data_dir=args.data_dir, subject="essay", limit=len(topics), today=today.isoformat()))
+    recommendations = plan["recommendations"]
+    if requested:
+        recommendations = [{"topic_id": requested, "name": topics[requested]["name"], "reason": "明确指定论文主题"}]
+    attempted = {event.get("item_id") for event in load_attempts(state_paths(args.data_dir)["attempts"])}
+    items = paper_practice.build_essay_items()
+    for recommendation in recommendations:
+        candidates = [item for item in items if item.get("topic_id") == recommendation["topic_id"] and paper_practice.eligible(item)
+                      and (not recommendation.get("supporting_topic_id") or recommendation["supporting_topic_id"] in item.get("covered_topic_ids", []))]
+        if not candidates:
+            continue
+        item = min(candidates, key=lambda row: (row["id"] in attempted, row["source_type"] != "real", -int(row["year"][:4]), row["id"]))
+        public = {key: value for key, value in item.items() if key != "answer"}
+        print(json.dumps({"item": public, "route_lock": {"subject": "essay", "topic_id": item["topic_id"], "item_id": item["id"]},
+                          "record": {"topic_id": item["topic_id"], "item_id": item["id"], "skill": "production", "subject": "essay", "assessment_scope": "essay", "max_score": 75,
+                                     "allowed_topic_ids": item.get("covered_topic_ids", []), "source_type": item["source_type"]},
+                          "reveal": {"item_id": item["id"]}}, ensure_ascii=False, indent=2))
+        return 0
+    raise TutorError("当前论文主题没有完整且可盲练的题面；可选择其他主题或维护材料")
 
 
 def quiz_sessions_dir(data_dir: Path) -> Path:
@@ -3638,46 +3839,19 @@ def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
             normalized["candidate_topics"] = sorted(topics)
             merged[item["id"]] = normalized
 
-    topics_by_resource: dict[str, set[str]] = {}
-    for topic in curriculum["topics"]:
-        for resource in topic.get("resources", []):
-            if resource.startswith("exam-bank/"):
-                topics_by_resource.setdefault(resource, set()).add(topic["id"])
-    for resource, topic_ids in topics_by_resource.items():
-        path = REPO_ROOT / resource
-        if not path.is_file():
-            continue
+    for path in sorted((REPO_ROOT / "exam-bank").glob("[0-9]*.md")):
+        resource = path.relative_to(REPO_ROOT).as_posix()
         for parsed in sanitize_bank.parse_exam_bank(path):
             if not parsed.get("options") or not parsed.get("correct"):
                 continue
-            item_id = parsed["id"]
-            existing = merged.get(item_id, {})
-            override = question_registry.topic_override(item_id)
-            candidate_ids = (
-                {override}
-                if override
-                else set()
-            )
-            normalized = {
-                **parsed,
-                "year": None,
-                "tag": None,
-                "tag_label": None,
-                "source": resource,
-                "source_type": "self_authored",
-                "candidate_topics": sorted(candidate_ids),
-            }
+            normalized = {**parsed, "year": None, "tag": None, "tag_label": None,
+                          "source": resource, "source_type": "self_authored"}
             normalized["teaching_status"] = (
-                "not_applicable"
-                if normalized.get("quality_status") != "ready"
-                else (
-                    "ready"
-                    if str(normalized.get("explanation") or "").strip()
-                    else "missing_explanation"
-                )
-            )
-            merged[item_id] = normalized
-    return list(merged.values())
+                "not_applicable" if normalized.get("quality_status") != "ready"
+                else "ready" if str(normalized.get("explanation") or "").strip()
+                else "missing_explanation")
+            merged[parsed["id"]] = normalized
+    return [knowledge_taxonomy.annotate_question(item) for item in merged.values()]
 
 
 def quiz_question_for_topic(
@@ -3693,12 +3867,18 @@ def quiz_question_for_topic(
     override = question_registry.topic_override(raw["id"])
     if override and override != topic_id:
         return None
-    if topic_id not in raw.get("candidate_topics", []):
+    if raw.get("candidate_topics") != [topic_id]:
+        return None
+    if raw.get("classification_status") == "needs_review":
         return None
     return {
         "item_id": raw["id"],
         "topic_id": topic_id,
         "topic_name": topic["name"],
+
+        "task_type": raw.get("task_type"),
+        "difficulty": raw.get("difficulty", 1),
+        "taxonomy_version": knowledge_taxonomy.TAXONOMY_VERSION,
         "stem": raw["stem"],
         "context_id": raw.get("context_id"),
         "context_title": raw.get("context_title"),
@@ -3836,9 +4016,10 @@ def select_quiz_group(
         selected = []
         counts: dict[str, int] = {}
         used = set()
+        type_counts: dict[str, int] = {}
         while candidates and len(selected) < limit:
             item = min(candidates, key=lambda q: (identity(q["item_id"]) in avoided,
-                identity(q["item_id"]) in attempted, _quiz_candidate_sort_key(q, counts)))
+                identity(q["item_id"]) in attempted, type_counts.get(q.get("task_type"), 0), q.get("difficulty", 1), _quiz_candidate_sort_key(q, counts)))
             candidates.remove(item)
             key = identity(item["item_id"])
             if key in used:
@@ -3847,6 +4028,7 @@ def select_quiz_group(
             item.update(number=len(selected)+1, mode="review" if recommendation.get("review_due") or recommendation.get("diagnostic_status") else "practice",
                         prior_wrong_reasons=recommendation.get("wrong_reasons") or [])
             selected.append(item)
+            type_counts[item.get("task_type")] = type_counts.get(item.get("task_type"), 0) + 1
             signature = "".join(item["correct"])
             counts[signature] = counts.get(signature, 0)+1
         return selected, [recommendation]*len(selected)
@@ -4027,6 +4209,9 @@ def build_quiz_prepare_payload(
         "short_group": len(public_questions) < args.limit,
         "estimated_minutes": len(public_questions),
         "task_kind": "mixed_check" if getattr(args, "mixed", False) else "targeted_practice",
+
+        "assessment_note": "按K模块记分与抽样评估；原题错因保留，模块达标不代表全部内容掌握",
+        "short_group_reason": "当前范围内通过质量、去重和曝光门禁的题目不足" if len(public_questions) < args.limit else None,
         "questions": public_questions,
         "contexts": public_contexts,
         "exam_date": exam_date,
@@ -4296,6 +4481,9 @@ def variant_question_payload(candidate: dict[str, Any]) -> dict[str, Any]:
     return {
         "item_id": candidate["item_id"],
         "topic_id": candidate["topic_id"],
+
+        "difficulty": candidate.get("difficulty", 1),
+        "task_type": candidate.get("task_type"),
         "stem": candidate["stem"],
         "context_id": candidate.get("context_id"),
         "context_title": candidate.get("context_title"),
@@ -4327,9 +4515,11 @@ def pick_variant_question(
         return None
     blocked_fingerprints = {question_registry.content_fingerprint(raw["stem"], [o["text"] for o in raw["options"]])
                             for raw in pool if raw["id"] in blocked_items | (recently_served_items or set())}
-    for raw in pool:
+    for raw in sorted(pool, key=lambda item: (item.get("task_type") != question.get("task_type"), item.get("difficulty", 1))):
         candidate = quiz_question_for_topic(raw, topic)
         if candidate is None:
+            continue
+        if candidate.get("difficulty", 1) > question.get("difficulty", 1):
             continue
         if candidate["item_id"] == question.get("item_id"):
             continue
@@ -4432,6 +4622,18 @@ def normalized_quiz_manifest(
     """Correct only derived public-item links, including cached feedback."""
 
     normalized = copy.deepcopy(manifest)
+    def remove_retired_labels(value: Any) -> None:
+        if isinstance(value, dict):
+            for key in ("knowledge_id", "knowledge_name", "secondary_knowledge_ids", "training_unit_id"):
+                value.pop(key, None)
+            if isinstance(value.get("command"), str):
+                value["command"] = re.sub(r"\s+--(?:knowledge|unit)\s+\S+", "", value["command"])
+            for nested in value.values():
+                remove_retired_labels(nested)
+        elif isinstance(value, list):
+            for nested in value:
+                remove_retired_labels(nested)
+    remove_retired_labels(normalized)
     questions = normalized.get("questions", [])
     if not isinstance(questions, list):
         raise TutorError("客观题会话 questions 无效")
@@ -4453,8 +4655,7 @@ def normalized_quiz_manifest(
                 number = entry.get("number")
                 if isinstance(number, int) and 1 <= number <= len(questions):
                     source = questions[number - 1]
-                    if source.get("item_id") in question_registry.PUBLIC_ITEM_CORRECTIONS:
-                        entry["topic_id"] = source["topic_id"]
+                    entry["topic_id"] = source["topic_id"]
             else:
                 corrected = question_registry.canonicalize_public_event(entry)
                 if corrected is not entry:
@@ -4463,7 +4664,17 @@ def normalized_quiz_manifest(
             if isinstance(variant, dict):
                 corrected = question_registry.canonicalize_public_event(variant)
                 if corrected is not variant:
-                    variant["topic_id"] = corrected["topic_id"]
+                    variant.update(topic_id=corrected["topic_id"])
+    public = normalized.get("public_payload")
+    if isinstance(public, dict):
+        changed = False
+        for index, row in enumerate(public.get("questions", [])):
+            if index < len(questions) and row.get("topic_name") != questions[index].get("topic_name"):
+                row["topic_name"] = questions[index].get("topic_name")
+                changed = True
+        if changed:
+            public["objective"] = "继续已保存的练习，按当前K模块分类记档"
+            public["evidence_summary"] = ["题干和选项保留原样；分类已按K模块更新"]
     return normalized
 
 
@@ -4571,6 +4782,7 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
                 {
                     "number": index,
                     "topic_id": question["topic_id"],
+
                     "response_state": "invalidated",
                     "selected": None,
                     "correct": None,
@@ -4603,6 +4815,7 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
             "attempt_id": f"{args.quiz_id}-q-{index}",
             "event_type": "practice",
             "topic_id": question["topic_id"],
+
             "item_id": question["item_id"],
             "at": graded_at,
             "subject": manifest["subject"],
@@ -4639,6 +4852,7 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
             {
                 "number": index,
                 "topic_id": question["topic_id"],
+
                 "response_state": event["response_state"],
                 "selected": None if conceded else "".join(selected),
                 "correct": "".join(correct),
@@ -4742,6 +4956,7 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
         next_state,
         parse_datetime(graded_at).date(),
         profile=profile,
+        data_dir=args.data_dir,
         quiz_id=args.quiz_id,
         variant_count=sum(
             1
@@ -4946,6 +5161,7 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
             "attempt_id": f"{args.quiz_id}-v-{index}",
             "event_type": "practice",
             "topic_id": candidate["topic_id"],
+
             "item_id": candidate["item_id"],
             "at": graded_at,
             "subject": manifest["subject"],
@@ -4986,6 +5202,7 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
                 "explanation": variant.get("explanation") or candidate.get("explanation"),
                 "item_id": candidate["item_id"],
                 "topic_id": candidate["topic_id"],
+
                 "response_state": event["response_state"],
                 "selected": None if conceded else "".join(selected),
                 "correct": "".join(correct),
@@ -5042,7 +5259,7 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
         "idempotent": not missing_events,
     }
     payload["next_action"] = next_training_action(
-        next_state, parse_datetime(graded_at).date(), profile=profile
+        next_state, parse_datetime(graded_at).date(), profile=profile, data_dir=args.data_dir
     )
     completed = {
         **manifest,
@@ -5299,6 +5516,17 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
         healthy = False
 
     try:
+        import audit_taxonomy
+        taxonomy_report = audit_taxonomy.audit()
+        ok = taxonomy_report["healthy"]
+        checks.append({"name": "knowledge-taxonomy", "healthy": ok,
+                       "message": f"知识域 {taxonomy_report['domains']}，K模块 {taxonomy_report['modules']}，逐题分类 {taxonomy_report['objective_items']}" if ok else "；".join(taxonomy_report["errors"][:5])})
+        healthy = healthy and ok
+    except (TutorError, ValueError, OSError) as error:
+        checks.append({"name": "knowledge-taxonomy", "healthy": False, "message": str(error)})
+        healthy = False
+
+    try:
         snapshot = load_json(FREQUENCY_SNAPSHOT_PATH, "考频快照")
         checked = subprocess.run(
             [sys.executable, str(FREQUENCY_BUILDER_PATH), "--check"],
@@ -5367,36 +5595,14 @@ def normalize_question_links(data_dir: Path) -> int:
         for event in attempts
         if question_registry.canonicalize_public_event(event) != event
     ]
-    impacted_topics = {
-        topic_id
-        for old, new in corrections
-        for topic_id in (old.get("topic_id"), new.get("topic_id"))
-        if isinstance(topic_id, str)
-    }
     curriculum = load_curriculum()
     topics = topic_map(curriculum)
-    rebuilt = copy.deepcopy(current)
-    if impacted_topics:
-        scratch = new_state(curriculum, str(profile.get("created_at") or now_iso()))
-        scratch["strategy"] = copy.deepcopy(current["strategy"])
-        for event in attempts:
-            if event.get("event_type") == "mock" or event.get("mode") == "full_mock":
-                continue
-            corrected = question_registry.canonicalize_public_event(event)
-            if event.get("topic_id") in impacted_topics or corrected.get("topic_id") in impacted_topics:
-                apply_record_event(scratch, corrected, curriculum)
-        for topic_id in impacted_topics:
-            rebuilt["topics"].pop(topic_id, None)
-            if topic_id in scratch["topics"]:
-                rebuilt["topics"][topic_id] = scratch["topics"][topic_id]
+    rebuilt = rebuild_evidence(profile, current, attempts)
     rebuilt["question_link_version"] = QUESTION_LINK_VERSION
+    rebuilt["applied_attempt_ids"] = list(current["applied_attempt_ids"])
     validate_state(rebuilt)
-    if (
-        rebuilt["subjects"] != current["subjects"]
-        or rebuilt["strategy"] != current["strategy"]
-        or rebuilt["applied_attempt_ids"] != current["applied_attempt_ids"]
-    ):
-        raise TutorError("迁移预检发现非题目关联字段变化，已取消")
+    if rebuilt["strategy"] != current["strategy"]:
+        raise TutorError("迁移不得修改考生已选路线与偏好")
 
     changed_manifests: dict[Path, dict[str, Any]] = {}
     directory = quiz_sessions_dir(data_dir)
@@ -5524,7 +5730,7 @@ def cmd_repair(args: argparse.Namespace) -> int:
                 rebuilt["strategy"][key] = source_state["strategy"][key]
     try:
         for event in sorted(attempts, key=lambda item: parse_datetime(item.get("at"))):
-            apply_event_to_state(rebuilt, event, curriculum)
+            apply_event_to_state(rebuilt, knowledge_taxonomy.migrate_legacy_assessments(event), curriculum)
         validate_state(rebuilt)
     except TutorError as error:
         raise TutorError(f"事件日志无法确定性重建，已保留原文件：{error}") from error
@@ -5616,6 +5822,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="显式允许插图被移除的案例题；默认只选择材料完整的盲练题",
     )
     case_prepare_parser.set_defaults(func=cmd_case_prepare)
+
+    essay_prepare_parser = subparsers.add_parser("essay-prepare", help="只读选择完整、已分类的论文题")
+    essay_prepare_parser.add_argument("--topic")
+    essay_prepare_parser.add_argument("--today")
+    essay_prepare_parser.set_defaults(func=cmd_essay_prepare)
 
     quiz_grade_parser = subparsers.add_parser(
         "quiz-grade", help="一次完成客观题判分、批量记档和状态更新"
@@ -5825,7 +6036,7 @@ def main(argv: list[str] | None = None) -> int:
             with data_lock(args.data_dir):
                 return int(args.func(args))
         return int(args.func(args))
-    except TutorError as error:
+    except (TutorError, ValueError) as error:
         print(f"错误：{error}", file=sys.stderr)
         return 2
 

@@ -1,218 +1,165 @@
 #!/usr/bin/env python3
-"""Build an auditable, report-only frequency snapshot from the quiz pool.
-
-Only quality-gated real or recalled-real questions that map uniquely to one
-stable comprehensive topic are counted.  Each paper is normalised to a
-75-question equivalent before the stable (80%) and recent-trend (20%) layers
-are combined.  The runtime keeps using the curated curriculum values until
-both mapping-coverage gates are met.
-"""
+"""Count reviewed questions without extrapolating incomplete papers to 75 items."""
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
-import sys
 from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
-from typing import Any
+
+import knowledge_taxonomy
+import tutor
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
-
-import tutor  # noqa: E402
-
-OUTPUT_PATH = REPO_ROOT / "tutor" / "frequency-snapshot.json"
+OUTPUT_PATH = REPO_ROOT / "tutor/frequency-snapshot.json"
 STABLE_WEIGHT = 0.8
 RECENT_WEIGHT = 0.2
-STABLE_COVERAGE_GATE = 0.9
-RECENT_COVERAGE_GATE = 0.8
+MIN_PAPER_COVERAGE = 0.8
+MIN_PAPERS = 3
 
 
-def _eligible_topics(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
-    return [
-        topic
-        for topic in curriculum["topics"]
-        if topic["id"].startswith("K")
-        and "comprehensive" in topic.get("subjects", [])
-        and "recognition" in topic.get("skills", [])
-    ]
-
-
-def _paper_rows(
-    pool: list[dict[str, Any]], topics: list[dict[str, Any]]
-) -> tuple[list[dict[str, Any]], dict[str, dict[str, float]]]:
-    papers: dict[tuple[str, str], dict[str, Any]] = defaultdict(
-        lambda: {"ready": 0, "mapped": 0, "topic_counts": Counter()}
-    )
-    for raw in pool:
-        source_type = raw.get("source_type")
-        year = raw.get("year")
-        if (
-            raw.get("quality_status") != "ready"
-            or raw.get("teaching_status") != "ready"
-            or source_type not in {
-            "real",
-            "recalled_real",
-            }
-        ):
-            continue
-        if not isinstance(year, str) or not year:
-            continue
-        paper = papers[(source_type, year)]
-        paper["ready"] += 1
-        matches = []
-        for topic in topics:
-            candidate = tutor.quiz_question_for_topic(raw, topic)
-            if candidate is not None:
-                matches.append(topic["id"])
-        if len(matches) != 1:
-            continue
-        paper["mapped"] += 1
-        paper["topic_counts"][matches[0]] += 1
-
-    rows: list[dict[str, Any]] = []
-    normalised: dict[str, dict[str, float]] = defaultdict(dict)
-    for (source_type, year), paper in sorted(papers.items()):
-        ready = int(paper["ready"])
-        mapped = int(paper["mapped"])
-        cohort = "stable" if source_type == "real" else "recent"
-        rows.append(
+def build_snapshot(as_of: str) -> dict:
+    curriculum = tutor.load_curriculum()
+    pool = tutor.load_quiz_question_pool(curriculum)
+    groups = defaultdict(list)
+    for item in pool:
+        if item.get("source_type") in {"real", "recalled_real"} and item.get("year"):
+            groups[(item["source_type"], item["year"])].append(item)
+    papers = []
+    totals = defaultdict(Counter)
+    cohort_counts = Counter()
+    for (source, year), items in sorted(groups.items()):
+        ready = [
+            item
+            for item in items
+            if item.get("quality_status") == "ready"
+            and item.get("teaching_status") == "ready"
+        ]
+        mapped = [
+            item
+            for item in ready
+            if item.get("classification_status") == "reviewed"
+            and len(item.get("candidate_topics", [])) == 1
+        ]
+        cohort = "stable" if source == "real" else "recent"
+        complete_enough = len(ready) / 75 >= MIN_PAPER_COVERAGE
+        papers.append(
             {
                 "year": year,
-                "source_type": source_type,
+                "source_type": source,
                 "cohort": cohort,
-                "ready_questions": ready,
-                "mapped_questions": mapped,
-                "unmapped_questions": ready - mapped,
-                "coverage": round(mapped / ready, 4) if ready else 0.0,
+                "ready_questions": len(ready),
+                "mapped_questions": len(mapped),
+                "unmapped_questions": len(ready) - len(mapped),
+                "coverage": round(len(mapped) / max(1, len(ready)), 4),
+                "expected_questions": 75,
+                "paper_coverage": round(len(ready) / 75, 4),
+                "frequency_eligible": complete_enough,
+                "exclusion_reason": None
+                if complete_enough
+                else "insufficient_paper_coverage",
             }
         )
-        if ready:
-            scale = 75.0 / ready
-            for topic_id, count in paper["topic_counts"].items():
-                normalised[cohort][topic_id] = (
-                    normalised[cohort].get(topic_id, 0.0) + count * scale
-                )
-    return rows, normalised
-
-
-def build_snapshot(as_of: str) -> dict[str, Any]:
-    curriculum = tutor.load_curriculum()
-    topics = _eligible_topics(curriculum)
-    pool = tutor.load_quiz_question_pool(curriculum)
-    papers, totals = _paper_rows(pool, topics)
-    cohort_papers = Counter(row["cohort"] for row in papers)
-
-    coverage: dict[str, dict[str, Any]] = {}
+        if not complete_enough:
+            continue
+        cohort_counts[cohort] += 1
+        # Missing questions retain unknown mass. A 14-question extract never becomes a full paper.
+        totals[cohort].update(item["candidate_topics"][0] for item in mapped)
+    coverage = {}
     for cohort in ("stable", "recent"):
-        selected = [row for row in papers if row["cohort"] == cohort]
-        ready = sum(row["ready_questions"] for row in selected)
-        mapped = sum(row["mapped_questions"] for row in selected)
+        rows = [paper for paper in papers if paper["cohort"] == cohort]
+        ready = sum(row["ready_questions"] for row in rows)
+        mapped = sum(row["mapped_questions"] for row in rows)
         coverage[cohort] = {
-            "papers": len(selected),
+            "papers": len(rows),
+            "eligible_papers": cohort_counts[cohort],
             "ready_questions": ready,
             "mapped_questions": mapped,
             "unmapped_questions": ready - mapped,
-            "ratio": round(mapped / ready, 4) if ready else 0.0,
+            "ratio": round(mapped / max(1, ready), 4),
         }
 
-    topic_rows = []
-    for topic in topics:
-        topic_id = topic["id"]
-        stable_rate = (
-            totals["stable"].get(topic_id, 0.0)
-            / max(cohort_papers["stable"], 1)
-        )
-        recent_rate = (
-            totals["recent"].get(topic_id, 0.0)
-            / max(cohort_papers["recent"], 1)
-        )
-        topic_rows.append(
-            {
-                "topic_id": topic_id,
-                "stable_questions_per_paper": round(stable_rate, 4),
-                "recent_questions_per_paper": round(recent_rate, 4),
-                "weighted_questions_per_paper": round(
-                    STABLE_WEIGHT * stable_rate + RECENT_WEIGHT * recent_rate,
-                    4,
-                ),
-            }
-        )
-    topic_rows.sort(key=lambda row: row["topic_id"])
+    def rates(ids, counts, key):
+        result = []
+        for ident in sorted(ids):
+            stable = counts["stable"][ident] / max(1, cohort_counts["stable"])
+            recent = counts["recent"][ident] / max(1, cohort_counts["recent"])
+            result.append(
+                {
+                    key: ident,
+                    "stable_questions_per_paper": round(stable, 4),
+                    "recent_questions_per_paper": round(recent, 4),
+                    "weighted_questions_per_paper": round(
+                        STABLE_WEIGHT * stable + RECENT_WEIGHT * recent, 4
+                    ),
+                }
+            )
+        return result
 
-    digest_input = json.dumps(
-        {"papers": papers, "topics": topic_rows},
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode("utf-8")
-    runtime_ready = (
-        coverage["stable"]["ratio"] >= STABLE_COVERAGE_GATE
-        and coverage["recent"]["ratio"] >= RECENT_COVERAGE_GATE
+    ready = all(
+        coverage[c]["ratio"] >= 0.99 and cohort_counts[c] >= MIN_PAPERS
+        for c in ("stable", "recent")
     )
     return {
         "schema_version": 1,
+        "policy_version": 3,
+        "taxonomy_version": knowledge_taxonomy.TAXONOMY_VERSION,
         "as_of": as_of,
-        "mode": "runtime_ready" if runtime_ready else "report_only",
+        "mode": "runtime_ready" if ready else "report_only",
         "weights": {"stable": STABLE_WEIGHT, "recent": RECENT_WEIGHT},
         "activation_thresholds": {
-            "stable_coverage": STABLE_COVERAGE_GATE,
-            "recent_coverage": RECENT_COVERAGE_GATE,
+            "stable_coverage": 0.99,
+            "recent_coverage": 0.99,
+            "minimum_paper_coverage": MIN_PAPER_COVERAGE,
+            "minimum_eligible_papers_per_cohort": MIN_PAPERS,
         },
         "coverage": coverage,
         "papers": papers,
-        "topics": topic_rows,
-        "source_digest": hashlib.sha256(digest_input).hexdigest(),
+        "topics": rates(
+            (t["id"] for t in curriculum["topics"] if t["id"].startswith("K")),
+            totals,
+            "topic_id",
+        ),
+        "source_digest": knowledge_taxonomy.source_digest(),
     }
 
 
-def rendered(snapshot: dict[str, Any]) -> str:
+def rendered(snapshot: dict) -> str:
     return json.dumps(snapshot, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
 
 def display_path(path: Path) -> str:
-    """Render repository paths compactly without rejecting an external output."""
-
     try:
         return path.relative_to(REPO_ROOT).as_posix()
     except ValueError:
         return str(path)
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=OUTPUT_PATH)
-    parser.add_argument("--as-of", default=None)
+    parser.add_argument("--as-of")
     parser.add_argument("--write", action="store_true")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
-
-    existing: dict[str, Any] = {}
-    if args.output.exists():
-        try:
-            existing = json.loads(args.output.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            existing = {}
-    as_of = args.as_of or existing.get("as_of") or date.today().isoformat()
-    content = rendered(build_snapshot(as_of))
+    existing = json.loads(args.output.read_text()) if args.output.exists() else {}
+    content = rendered(
+        build_snapshot(args.as_of or existing.get("as_of") or date.today().isoformat())
+    )
     if args.check:
-        current = args.output.read_text(encoding="utf-8") if args.output.exists() else ""
-        if current != content:
+        if not args.output.exists() or args.output.read_text() != content:
             print(
-                f"error: {args.output.relative_to(REPO_ROOT)} is out of date; "
-                "run scripts/build_frequency_snapshot.py --write",
-                file=sys.stderr,
+                f"error: {display_path(args.output)} is out of date; run scripts/build_frequency_snapshot.py --write"
             )
             return 1
         return 0
     if args.write:
         args.output.write_text(content, encoding="utf-8")
         print(f"wrote {display_path(args.output)}")
-        return 0
-    print(content, end="")
+    else:
+        print(content, end="")
     return 0
 
 

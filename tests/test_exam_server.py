@@ -218,8 +218,10 @@ class ExamServerTest(unittest.TestCase):
         path = self.data_dir / "quiz-audit-queue.jsonl"
         path.write_text(json.dumps({"quiz_id": "invalid-fixture", "number": 1,
             "item_id": item["item_id"], "status": "quarantined"}) + "\n")
+        _, payload = self.request("/api/mock-paper")
+        self.assertEqual(exam_server.PAPER_IDS[1], payload["data"]["paper_id"])
         with self.assertRaises(urllib.error.HTTPError) as denied:
-            self.request("/api/mock-paper")
+            self.request(f"/api/mock-paper?paper_id={exam_server.PAPER_ID}&mode=review")
         self.assertEqual(409, denied.exception.code)
 
     def test_mock_submit_withholds_answers_when_recording_fails(self) -> None:
@@ -300,7 +302,7 @@ class ExamServerTest(unittest.TestCase):
         self.assertEqual(sum(event.get("event_type") == "mock" for event in attempts), 1)
         self.assertEqual(len(attempts), 151)
         first_question = next(event for event in attempts if event["attempt_id"].endswith("-q-01"))
-        self.assertTrue(first_question["item_id"].startswith("exam-bank/"))
+        self.assertIn(first_question["item_id"], {item["item_id"] for item in exam_server.private_items()})
         self.assertEqual(first_question["selected_answer"], first_question["correct_answer"])
 
         _, feedback = self.request(
@@ -373,6 +375,61 @@ class ExamServerTest(unittest.TestCase):
         public = exam_server.public_payload()
         serialized = json.dumps(public, ensure_ascii=False)
         self.assertNotIn("question_fingerprint", serialized)
+
+    def test_new_form_keeps_its_identity_for_grading_replay_and_feedback(self) -> None:
+        paper_id = exam_server.PAPER_IDS[1]
+        _, payload = self.request(f"/api/mock-paper?paper_id={paper_id}")
+        self.assertEqual(paper_id, payload["data"]["paper_id"])
+        answers = {str(q["number"]): q["question"]["answer"] for q in exam_server.private_items(paper_id)}
+        session_id = f"web-{paper_id}-newform01"
+        body = {"session_id": session_id, "paper_id": paper_id, "answers": answers, "duration_seconds": 3600}
+        _, submitted = self.request("/api/mock-submit", payload=body)
+        self.assertEqual(75, submitted["data"]["score"])
+        self.assertEqual(exam_server.private_items(paper_id)[0]["item_id"], submitted["data"]["results"][0]["id"])
+        _, replay = self.request("/api/mock-submit", payload=body)
+        self.assertTrue(replay["data"]["record"]["already_recorded"])
+        self.request("/api/mock-feedback", payload={**body, "wrong_reasons": {}})
+        feedback = json.loads((self.data_dir / "postmortems.jsonl").read_text())
+        self.assertEqual(paper_id, feedback["paper_id"])
+        with self.assertRaises(urllib.error.HTTPError) as denied:
+            self.request("/api/mock-submit", payload={**body, "paper_id": exam_server.PAPER_ID})
+        self.assertEqual(400, denied.exception.code)
+
+    def test_preflight_skips_exposed_forms_and_keeps_explicit_review(self) -> None:
+        t = exam_server.tutor
+        profile, state = t.load_profile_and_state(self.data_dir)
+        events = []
+        for n, paper_id in enumerate(exam_server.PAPER_IDS):
+            q = exam_server.private_items(paper_id)[0]
+            event = dict(attempt_id=f"prior-{n}", event_type="practice", item_id=q["item_id"], topic_id=q["topic_id"],
+                         subject="comprehensive", skill="recognition", mode="practice", at=t.now_iso(),
+                         score=1, max_score=1, confidence="sure", source_type="real", wrong_reasons=[])
+            events.append(event)
+            t.apply_record_event(state, event, t.load_curriculum())
+            t.write_attempts(self.data_dir / "attempts.jsonl", events)
+            t.save_state_bundle(self.data_dir, profile, state, backup=False)
+            if n == 0:
+                _, payload = self.request("/api/mock-paper")
+                self.assertEqual(exam_server.PAPER_IDS[1], payload["data"]["paper_id"])
+        with self.assertRaises(urllib.error.HTTPError) as denied:
+            self.request("/api/mock-paper")
+        payload = json.loads(denied.exception.read())
+        self.assertTrue(payload["resource_unavailable"])
+        self.assertNotIn('"answer"', json.dumps(payload))
+        _, review = self.request(f"/api/mock-paper?paper_id={exam_server.PAPER_ID}&mode=review")
+        self.assertFalse(review["data"]["measurement"]["available"])
+        self.assertIn("复习", review["data"]["measurement_note"])
+        self.assertEqual(75, len(review["data"]["items"]))
+
+    def test_pending_quiz_exposure_also_blocks_independent_measurement(self) -> None:
+        q = exam_server.private_items()[0]
+        session = {"schema_version": 1, "created_at": exam_server.tutor.now_iso(),
+                   "questions": [{"item_id": q["item_id"], "question_fingerprint": q["question_fingerprint"]}]}
+        path = exam_server.tutor.quiz_session_path(self.data_dir, "quiz-preflight")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(session))
+        _, result = self.request("/api/mock-paper")
+        self.assertEqual(exam_server.PAPER_IDS[1], result["data"]["paper_id"])
 
     def test_concurrent_first_submissions_create_one_full_mock(self) -> None:
         common = {

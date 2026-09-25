@@ -27,7 +27,7 @@
 python3 scripts/serve.py
 ```
 
-浏览器打开 <http://localhost:8420>，即可使用 75 题、150 分钟的高频模拟卷。页面只负责机考交互和确定性判分，不包装或代理任何模型，也不接收 API Key；交卷后把逐题答案、真实用时和考后错因写入本机 `.study/`，再由 Codex、Claude Code、Qwen Code 等当前 Agent 读取并安排个性化复习。
+浏览器打开 <http://localhost:8420>，即可使用 75 题、150 分钟的全模块诊断模拟卷。页面只负责机考交互和确定性判分，不包装或代理任何模型，也不接收 API Key；交卷后把逐题答案、真实用时和考后错因写入本机 `.study/`，再由 Codex、Claude Code、Qwen Code 等当前 Agent 读取并安排个性化复习。
 
 考试页默认只监听 `127.0.0.1`，不访问外网。完整说明见 [`tutor/README.md`](./tutor/README.md#本地考试终端)。
 
@@ -66,14 +66,14 @@ python3 scripts/serve.py
 │   ├── paper-topics/           # ⭐ 论文 13 大主题分类（万能提纲 + 21 道仿真模拟题）
 │   ├── paper-samples/          # ⭐ 18 篇真实项目改编范文（13 主题全覆盖 + 5 篇高频变体，3000+ 字）
 │   ├── case-types/             # ⭐ 案例 9 大题型分类（答题套路 + 26 道完整模拟题）
-│   ├── comprehensive-by-year/  # ⭐ 综合知识历年真题（2009 下 – 2026 上）
-│   ├── case-by-year/           # ⭐ 案例分析历年真题（2009 下 – 2026 上，缺 2023 下）
+│   ├── comprehensive-by-year/  # ⭐ 综合知识历年真题（2018 下 – 2026 上）
+│   ├── case-by-year/           # ⭐ 案例分析历年真题（2009–2017 经典选题，2018 起按年，2023 部分还原）
 │   ├── essay-by-year/          # ⭐ 论文历年真题完整题干（写作训练用）
 │   ├── assets/                 # 原题插图（无损 WebP，已剔除广告与水印图）
 │   ├── essay-questions-by-year.md  # ⭐ 2009-2024 历年论文真题清单 + 主题映射 + 选题决策树
 │   ├── analysis-template.md    # 历年真题解析模板
 │   └── wrong-questions.md      # 错题本
-├── exam-bank/                  # ⭐ 综合选择题题库（自主命题 320+ 题，17 章高频考点）
+├── exam-bank/                  # ⭐ 综合选择题题库（自主命题 513 题，30 个专题）
 ├── knowledge-index/            # ⭐ 22 个知识点 → 对应例题索引
 ├── cheatsheets/                # 高频考点速查表（质量属性/UML/模式等）
 └── resources.md                # 外部权威资源索引
@@ -83,13 +83,13 @@ python3 scripts/serve.py
 
 | 科目 | 题型 | 题数 | 位置 |
 |---|---|---|---|
-| 综合知识 | **历年真题结构化 md**（全部带 § 知识点标签：2009 下–2017 下为题组级 §N，2018 下起为逐题 §N.M） | **20 个考期** | [`past-papers/comprehensive-by-year/`](./past-papers/comprehensive-by-year/) |
-| 综合知识 | 选择题题库（自主命题 + 解析） | **320+** | [`exam-bank/`](./exam-bank/) |
+| 综合知识 | **历年真题结构化 md**（2018 下起；2009–2017 已退出训练） | **11 个考期** | [`past-papers/comprehensive-by-year/`](./past-papers/comprehensive-by-year/) |
+| 综合知识 | 选择题题库（自主命题 + 解析） | **513** | [`exam-bank/`](./exam-bank/) |
 | 案例分析 | 完整模拟题（题干+答案+评分） | **26** | [`past-papers/case-types/`](./past-papers/case-types/) |
-| 案例分析 | **历年真题**（2009 下 – 2026 上，含参考答案） | **19 个考期** | [`past-papers/case-by-year/`](./past-papers/case-by-year/) |
+| 案例分析 | **历年真题**（2009 下 – 2026 上，含参考答案） | **20 个考期** | [`past-papers/case-by-year/`](./past-papers/case-by-year/) |
 | 论文 | 仿真模拟论文题（题目+提纲答案） | **21** | [`past-papers/paper-topics/`](./past-papers/paper-topics/) |
 | 论文 | 完整范文（3000+ 字/篇，13 主题全覆盖 + 5 高频变体） | **18** | [`past-papers/paper-samples/`](./past-papers/paper-samples/) |
-| 论文 | **历年真题完整题干与小问** | **16 个考期** | [`past-papers/essay-by-year/`](./past-papers/essay-by-year/) |
+| 论文 | **历年题干与回忆材料（完整性逐题校验）** | **17 个考期** | [`past-papers/essay-by-year/`](./past-papers/essay-by-year/) |
 | 论文 | 历年真题清单（2009-2024，64+ 题）+ 主题映射 + 选题决策树 | **1 份** | [`past-papers/essay-questions-by-year.md`](./past-papers/essay-questions-by-year.md) |
 
 > 2009–2022 的多数考期已由贡献者购买的扫描件转录入库（转录流程见 [`scripts/import_las_papers.py`](./scripts/import_las_papers.py)），仓库只保留 Markdown 与插图，**不存放扫描 PDF 原件**。更多公开原卷可从 [xiaomabenten/system_architect](https://github.com/xiaomabenten/system_architect/tree/main/03、历年真题(2009年-2025年)%2B答案解析) 获取。
@@ -100,11 +100,11 @@ python3 scripts/serve.py
 
 | 科目 | 保命卡 | 支撑资料 |
 |---|---|---|
-| 📚 综合知识（45/75） | [`SURVIVAL_CARD.md`](./past-papers/SURVIVAL_CARD.md) 272 条核心考点 + [`HIGH_FREQ.md`](./past-papers/HIGH_FREQ.md) 高频统计 | [`comprehensive-by-year/`](./past-papers/comprehensive-by-year/) 20 个考期真题 |
+| 📚 综合知识（45/75） | [`SURVIVAL_CARD.md`](./past-papers/SURVIVAL_CARD.md) 272 条核心考点 + [`HIGH_FREQ.md`](./past-papers/HIGH_FREQ.md) 高频统计 | [`comprehensive-by-year/`](./past-papers/comprehensive-by-year/) 11 个考期综合真题 |
 | 🎯 案例分析（45/75） | [`CASE_SURVIVAL.md`](./past-papers/CASE_SURVIVAL.md) 90 分钟战术 + 高频题型套路 | [`case-types/`](./past-papers/case-types/) 13 题型套路 + [`case-by-year/`](./past-papers/case-by-year/) 19 个考期真题 |
 | ✍️ 论文（45/75） | [`PAPER_SURVIVAL.md`](./past-papers/PAPER_SURVIVAL.md) 万能项目 + 5 主题万能段落 | [`paper-samples/`](./past-papers/paper-samples/) 18 篇范文 + [`paper-topics/`](./past-papers/paper-topics/) 13 主题提纲 |
 
-**综合过线策略**（数据来自 7 年真题）：只抓 §4 软件工程（21.8%）+ §6 系统架构（17.6%）+ §1 计算机系统（13.7%）+ §7 质量属性（10.0%）= **63% ≈ 47 题**。这 4 板块打到 85% 正确 = 40 题稳过，其他 28 题蒙对 7 题即可达到 47/75 保过。
+**综合训练策略**：优先个人失分与到期知识点，再参考当前核验的考频。模块抽样表现和整卷测量分别展示；历史题目比例或一次模拟成绩不能保证过线。分类与可用题量见 [`tutor/topic-map.md`](./tutor/topic-map.md)。
 
 **案例过线策略**：第 1 题必做（几乎都是 ATAM 送分题）+ 后 4 题选自己擅长的 2 题（推荐：数据库设计 / 微服务改造 / 消息缓存三选二）。每题拿 15 分共 45 分。
 
@@ -123,3 +123,5 @@ python3 scripts/serve.py
 > 考前复习最短路径：**知识点 → 例题**，一个点吃透一组题。
 
 入口：[`knowledge-index/`](./knowledge-index/)
+
+> 历史题训练范围及逐题依据见 [`历史题复核`](past-papers/HISTORICAL_CURATION.md)。

@@ -3,7 +3,7 @@
 
 ``past-papers/case-by-year/`` and ``past-papers/essay-by-year/`` hold the raw
 papers; ``past-papers/case-types/`` and ``past-papers/paper-topics/`` hold the
-numbered playbooks (案例题型 01–13 / 论文主题 01–13). This script links the two
+numbered playbooks (案例题型 01–15 / 论文主题 01–13). This script links the two
 by writing a tag line under every ``## 试题N`` heading:
 
     ## 试题一
@@ -36,6 +36,7 @@ PAPERS = {
     "essay": REPO_ROOT / "past-papers" / "essay-by-year",
 }
 TAG_MAP_PATH = REPO_ROOT / "scripts" / "case_essay_tags.json"
+HISTORICAL_REVIEW_PATH = REPO_ROOT / "scripts" / "historical_subjective_review.json"
 # [ \t] instead of \s: a permissive \s* would let the pattern swallow the
 # following blank line and pick up "【说明】" as the question title.
 # 版式在各考期之间并不统一，这里一并兼容：
@@ -106,6 +107,27 @@ def split_questions(text: str) -> list[tuple[str, str, str]]:
     return out
 
 
+def split_question_records(text: str) -> list[dict]:
+    """Keep batch identity; the same exam date may contain different papers."""
+    lines = text.splitlines()
+    headings = []
+    batch = None
+    numerals = {n: str(i) for i, n in enumerate("一二三四五六七八九十", 1)}
+    for index, line in enumerate(lines):
+        marker = re.match(r"^#{1,4}\s*批次([一二三四五六七八九十0-9]+)", line)
+        if marker:
+            batch = numerals.get(marker.group(1), marker.group(1))
+        parsed = parse_heading(line)
+        if parsed:
+            headings.append((index, batch, parsed))
+    result = []
+    for position, (index, batch, (numeral, title)) in enumerate(headings):
+        end = headings[position+1][0] if position+1 < len(headings) else len(lines)
+        result.append({"number": numeral, "title": title, "batch": batch,
+                       "body": "\n".join(lines[index+1:end])})
+    return result
+
+
 def first_meaningful_line(body: str, limit: int = 88) -> str:
     """First substantive paragraph, skipping the generic '阅读以下…' instruction."""
     fallback = ""
@@ -140,7 +162,7 @@ def load_tag_map(path: Path = TAG_MAP_PATH) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def validate_tag_map(tag_map: dict) -> list[str]:
+def validate_tag_map(tag_map: dict, *, check_displayed: bool = True) -> list[str]:
     """Every paper must have one tag per 试题, matching the file's heading count."""
     problems: list[str] = []
     for kind in ("case", "essay"):
@@ -163,6 +185,42 @@ def validate_tag_map(tag_map: dict) -> list[str]:
             for index, question in enumerate(questions):
                 if not str(question.get("tag", "")).startswith(("案例", "论文")):
                     problems.append(f"{kind}/{year} 第 {index + 1} 条标签格式错误")
+            # Check identity and displayed labels, including the blind source
+            # copy. Equal counts alone do not detect shifted or stale tags.
+            for paper in (p for p in iter_papers(kind) if tag_key(p.stem) == year):
+                actual = split_questions(paper.read_text(encoding="utf-8"))
+                if len(actual) != len(questions):
+                    problems.append(f"{kind}/{paper.stem}: 题干/答案版题目数量不一致")
+                    continue
+                for (numeral, _, body), question in zip(actual, questions):
+                    if numeral != str(question.get("number")):
+                        problems.append(f"{kind}/{paper.stem}: 题号 {numeral} 与标签表不一致")
+                    expected_line = f'> **{HEADING_LABEL[kind]}**：{question["tag"]} · {question.get("label", "").strip()}'
+                    displayed = next((line.strip() for line in body.splitlines() if TAG_LINE_RE.match(line)), "")
+                    if check_displayed and displayed != expected_line:
+                        problems.append(f"{kind}/{paper.stem} 试题{numeral}: 正文标签与标签表不一致")
+    return problems
+
+
+def validate_historical_review(tag_map: dict) -> list[str]:
+    """Validate the retained identities against the independently reviewed list."""
+    review = json.loads(HISTORICAL_REVIEW_PATH.read_text(encoding="utf-8"))
+    problems = []
+    for kind in ("case", "essay"):
+        for year, rows in review[kind].items():
+            retained = [row for row in rows if row["keep"]]
+            expected = [{key: row[key] for key in ("number", "tag", "label")} for row in retained]
+            if tag_map.get(kind, {}).get(year) != expected:
+                problems.append(f"{kind}/{year}: 标签与逐题复核清单不一致")
+            for paper in (p for p in iter_papers(kind) if tag_key(p.stem) == year):
+                blocks = split_questions(paper.read_text(encoding="utf-8"))
+                if [n for n, _, _ in blocks] != [r["number"] for r in retained]:
+                    problems.append(f"{kind}/{paper.stem}: 保留题号与复核清单不一致")
+                for (numeral, title, body), row in zip(blocks, retained):
+                    content = re.sub(r"^>[^\n]*", "", body, flags=re.M)
+                    for evidence in row["evidence"]:
+                        if evidence not in content:
+                            problems.append(f"{kind}/{paper.stem} 试题{numeral}: 缺少复核依据 {evidence}")
     return problems
 
 
@@ -208,7 +266,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     if args.check:
-        problems = validate_tag_map(tag_map)
+        problems = validate_tag_map(tag_map) + validate_historical_review(tag_map)
         if problems:
             print("\n".join(problems))
             return 1
@@ -217,7 +275,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     if args.apply:
-        problems = validate_tag_map(tag_map)
+        problems = validate_tag_map(tag_map, check_displayed=False)
         if problems:
             print("\n".join(problems), file=sys.stderr)
             return 1
