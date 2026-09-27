@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "taxonomy_version": 1,
+  "taxonomy_version": 2,
   "description": "已复核的主观题身份、模块范围、小问及完整性。",
   "items": {
     "past-papers/case-by-year/2009下-原卷.md#试题一": {

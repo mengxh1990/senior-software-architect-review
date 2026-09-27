@@ -118,6 +118,29 @@ class SelectionTests(unittest.TestCase):
         chosen = practice.select(items, tag=None, year=None, numeral=None, blind_only=True, skip_missing_figures=False)
         self.assertEqual(chosen, [])
 
+    def test_multi_batch_numeral_is_rejected_before_filtering(self) -> None:
+        """多批次考期按题号取题：含混判定看过滤前的全部匹配题。
+
+        批次1 的试题是 read_only、批次2 是 blind 时，也不能靠 blind_only
+        过滤静默消歧，必须要求显式指定批次。
+        """
+        items = [
+            self._item(id="b1", batch="1", practice_mode="read_only"),
+            self._item(id="b2", batch="2"),
+        ]
+        with self.assertRaises(ValueError):
+            practice.select(items, tag=None, year="2013下", numeral="一", blind_only=True, skip_missing_figures=False)
+
+    def test_multi_batch_numeral_with_explicit_batch_is_served(self) -> None:
+        items = [
+            self._item(id="b1", batch="1", practice_mode="read_only"),
+            self._item(id="b2", batch="2"),
+        ]
+        chosen = practice.select(
+            items, tag=None, year="2013下", numeral="一", batch="2", blind_only=True, skip_missing_figures=False
+        )
+        self.assertEqual([i["id"] for i in chosen], ["b2"])
+
 
 class ShippedPaperSafetyTests(unittest.TestCase):
     def test_blind_case_stems_never_contain_answer_markers(self) -> None:

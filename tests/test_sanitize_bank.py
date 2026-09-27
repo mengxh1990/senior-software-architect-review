@@ -736,6 +736,23 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual("invalid", verdict["quality_status"])
         self.assertIn("answer_marker_leak", verdict["quality_issues"])
 
+    def test_answer_marker_in_context_is_never_ready(self) -> None:
+        verdict = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/x.md#2",
+                "stem": "阅读以下材料，回答第 2 题（　）。",
+                "context": "某系统架构评估材料。**答案**：A。该架构风格强调……",
+                "options": [
+                    {"label": "A", "text": "选项 A"},
+                    {"label": "B", "text": "选项 B"},
+                ],
+                "correct": ["A"],
+                "explanation": None,
+            }
+        )
+        self.assertEqual("invalid", verdict["quality_status"])
+        self.assertIn("answer_marker_leak", verdict["quality_issues"])
+
     def test_maintainer_exclusion_always_wins(self) -> None:
         item = {
             "id": "past-papers/x.md#3",
@@ -910,6 +927,38 @@ class PastPaperParsingTests(unittest.TestCase):
                 self.assertIn(item_id, items)
                 self.assertEqual("invalid", items[item_id]["quality_status"])
                 self.assertIn(f"excluded:{reason}", items[item_id]["quality_issues"])
+
+    def test_recall_duplicated_group_items_stay_excluded(self) -> None:
+        """2024 上 #50-52 疑为回忆源单空数据复制，排除条目必须实际生效而非静默失配。"""
+        items = {
+            item["id"]: item
+            for item in sanitize_bank.parse_paper(
+                REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2024上.md")
+        }
+        for number in (50, 51, 52):
+            item_id = f"past-papers/comprehensive-by-year/2024上.md#{number}"
+            with self.subTest(item_id=item_id):
+                self.assertIn(item_id, items)
+                self.assertEqual("invalid", items[item_id]["quality_status"])
+                self.assertIn(
+                    "excluded:duplicate_transcription_pending_verification",
+                    items[item_id]["quality_issues"],
+                )
+
+    def test_quality_exclusions_reference_real_items(self) -> None:
+        """排除表所有 item_id 都必须能在题源文件中解析到，笔误失配会被立刻发现。"""
+        exclusions = sanitize_bank.load_quality_exclusions()
+        self.assertTrue(exclusions)
+        items: dict = {}
+        for path in sorted(sanitize_bank.PAPER_DIR.glob("*.md")):
+            items.update({item["id"]: item for item in sanitize_bank.parse_paper(path)})
+        for item_id in exclusions:
+            with self.subTest(item_id=item_id):
+                self.assertIn(
+                    item_id,
+                    items,
+                    "排除表条目在题源文件中解析不到，排除已静默失效",
+                )
 
     def test_compiler_items_have_reviewed_canonical_targets(self) -> None:
         items = {item["id"]: item for item in sanitize_bank.parse_paper(

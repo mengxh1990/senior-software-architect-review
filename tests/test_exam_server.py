@@ -11,6 +11,7 @@ import urllib.error
 import urllib.request
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 from pathlib import Path
 
 
@@ -275,7 +276,7 @@ class ExamServerTest(unittest.TestCase):
             self.assertEqual(response.status, 200)
             self.assertIn("本地模拟考试", response.read().decode("utf-8"))
 
-    def test_submit_persists_once_and_same_paper_retest_is_not_a_new_mock(self) -> None:
+    def test_submit_persists_once_and_same_paper_retest_marks_repeated_paper(self) -> None:
         answers = self.correct_answers()
         common = {
             "answers": answers,
@@ -295,12 +296,18 @@ class ExamServerTest(unittest.TestCase):
         second_id = f"web-{exam_server.PAPER_ID}-abcdefgh"
         _, second = self.request("/api/mock-record", payload={"session_id": second_id, **common})
         self.assertTrue(second["data"]["retest"])
+        scores = second["data"]["status"]["subjects"]["comprehensive"]["mock_scores"]
+        self.assertEqual(2, len(scores))
+        self.assertTrue(scores[0]["measurement_eligible"])
+        self.assertFalse(scores[1]["measurement_eligible"])
+        self.assertIn("repeated_paper", scores[1]["ineligible_reasons"])
+        self.assertEqual(second_id, scores[1]["mock_id"])
 
         attempts = exam_server.tutor.load_attempts(
             exam_server.tutor.state_paths(self.data_dir)["attempts"]
         )
-        self.assertEqual(sum(event.get("event_type") == "mock" for event in attempts), 1)
-        self.assertEqual(len(attempts), 151)
+        self.assertEqual(sum(event.get("event_type") == "mock" for event in attempts), 2)
+        self.assertEqual(len(attempts), 152)
         first_question = next(event for event in attempts if event["attempt_id"].endswith("-q-01"))
         self.assertIn(first_question["item_id"], {item["item_id"] for item in exam_server.private_items()})
         self.assertEqual(first_question["selected_answer"], first_question["correct_answer"])
@@ -431,7 +438,7 @@ class ExamServerTest(unittest.TestCase):
         _, result = self.request("/api/mock-paper")
         self.assertEqual(exam_server.PAPER_IDS[1], result["data"]["paper_id"])
 
-    def test_concurrent_first_submissions_create_one_full_mock(self) -> None:
+    def test_concurrent_first_submissions_record_retest_with_repeated_paper(self) -> None:
         common = {
             "answers": self.correct_answers(),
             "confidences": {},
@@ -451,8 +458,371 @@ class ExamServerTest(unittest.TestCase):
         attempts = exam_server.tutor.load_attempts(
             exam_server.tutor.state_paths(self.data_dir)["attempts"]
         )
-        self.assertEqual(sum(event.get("event_type") == "mock" for event in attempts), 1)
-        self.assertEqual(len(attempts), 151)
+        self.assertEqual(sum(event.get("event_type") == "mock" for event in attempts), 2)
+        self.assertEqual(len(attempts), 152)
+
+    def test_server_side_exam_clock_marks_real_overtime_ineligible(self) -> None:
+        session_id = f"web-{exam_server.PAPER_ID}-overtime1"
+        status, payload = self.request(f"/api/mock-paper?session_id={session_id}")
+        self.assertEqual(200, status)
+        issued = exam_server.ISSUED_EXAMS[session_id]
+        self.assertEqual(exam_server.PAPER_ID, issued["paper_id"])
+        # 注入一个早已过期的开考时刻，模拟后台标签页节流导致的迟到交卷。
+        issued["issued_at"] = (
+            exam_server.tutor.parse_datetime(exam_server.tutor.now_iso()) - timedelta(seconds=10000)
+        ).isoformat(timespec="seconds")
+
+        _, submitted = self.request("/api/mock-submit", payload={
+            "session_id": session_id,
+            "answers": self.correct_answers(),
+            "duration_seconds": 1800,
+        })
+        self.assertEqual(75, submitted["data"]["score"])
+        scores = submitted["data"]["record"]["status"]["subjects"]["comprehensive"]["mock_scores"]
+        self.assertEqual(1, len(scores))
+        self.assertFalse(scores[0]["measurement_eligible"])
+        self.assertIn("overtime", scores[0]["ineligible_reasons"])
+        self.assertGreater(scores[0]["duration_minutes"], 9000 / 60)
+        attempts = exam_server.tutor.load_attempts(
+            exam_server.tutor.state_paths(self.data_dir)["attempts"]
+        )
+        mock_event = next(event for event in attempts if event.get("event_type") == "mock")
+        self.assertGreaterEqual(mock_event["duration_seconds"], 10000)
+
+    def test_submit_falls_back_to_client_duration_when_issue_record_missing(self) -> None:
+        # 未通过 GET 登记开考（如服务中途重启）时，回退客户端申报用时且不封顶：
+        # 超过 24 小时的跨天旧会话也能记档，并按 overtime 降资格，与服务端
+        # 权威计时路径一致，避免重试一个必然 400 的请求导致答卷丢失。
+        _, submitted = self.request("/api/mock-submit", payload={
+            "session_id": f"web-{exam_server.PAPER_ID}-fallback1",
+            "answers": self.correct_answers(),
+            "duration_seconds": 9600,
+        })
+        scores = submitted["data"]["record"]["status"]["subjects"]["comprehensive"]["mock_scores"]
+        self.assertIn("overtime", scores[0]["ineligible_reasons"])
+        _, stale = self.request("/api/mock-submit", payload={
+            "session_id": f"web-{exam_server.PAPER_ID}-fallback2",
+            "answers": self.correct_answers(),
+            "duration_seconds": 86401,
+        })
+        stale_scores = stale["data"]["record"]["status"]["subjects"]["comprehensive"]["mock_scores"]
+        self.assertIn("overtime", stale_scores[0]["ineligible_reasons"])
+        with self.assertRaises(urllib.error.HTTPError) as denied:
+            self.request("/api/mock-submit", payload={
+                "session_id": f"web-{exam_server.PAPER_ID}-fallback3",
+                "answers": self.correct_answers(),
+                "duration_seconds": 0,
+            })
+        self.assertEqual(400, denied.exception.code)
+
+    def test_server_side_exam_clock_records_real_duration_and_stays_eligible(self) -> None:
+        session_id = f"web-{exam_server.PAPER_ID}-clockok01"
+        status, _ = self.request(f"/api/mock-paper?session_id={session_id}")
+        self.assertEqual(200, status)
+        issued = exam_server.ISSUED_EXAMS[session_id]
+        # 开考后 30 秒交卷；申报一个失真用时（若被采信将按 overtime 降资格）。
+        issued["issued_at"] = (
+            exam_server.tutor.parse_datetime(exam_server.tutor.now_iso()) - timedelta(seconds=30)
+        ).isoformat(timespec="seconds")
+
+        _, submitted = self.request("/api/mock-submit", payload={
+            "session_id": session_id,
+            "answers": self.correct_answers(),
+            "duration_seconds": 7200,
+        })
+        self.assertEqual(75, submitted["data"]["score"])
+        scores = submitted["data"]["record"]["status"]["subjects"]["comprehensive"]["mock_scores"]
+        self.assertEqual(1, len(scores))
+        self.assertTrue(scores[0]["measurement_eligible"])
+        self.assertEqual([], scores[0]["ineligible_reasons"])
+        attempts = exam_server.tutor.load_attempts(
+            exam_server.tutor.state_paths(self.data_dir)["attempts"]
+        )
+        mock_event = next(event for event in attempts if event.get("event_type") == "mock")
+        # 记档用时来自服务端 issued_at 差值，而非客户端申报值。
+        self.assertGreaterEqual(mock_event["duration_seconds"], 30)
+        self.assertLess(mock_event["duration_seconds"], 600)
+
+    def test_full_duration_auto_submit_at_time_limit_stays_eligible(self) -> None:
+        # 恰好用满 150 分钟后由前端自动交卷：服务端权威计时的发卷提前量、
+        # 秒级截断与提交传输开销可把记档用时顶到 9001，必须在超时宽限内
+        # 保持独立模考资格，而不是把用满时限的考生误判 overtime。
+        session_id = f"web-{exam_server.PAPER_ID}-fulltime1"
+        status, _ = self.request(f"/api/mock-paper?session_id={session_id}")
+        self.assertEqual(200, status)
+        issued = exam_server.ISSUED_EXAMS[session_id]
+        issued["issued_at"] = (
+            exam_server.tutor.parse_datetime(exam_server.tutor.now_iso()) - timedelta(seconds=9000)
+        ).isoformat(timespec="seconds")
+
+        _, submitted = self.request("/api/mock-submit", payload={
+            "session_id": session_id,
+            "answers": self.correct_answers(),
+            "duration_seconds": 9000,
+        })
+        self.assertEqual(75, submitted["data"]["score"])
+        scores = submitted["data"]["record"]["status"]["subjects"]["comprehensive"]["mock_scores"]
+        self.assertEqual(1, len(scores))
+        self.assertTrue(scores[0]["measurement_eligible"])
+        self.assertEqual([], scores[0]["ineligible_reasons"])
+        attempts = exam_server.tutor.load_attempts(
+            exam_server.tutor.state_paths(self.data_dir)["attempts"]
+        )
+        mock_event = next(event for event in attempts if event.get("event_type") == "mock")
+        self.assertGreaterEqual(mock_event["duration_seconds"], 9000)
+
+    def test_idle_wall_clock_time_does_not_consume_daily_budget(self) -> None:
+        # 挂机/睡眠墙钟不计训练：入账训练预算以训练时限+宽限封顶，
+        # 模考证据里的完整原始用时保持不变（overtime 判定仍用真实用时）。
+        session_id = f"web-{exam_server.PAPER_ID}-budget01"
+        status, _ = self.request(f"/api/mock-paper?session_id={session_id}")
+        self.assertEqual(200, status)
+        issued = exam_server.ISSUED_EXAMS[session_id]
+        issued["issued_at"] = (
+            exam_server.tutor.parse_datetime(exam_server.tutor.now_iso()) - timedelta(seconds=32400)
+        ).isoformat(timespec="seconds")
+        _, submitted = self.request("/api/mock-submit", payload={
+            "session_id": session_id,
+            "answers": self.correct_answers(),
+            "duration_seconds": 1800,
+        })
+        self.assertEqual(75, submitted["data"]["score"])
+        attempts = exam_server.tutor.load_attempts(
+            exam_server.tutor.state_paths(self.data_dir)["attempts"]
+        )
+        mock_event = next(event for event in attempts if event.get("event_type") == "mock")
+        self.assertGreaterEqual(mock_event["duration_seconds"], 32400)
+        state = json.loads(
+            exam_server.tutor.state_paths(self.data_dir)["state"].read_text(encoding="utf-8")
+        )
+        day = exam_server.tutor.parse_datetime(mock_event["at"]).date().isoformat()
+        limit = exam_server.tutor.SUBJECT_TIME_LIMITS["comprehensive"]
+        self.assertEqual(
+            limit + exam_server.tutor.OVERTIME_GRACE_SECONDS,
+            state["training_days"][day]["comprehensive"],
+        )
+
+    def test_head_on_static_asset_returns_same_headers_without_body(self) -> None:
+        with urllib.request.urlopen(self.origin + "/index.html", timeout=3) as response:
+            get_length = response.headers["Content-Length"]
+            get_type = response.headers["Content-Type"]
+            self.assertEqual(200, response.status)
+            response.read()
+        head = urllib.request.Request(self.origin + "/index.html", method="HEAD")
+        with urllib.request.urlopen(head, timeout=3) as response:
+            self.assertEqual(200, response.status)
+            self.assertEqual(b"", response.read())
+            self.assertEqual(get_length, response.headers["Content-Length"])
+            self.assertEqual(get_type, response.headers["Content-Type"])
+
+    def test_stale_issued_exam_records_are_evicted_on_new_activity(self) -> None:
+        # 弃考会话的开考记录不能在长驻进程里永久滞留。
+        stale_id = f"web-{exam_server.PAPER_ID}-staleone"
+        status, _ = self.request(f"/api/mock-paper?session_id={stale_id}")
+        self.assertEqual(200, status)
+        exam_server.ISSUED_EXAMS[stale_id]["issued_at"] = (
+            exam_server.tutor.parse_datetime(exam_server.tutor.now_iso()) - timedelta(hours=3)
+        ).isoformat(timespec="seconds")
+        fresh_id = f"web-{exam_server.PAPER_ID}-freshone"
+        status, _ = self.request(f"/api/mock-paper?session_id={fresh_id}")
+        self.assertEqual(200, status)
+        self.assertNotIn(stale_id, exam_server.ISSUED_EXAMS)
+        self.assertIn(fresh_id, exam_server.ISSUED_EXAMS)
+
+    def test_reissued_session_keeps_first_issued_at(self) -> None:
+        session_id = f"web-{exam_server.PAPER_ID}-reissue1"
+        status, _ = self.request(f"/api/mock-paper?session_id={session_id}")
+        self.assertEqual(200, status)
+        stale = (
+            exam_server.tutor.parse_datetime(exam_server.tutor.now_iso()) - timedelta(seconds=600)
+        ).isoformat(timespec="seconds")
+        exam_server.ISSUED_EXAMS[session_id]["issued_at"] = stale
+        # 同会话重复 GET（控制台/curl 重放）不得把权威计时起点重置为当前时刻。
+        status, _ = self.request(f"/api/mock-paper?session_id={session_id}")
+        self.assertEqual(200, status)
+        self.assertEqual(stale, exam_server.ISSUED_EXAMS[session_id]["issued_at"])
+
+    def test_successful_submit_clears_issued_exam_entry(self) -> None:
+        session_id = f"web-{exam_server.PAPER_ID}-cleanup01"
+        status, _ = self.request(f"/api/mock-paper?session_id={session_id}")
+        self.assertEqual(200, status)
+        self.assertIn(session_id, exam_server.ISSUED_EXAMS)
+        _, submitted = self.request("/api/mock-submit", payload={
+            "session_id": session_id,
+            "answers": self.correct_answers(),
+            "duration_seconds": 1800,
+        })
+        self.assertEqual(75, submitted["data"]["score"])
+        # 交卷落档后清理会话的开考记录，长驻进程不再无界增长。
+        self.assertNotIn(session_id, exam_server.ISSUED_EXAMS)
+
+    def test_submit_quality_recheck_skips_pure_replay(self) -> None:
+        session_id = f"web-{exam_server.PAPER_ID}-replayq01"
+        status, _ = self.request(f"/api/mock-paper?session_id={session_id}")
+        self.assertEqual(200, status)
+        _, submitted = self.request("/api/mock-submit", payload={
+            "session_id": session_id,
+            "answers": self.correct_answers(),
+            "duration_seconds": 1800,
+        })
+        self.assertEqual(75, submitted["data"]["score"])
+        # 记档成功后题目被隔离：纯幂等重放（事件已全部在档）不应被新的
+        # 隔离状态阻塞，仍返回已记档结果而不是 409。
+        item = exam_server.private_items()[0]
+        (self.data_dir / "quiz-audit-queue.jsonl").write_text(
+            json.dumps({"quiz_id": "invalid-fixture", "number": 1,
+                        "item_id": item["item_id"], "status": "quarantined"}) + "\n"
+        )
+        _, replay = self.request("/api/mock-submit", payload={
+            "session_id": session_id,
+            "answers": self.correct_answers(),
+            "duration_seconds": 1800,
+        })
+        self.assertTrue(replay["data"]["record"]["already_recorded"])
+
+    def test_mock_paper_rejects_session_bound_to_another_paper(self) -> None:
+        mismatched = f"web-{exam_server.PAPER_IDS[1]}-mismatch01"
+        with self.assertRaises(urllib.error.HTTPError) as denied:
+            self.request(f"/api/mock-paper?paper_id={exam_server.PAPER_ID}&session_id={mismatched}")
+        self.assertEqual(400, denied.exception.code)
+        body = json.loads(denied.exception.read())
+        self.assertEqual("开考会话与下发的试卷不一致", body["error"])
+        self.assertNotIn(mismatched, exam_server.ISSUED_EXAMS)
+
+    def test_postmortem_accepts_legacy_sessions_with_blank_answer_events(self) -> None:
+        answers = self.correct_answers()
+        for number in ("1", "2"):
+            answers[number] = ""
+        session_id = f"web-{exam_server.PAPER_ID}-legacyblank"
+        self.request("/api/mock-submit", payload={
+            "session_id": session_id,
+            "answers": answers,
+            "duration_seconds": 1800,
+        })
+        attempts_path = exam_server.tutor.state_paths(self.data_dir)["attempts"]
+        attempts = exam_server.tutor.load_attempts(attempts_path)
+        # 旧版服务对未答题也写逐题事件（selected_answer 为空）：补齐旧格式事件，
+        # 升级后补交错因反馈必须兼容这种会话而不是拒绝记档。
+        template = next(
+            event for event in attempts
+            if event.get("event_type") == "practice" and event["attempt_id"] == f"{session_id}-q-03"
+        )
+        for number in ("01", "02"):
+            legacy_event = dict(template)
+            legacy_event["attempt_id"] = f"{session_id}-q-{number}"
+            legacy_event["selected_answer"] = ""
+            attempts.append(legacy_event)
+        exam_server.tutor.write_attempts(attempts_path, attempts)
+
+        _, feedback = self.request("/api/mock-feedback", payload={
+            "session_id": session_id,
+            "answers": answers,
+            "wrong_reasons": {number: ["knowledge_gap"] for number in ("1", "2")},
+        })
+        self.assertTrue(feedback["ok"])
+        self.assertTrue((self.data_dir / "postmortems.jsonl").is_file())
+
+    def test_unanswered_questions_write_no_practice_events(self) -> None:
+        answers = self.correct_answers()
+        for number in ("1", "2", "3", "8", "75"):
+            answers[number] = ""
+        session_id = f"web-{exam_server.PAPER_ID}-blank0001"
+        _, submitted = self.request("/api/mock-submit", payload={
+            "session_id": session_id,
+            "answers": answers,
+            "duration_seconds": 1800,
+        })
+        self.assertEqual(70, submitted["data"]["score"])
+        attempts = exam_server.tutor.load_attempts(
+            exam_server.tutor.state_paths(self.data_dir)["attempts"]
+        )
+        practice = [event for event in attempts if event.get("event_type") == "practice"]
+        self.assertEqual(70, len(practice))
+        recorded_ids = {event["attempt_id"] for event in attempts}
+        self.assertNotIn(f"{session_id}-q-01", recorded_ids)
+        self.assertNotIn(f"{session_id}-q-75", recorded_ids)
+        self.assertIn(f"{session_id}-q-04", recorded_ids)
+        # 未答题按错题参与错因反馈，postmortem 流程按实际答题数校验。
+        _, feedback = self.request("/api/mock-feedback", payload={
+            "session_id": session_id,
+            "answers": answers,
+            "wrong_reasons": {number: ["knowledge_gap"] for number in ("1", "2", "3", "8", "75")},
+        })
+        self.assertTrue(feedback["ok"])
+        self.assertTrue((self.data_dir / "postmortems.jsonl").is_file())
+
+    def test_submit_rechecks_paper_quality_after_issuance(self) -> None:
+        session_id = f"web-{exam_server.PAPER_ID}-quality01"
+        status, _ = self.request(f"/api/mock-paper?session_id={session_id}")
+        self.assertEqual(200, status)
+        item = exam_server.private_items()[0]
+        # 发卷后题目被隔离：交卷必须复核卷质量并拒绝记档。
+        (self.data_dir / "quiz-audit-queue.jsonl").write_text(
+            json.dumps({"quiz_id": "invalid-fixture", "number": 1,
+                        "item_id": item["item_id"], "status": "quarantined"}) + "\n"
+        )
+        with self.assertRaises(urllib.error.HTTPError) as denied:
+            self.request("/api/mock-submit", payload={
+                "session_id": session_id,
+                "answers": self.correct_answers(),
+                "duration_seconds": 1800,
+            })
+        self.assertEqual(409, denied.exception.code)
+        body = json.loads(denied.exception.read())
+        self.assertIn("隔离", body["error"])
+        self.assertEqual(
+            exam_server.tutor.load_attempts(
+                exam_server.tutor.state_paths(self.data_dir)["attempts"]
+            ),
+            [],
+        )
+
+    def test_prior_exposure_excludes_only_this_sessions_events(self) -> None:
+        answers = self.correct_answers()
+        first_id = f"web-{exam_server.PAPER_ID}-abcdefgh"
+        second_id = f"web-{exam_server.PAPER_ID}-abcdefgh1"
+        for session_id in (first_id, second_id):
+            self.request("/api/mock-record", payload={
+                "session_id": session_id, "answers": answers, "duration_seconds": 3600})
+        attempts = exam_server.tutor.load_attempts(
+            exam_server.tutor.state_paths(self.data_dir)["attempts"]
+        )
+        mock_events = {
+            event["attempt_id"]: event for event in attempts if event.get("event_type") == "mock"
+        }
+        # 会话 id 前缀相近时，上一场的逐题事件仍计入曝光，不被误排除。
+        self.assertEqual(75, mock_events[second_id]["prior_exposure_count"])
+
+    def test_curriculum_payload_keeps_static_frequency_on_fallback(self) -> None:
+        original = exam_server.tutor.runtime_frequency
+        exam_server.tutor.runtime_frequency = lambda: {
+            "active": "curriculum_fallback", "snapshot_is_advisory": True,
+            "reason": "missing_snapshot", "topics": {},
+        }
+        try:
+            status, payload = self.request("/api/curriculum")
+        finally:
+            exam_server.tutor.runtime_frequency = original
+        self.assertEqual(200, status)
+        knowledge = [row for row in payload["data"]["topics"] if row["id"].startswith("K")]
+        self.assertTrue(knowledge)
+        for row in knowledge:
+            self.assertEqual("curriculum_fallback", row["frequency_source"])
+            self.assertIsNotNone(row["frequency_count"])
+
+    def test_head_request_shares_same_origin_guard(self) -> None:
+        allowed = urllib.request.Request(self.origin + "/api/status", method="HEAD")
+        with urllib.request.urlopen(allowed, timeout=3) as response:
+            self.assertEqual(204, response.status)
+            self.assertEqual(b"", response.read())
+        denied = urllib.request.Request(
+            self.origin + "/api/status",
+            method="HEAD",
+            headers={"Origin": "https://evil.example"},
+        )
+        with self.assertRaises(urllib.error.HTTPError) as rejected:
+            urllib.request.urlopen(denied, timeout=3)
+        self.assertEqual(403, rejected.exception.code)
 
 
 if __name__ == "__main__":

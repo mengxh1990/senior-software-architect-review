@@ -535,6 +535,71 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "进入 14 天维护阶段后才应用 21 天最小间隔",
             )
 
+    def test_backfilled_earlier_success_keeps_the_earliest_cross_day_date(self) -> None:
+        scripts_path = str(REPO_ROOT / "scripts")
+        if scripts_path not in sys.path:
+            sys.path.insert(0, scripts_path)
+        import tutor as module
+
+        topic_id = self._recognition_topic()["id"]
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            # 先落库 09-05 的同题确定成功，再用 --at 回填该题 09-03 的确定成功；
+            # 增量应用与按时间序重放的 rebuild/repair 必须给出同样的跨日证据。
+            for attempt_id, at in (
+                ("backfill-later", "2026-09-05T09:00:00+08:00"),
+                ("backfill-earlier", "2026-09-03T09:00:00+08:00"),
+            ):
+                _run_cli(
+                    data_dir,
+                    "record",
+                    "--topic",
+                    topic_id,
+                    "--skill",
+                    "recognition",
+                    "--score",
+                    "1",
+                    "--max-score",
+                    "1",
+                    "--attempt-id",
+                    attempt_id,
+                    "--item-id",
+                    "backfill-shared-item",
+                    "--at",
+                    at,
+                )
+            state = json.loads(
+                (data_dir / "state.json").read_text(encoding="utf-8")
+            )
+            record = state["topics"][topic_id]["mastery"]["recognition"]
+            self.assertEqual(
+                ["2026-09-03"],
+                record["successful_dates"],
+                "回填更早的同题确定成功必须把跨日证据归到最早日期",
+            )
+            # 与按时间序重放的 rebuild 口径一致：门禁状态与跨日证据都不能
+            # 随日志顺序分叉。
+            paths = module.state_paths(data_dir)
+            profile = module.load_json(paths["profile"], "私人档案")
+            old = module.validate_state(
+                module.load_json(paths["state"], "学习状态")
+            )
+            rebuilt = module.rebuild_evidence(
+                profile, old, module.load_attempts(paths["attempts"])
+            )
+            rebuilt_record = rebuilt["topics"][topic_id]["mastery"]["recognition"]
+            self.assertEqual(
+                record["successful_dates"],
+                rebuilt_record["successful_dates"],
+                "增量落库与按时间序重放的 successful_dates 必须一致",
+            )
+            self.assertEqual(
+                record["status"],
+                rebuilt_record["status"],
+                "增量落库与按时间序重放的门禁状态必须一致",
+            )
+
     def test_every_command_refuses_a_copied_unignored_private_directory(self) -> None:
         with tempfile.TemporaryDirectory() as source_temporary:
             source = Path(source_temporary)
@@ -788,6 +853,28 @@ class TutorAcceptanceTest(unittest.TestCase):
             recorded = [json.loads(line) for line in (data_dir / "attempts.jsonl").read_text().splitlines()]
             same_day = next(event for event in recorded if event["attempt_id"] == "variant-same-day")
             self.assertEqual(same_day["variant_of"], "self-authored/registered-001")
+
+    def test_register_question_rejects_unknown_keys(self) -> None:
+        topic_id = self._recognition_topic()["id"]
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            registration = data_dir / "typo.json"
+            registration.write_text(json.dumps({
+                "item_id": "self-authored/typo-001",
+                "topic_id": topic_id,
+                "stem": "键名笔误的登记题",
+                "options": ["选项甲", "选项乙"],
+                "explain": "笔误键应报错而不是被静默丢弃",
+            }, ensure_ascii=False), encoding="utf-8")
+            rejected = _run_cli(
+                data_dir, "register-question", "--file", str(registration),
+                expected_returncode=None,
+            )
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("未知键", rejected.stderr)
+            self.assertIn("explain", rejected.stderr)
+            self.assertFalse((data_dir / "question-registry.json").exists())
 
     def test_quiz_prepare_hides_answers_and_persists_private_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -1629,9 +1716,46 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertTrue(payload["crunch_mode"])
             self.assertEqual(payload["days_to_exam"], 2)
             items = _recommendation_items(payload)
-            self.assertEqual([], items, "没有已学证据时，考前不应开新专题")
+            self.assertTrue(items, "考前仍应提供保命卡或高频快分材料")
+            recommended_ids = {_recommendation_topic_id(item) for item in items}
+            # 考前不开低频新课：未学考点必须带保命卡或属于高频/快分点。
+            for topic in self.topics:
+                if topic["id"] not in recommended_ids:
+                    continue
+                survival = any(
+                    "SURVIVAL.md" in resource or resource.startswith("cheatsheets/")
+                    for resource in topic.get("resources", [])
+                )
+                high_frequency_quick_win = (
+                    int(topic.get("frequency_count") or 0) >= 8
+                    or float(topic.get("quick_win") or 0) >= 0.7
+                )
+                self.assertTrue(
+                    survival or high_frequency_quick_win,
+                    f"考前不应推荐低频且无保命卡的未学考点：{topic['id']}",
+                )
+            # 低频且无保命卡的未学考点不进入考前计划。
+            self.assertNotIn("K29.DESIGN_PATTERNS", recommended_ids)
+            self.assertNotIn("K30.LANGUAGES_COMPILERS", recommended_ids)
             progress = _json_output(_run_cli(data_dir, "progress", "--json", "--today", "2026-11-05"))
-            self.assertEqual("survival_review", progress["next_action"]["mode"])
+            next_action = progress["next_action"]
+            # 有保命卡/高频材料可练时路由到这些材料，而不是收尾等待。
+            self.assertEqual("quiz_prepare", next_action["mode"])
+            routed_topic = next(
+                topic
+                for topic in self.topics
+                if topic["id"] == next_action["topic_id"]
+            )
+            survival = any(
+                "SURVIVAL.md" in resource or resource.startswith("cheatsheets/")
+                for resource in routed_topic.get("resources", [])
+            )
+            self.assertTrue(
+                survival
+                or int(routed_topic.get("frequency_count") or 0) >= 8
+                or float(routed_topic.get("quick_win") or 0) >= 0.7,
+                "考前路由的考点必须带保命卡或属于高频/快分点",
+            )
 
     def test_weak_mock_subject_gets_non_equal_priority(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -1768,6 +1892,93 @@ class TutorAcceptanceTest(unittest.TestCase):
             self.assertEqual(
                 issues["K08.SOFTWARE_PROCESS_MODELS"]["topic_name"],
                 next(topic["name"] for topic in self.topics if topic["id"] == "K08.SOFTWARE_PROCESS_MODELS"),
+            )
+
+    def test_diagnosis_queue_orders_wrong_then_due_review_then_uncertain(self) -> None:
+        """薄弱点队列次序遵循 §7：模考失分 → 到期跨日复测 → 猜对或不确定。"""
+
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            # K09 模考失分未补练；K08 模考失分后已用新题补练。
+            _append_mock_gap_session(
+                data_dir,
+                "queue-mock-001",
+                wrong_items=[
+                    ("K09.QUALITY_SCENARIOS", "exam-bank/11-quality-attributes.md#1"),
+                    ("K08.SOFTWARE_PROCESS_MODELS", "exam-bank/07-software-engineering.md#1"),
+                ],
+            )
+            # K12 猜对但不确定：同样进入薄弱点队列，但优先级最低。
+            with (data_dir / "attempts.jsonl").open("a", encoding="utf-8") as handle:
+                handle.write(
+                    json.dumps(
+                        {
+                            "attempt_id": "queue-mock-001-q-99",
+                            "event_type": "practice",
+                            "topic_id": "K12.PATTERNS_SOA_MICROSERVICES",
+                            "item_id": "exam-bank/15-microservice-cloud-native.md#2",
+                            "at": "2026-08-10T10:00:00+08:00",
+                            "subject": "comprehensive",
+                            "skill": "recognition",
+                            "mode": "mock",
+                            "score": 1,
+                            "max_score": 1,
+                            "confidence": "guess",
+                            "wrong_reasons": [],
+                            "source_type": "simulation",
+                            "source": "exam-bank/15-microservice-cloud-native.md#2",
+                            "feedback_seen": True,
+                        },
+                        ensure_ascii=False,
+                    )
+                    + "\n"
+                )
+            # K08 在模考次日用另一道题补练，跨日复测在诊断日已到期。
+            _run_cli(
+                data_dir,
+                "record",
+                "--topic",
+                "K08.SOFTWARE_PROCESS_MODELS",
+                "--skill",
+                "recognition",
+                "--score",
+                "1",
+                "--max-score",
+                "1",
+                "--attempt-id",
+                "queue-remedy-001",
+                "--item-id",
+                "test-item:queue-remedy-001",
+                "--at",
+                "2026-08-11T09:00:00+08:00",
+                "--confidence",
+                "sure",
+            )
+            payload = _json_output(
+                _run_cli(
+                    data_dir,
+                    "diagnose",
+                    "--subject",
+                    "comprehensive",
+                    "--json",
+                    "--today",
+                    "2026-08-13",
+                )
+            )
+            statuses = {issue["topic_id"]: issue["status"] for issue in payload["issues"]}
+            self.assertEqual("pending_remediation", statuses["K09.QUALITY_SCENARIOS"])
+            self.assertEqual("due_review", statuses["K08.SOFTWARE_PROCESS_MODELS"])
+            self.assertEqual("pending_remediation", statuses["K12.PATTERNS_SOA_MICROSERVICES"])
+            order = [issue["topic_id"] for issue in payload["issues"]]
+            self.assertEqual(
+                [
+                    "K09.QUALITY_SCENARIOS",
+                    "K08.SOFTWARE_PROCESS_MODELS",
+                    "K12.PATTERNS_SOA_MICROSERVICES",
+                ],
+                order,
+                "模考失分 → 到期跨日复测 → 猜对或不确定",
             )
 
     def test_weakpoints_ranks_overdue_and_recent_topics_readonly(self) -> None:
@@ -1980,10 +2191,20 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "B,A,A,A,A",
             )
         )
+        # 变式在作答前不随判分输出携带答案与解析。
+        for result in graded["results"]:
+            variant = result.get("variant_question")
+            if variant is not None:
+                self.assertNotIn("answer", variant)
+                self.assertNotIn("explanation", variant)
+                self.assertTrue(variant["stem"])
+                self.assertTrue(variant["options"])
         variants = [
-            result["variant_question"]
-            for result in graded["results"]
-            if result.get("variant_question")
+            entry["variant_question"]
+            for entry in self._quiz_manifest(data_dir, prepared["quiz_id"])["result"][
+                "results"
+            ]
+            if isinstance(entry.get("variant_question"), dict)
         ]
         self.assertTrue(variants, "错题应产生同大考点的后续练习题")
         return graded, variants
@@ -2487,6 +2708,258 @@ class TutorAcceptanceTest(unittest.TestCase):
                 "变式题的作答现在也是正式证据，必须进入去重集合",
             )
 
+    def test_recalled_paper_years_are_not_labeled_real(self) -> None:
+        scripts_path = str(REPO_ROOT / "scripts")
+        if scripts_path not in sys.path:
+            sys.path.insert(0, scripts_path)
+        import tutor as module
+
+        curriculum = module.load_curriculum()
+        pool = module.load_quiz_question_pool(curriculum)
+        sources = {
+            item["source_type"]
+            for item in pool
+            if item.get("source") == "past-papers/comprehensive-by-year/2020.md"
+        }
+        self.assertTrue(sources, "2020 回忆版题目应已进入题池")
+        self.assertEqual(
+            {"recalled_real"}, sources, "2020 回忆版不得标记为 real 完整真题"
+        )
+
+    def test_variant_audit_version_hash_matches_the_pool_entry(self) -> None:
+        scripts_path = str(REPO_ROOT / "scripts")
+        if scripts_path not in sys.path:
+            sys.path.insert(0, scripts_path)
+        import tutor as module
+
+        curriculum = module.load_curriculum()
+        topics = module.topic_map(curriculum)
+        pool = module.load_quiz_question_pool(curriculum)
+        raw = next(
+            item for item in pool if item["id"] == "exam-bank/05-uml.md#4"
+        )
+        candidate = module.quiz_question_for_topic(
+            raw, topics["K03.SOFTWARE_DESIGN_UML"]
+        )
+        assert candidate is not None
+        variant = module.variant_question_payload(candidate)
+        self.assertEqual(
+            module.question_version(candidate),
+            module.question_version(variant),
+            "变式审计条目的版本哈希必须与题池条目对上",
+        )
+
+    def test_auto_excluded_variant_is_queued_open_not_quarantined(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            graded, variants = self._grade_quiz_with_wrong_answers(data_dir)
+            # 模拟变式在等待作答期间被移出门禁池：清单中的 item_id 不再可解析。
+            manifest_path = data_dir / "quiz-sessions" / f"{graded['quiz_id']}.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            for entry in manifest["result"]["results"]:
+                variant = entry.get("variant_question")
+                if isinstance(variant, dict):
+                    variant["item_id"] = "past-papers/comprehensive-by-year/2020.md#999"
+            manifest_path.write_text(
+                json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True)
+                + "\n",
+                encoding="utf-8",
+            )
+            recorded = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-variant-grade",
+                    "--quiz-id",
+                    graded["quiz_id"],
+                    "--answers",
+                    ",".join("X" for _ in variants),
+                )
+            )
+            self.assertEqual(len(variants), recorded["invalidated_count"])
+            self.assertEqual(
+                "question_unavailable", recorded["results"][0]["invalid_reason"]
+            )
+            self.assertEqual(
+                "excluded",
+                recorded["results"][0]["response_state"],
+                "自动排除不写 invalidated，否则 manifest 会把题项永久拦截",
+            )
+            scripts_path = str(REPO_ROOT / "scripts")
+            if scripts_path not in sys.path:
+                sys.path.insert(0, scripts_path)
+            import tutor as module
+
+            self.assertNotIn(
+                "past-papers/comprehensive-by-year/2020.md#999",
+                module.quarantined_item_ids(data_dir, []),
+                "修复回池后的题不得被历史自动排除记录挡住",
+            )
+            queue = [
+                json.loads(line)
+                for line in (data_dir / "quiz-audit-queue.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if line.strip()
+            ]
+            self.assertTrue(queue)
+            for entry in queue:
+                self.assertEqual(
+                    "open",
+                    entry["status"],
+                    "自动排除只作维护参考，不得写成永久 quarantine",
+                )
+
+    def test_manual_variant_invalidation_is_quarantined_in_the_audit_queue(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            graded, variants = self._grade_quiz_with_wrong_answers(data_dir)
+            recorded = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-variant-grade",
+                    "--quiz-id",
+                    graded["quiz_id"],
+                    "--answers",
+                    ",".join("X" for _ in variants),
+                    "--invalidate",
+                    "1=missing_table",
+                )
+            )
+            self.assertEqual(1, recorded["invalidated_count"])
+            self.assertEqual(
+                "invalidated",
+                recorded["results"][0]["response_state"],
+                "人工确认无效才是 invalidated，进入永久拦截",
+            )
+            queue = [
+                json.loads(line)
+                for line in (data_dir / "quiz-audit-queue.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if line.strip()
+            ]
+            self.assertEqual(
+                ["quarantined"],
+                [entry["status"] for entry in queue],
+                "人工 --invalidate 才进入永久 quarantine",
+            )
+
+    def test_duplicate_quiz_marks_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir)
+            rejected = _run_cli(
+                data_dir,
+                "quiz-grade",
+                "--quiz-id",
+                prepared["quiz_id"],
+                "--answers",
+                "A,A,A,A,A",
+                "--audit",
+                "1=答案键疑似有误,1=选项疑似重复",
+                expected_returncode=2,
+            )
+            self.assertIn("--audit", rejected.stderr)
+            self.assertIn("题号重复", rejected.stderr)
+            self.assertIn("1", rejected.stderr)
+
+    def test_backdated_grading_keeps_continuation_dedup_on_the_real_day(
+        self,
+    ) -> None:
+        scripts_path = str(REPO_ROOT / "scripts")
+        if scripts_path not in sys.path:
+            sys.path.insert(0, scripts_path)
+        import tutor as module
+
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            prepared = self._prepare_quiz(data_dir, limit=1)
+            # 同日另一组未判分的 K03 题组：真实当天的出题冷却必须覆盖它。
+            sibling = _json_output(
+                _run_cli(
+                    data_dir,
+                    "quiz-prepare",
+                    "--topic",
+                    "K03.SOFTWARE_DESIGN_UML",
+                    "--limit",
+                    "1",
+                )
+            )
+            backdated = (
+                datetime.now().astimezone() - timedelta(days=3)
+            ).isoformat(timespec="seconds")
+            _run_cli(
+                data_dir,
+                "quiz-grade",
+                "--quiz-id",
+                prepared["quiz_id"],
+                "--answers",
+                "A",
+                "--at",
+                backdated,
+            )
+            manifest_path = data_dir / "quiz-sessions" / f"{prepared['quiz_id']}.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            grade_payload = {
+                "next_action": {
+                    "mode": "quiz_prepare",
+                    "subject": "comprehensive",
+                    "topic_id": "K03.SOFTWARE_DESIGN_UML",
+                    "budget": {"remaining_seconds": 600},
+                }
+            }
+            with patch.object(
+                module,
+                "build_quiz_prepare_payload",
+                wraps=module.build_quiz_prepare_payload,
+            ) as spy:
+                payload = module._prepare_next_quiz_payload(
+                    data_dir,
+                    manifest_path,
+                    manifest,
+                    grade_payload,
+                    phase="grade",
+                    limit=1,
+                )
+            prepare_args = spy.call_args[0][0]
+            self.assertIsNone(
+                prepare_args.today,
+                "--at 回填的判分时间不得成为续练去重的归日基准",
+            )
+            # 行为层钉住同一不变量：续练题面不重复真实当天已出过的题，
+            # 出题冷却按会话真实创建时刻归日，回填判分不改变当日集合。
+            self.assertEqual("ready", payload["preparation_status"])
+            child = self._quiz_manifest(data_dir, payload["next_quiz"]["quiz_id"])
+            child_ids = {question["item_id"] for question in child["questions"]}
+            served_today = {
+                question["item_id"]
+                for question in manifest["questions"]
+            } | self._manifest_item_ids(data_dir, sibling["quiz_id"])
+            self.assertTrue(child_ids)
+            self.assertFalse(
+                child_ids & served_today,
+                "续练去重必须落在真实当天：不得重复回填会话或同日其他会话已出过的题",
+            )
+            today = datetime.now().astimezone().date()
+            self.assertTrue(
+                (served_today | child_ids)
+                <= module.quiz_questions_served_on(data_dir, today),
+                "回填判分后的当日出题集合仍须按真实创建时刻归日",
+            )
+            self.assertEqual(
+                set(),
+                module.quiz_questions_served_on(
+                    data_dir, module.parse_datetime(backdated).date()
+                ),
+                "回填的 --at 不得把任何已出题目归到回填日期",
+            )
+
     def test_quiz_grade_audit_failure_does_not_commit_learner_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary)
@@ -2545,9 +3018,24 @@ class TutorAcceptanceTest(unittest.TestCase):
                     if variant is not None:
                         self.assertNotIn(variant["item_id"], attempted_ids)
                         self.assertTrue(variant["stem"])
-                        self.assertTrue(variant["answer"])
+                        self.assertNotIn("answer", variant)
+                        self.assertNotIn("explanation", variant)
+                        self.assertTrue(variant["options"])
                 else:
                     self.assertIsNone(variant)
+            stored_variants = [
+                entry["variant_question"]
+                for entry in self._quiz_manifest(data_dir, prepared["quiz_id"])["result"][
+                    "results"
+                ]
+                if isinstance(entry.get("variant_question"), dict)
+            ]
+            self.assertTrue(stored_variants)
+            for variant in stored_variants:
+                self.assertTrue(
+                    variant["answer"],
+                    "会话清单保留完整题面，供 quiz-variant-grade 判分",
+                )
                 explanation = result.get("explanation")
                 if explanation:
                     self.assertNotIn("✅", explanation)

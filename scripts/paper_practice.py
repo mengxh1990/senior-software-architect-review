@@ -333,7 +333,9 @@ def build_essay_items() -> list[dict]:
 def select(items: list[dict], *, tag: str | None, year: str | None, numeral: str | None,
            blind_only: bool, skip_missing_figures: bool, batch: str | None = None,
            item_id: str | None = None) -> list[dict]:
-    chosen = []
+    # 含混判定基于 (year, numeral) 匹配到的全部题（过滤前）：
+    # blind_only/缺图过滤只影响最终返回集合，不得替用户静默消歧
+    matched = []
     for item in items:
         if item_id and item["id"] != item_id:
             continue
@@ -345,14 +347,17 @@ def select(items: list[dict], *, tag: str | None, year: str | None, numeral: str
             continue
         if numeral and item["numeral"] != numeral:
             continue
+        matched.append(item)
+    if year and numeral and not batch and not item_id and len({i.get("batch") for i in matched}) > 1:
+        raise ValueError("该考期题号存在多个批次；请传 --batch 或 --item-id")
+    chosen = []
+    for item in matched:
         if blind_only and not eligible(item, allow_missing_figures=not skip_missing_figures):
             continue
         # An explicit partial-material request never authorizes invented figures.
         if skip_missing_figures and item["subject"] == "case" and item["missing_figure"]:
             continue
         chosen.append(item)
-    if year and numeral and not batch and not item_id and len({i.get("batch") for i in chosen}) > 1:
-        raise ValueError("该考期题号存在多个批次；请传 --batch 或 --item-id")
     return chosen
 
 

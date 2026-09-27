@@ -154,6 +154,50 @@ class AssessmentRegressionTests(unittest.TestCase):
         plan = t.build_recommendation_payload(argparse.Namespace(data_dir=self.data, today='2026-09-22', subject='case', limit=71))
         self.assertIn(route, [r['topic_id'] for r in plan['recommendations']])
 
+    def test_cross_day_evidence_requires_new_distinct_items(self):
+        # §4 跨日口径：不同题的确定成功证据需覆盖至少 2 个日历日；
+        # 次日复做旧题不新增跨日证据，只有新题成功才补足跨日维度。
+        for n in range(6):
+            record = self.add(n, 20)
+        self.assertEqual(1, record['days'])
+        record = self.add(0, 21, attempt_id='a-redo')
+        self.assertEqual(6, record['distinct_items'])
+        self.assertEqual(1, record['days'])
+        self.assertNotEqual('pass_ready', record['status'])
+        record = self.add(6, 21)
+        self.assertEqual(2, record['days'])
+        self.assertEqual('pass_ready', record['status'])
+
+    def test_english_contexts_count_only_confirmed_successes(self):
+        # §4：2 份阅读材料按「确定成功」的作答计；猜对的作答不新增材料证据。
+        for n in range(10):
+            record = self.add(n, 20, topic_id=module_assessment.ENGLISH,
+                              context_id='passage-a', confidence='guess')
+        self.assertEqual(0, record['contexts'])
+        for n in range(10, 15):
+            record = self.add(n, 20, topic_id=module_assessment.ENGLISH,
+                              context_id='passage-b')
+        self.assertEqual(1, record['contexts'])
+        self.assertEqual('partial', record['measurement_status'])
+
+    def test_pending_wal_replays_in_chronological_order(self):
+        # 日志乱序（补录事件 at 更早却写在后面）时，pending 回放与 rebuild
+        # 同序，复习阶梯按真实时间推进。
+        def raw_event(n, day):
+            return dict(attempt_id=f'a-{n}', event_type='practice', item_id=f'fixture:{n}',
+                        topic_id=K, subject='comprehensive', skill='recognition', mode='practice',
+                        at=f'2026-09-{day:02d}T10:00:00+08:00', score=1, max_score=1,
+                        confidence='sure', source_type='self_authored', wrong_reasons=[],
+                        question_fingerprint=f'content-{n}')
+
+        self.events = [raw_event(1, 21), raw_event(0, 20)]
+        t.write_attempts(self.data / 'attempts.jsonl', self.events)
+        _, state = t.load_profile_and_state(self.data, persist_pending=False)
+        rebuilt = t.rebuild_evidence(self.profile, state, self.events)
+        replayed = state['topics'][K]['mastery']['recognition']
+        self.assertEqual('2026-09-23', replayed['next_review_at'])
+        self.assertEqual(rebuilt['topics'][K]['mastery']['recognition'], replayed)
+
 
 if __name__ == '__main__':
     unittest.main()

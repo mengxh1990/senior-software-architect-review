@@ -124,6 +124,9 @@ PAPER_GROUP_TAG_RE = re.compile(
 PASSAGE_HEADER_RE = re.compile(r"^##\s+(Passage\s+\d+[^\n]*)\s*$", re.MULTILINE)
 TRAILING_OPTIONS_LABEL_RE = re.compile(r"(?:\s|^)(?:选项(?:如下)?|options?)\s*[:：]\s*$", re.IGNORECASE)
 PLACEHOLDER_STEM_RE = re.compile(r"^[（(]\s*\d{1,3}\s*[)）]$")
+# 从未撰写过的解析占位符，如「（解析待补充）」。此类条目可能通过所有结构
+# 质量检查，但占位文本不是可教学的反馈，不能当作有效解析放行。
+PLACEHOLDER_EXPLANATION_RE = re.compile(r"^[（(]?\s*(?:解析)?待补充\s*[)）]?$")
 INLINE_SUBQUESTION_OPTION_RE = re.compile(
     r"^[（(]\s*\d{1,3}\s*[)）]\s*[A-D][.．、]"
 )
@@ -1282,6 +1285,12 @@ def clean_explanation(value: str | None) -> str | None:
     return text or None
 
 
+def is_placeholder_explanation(value: str | None) -> bool:
+    """True when an explanation is an unfilled placeholder (待补充)."""
+
+    return PLACEHOLDER_EXPLANATION_RE.fullmatch(str(value or "").strip()) is not None
+
+
 def _is_compound_figure(stem: str, index: int) -> bool:
     """True when the ``图`` at ``index`` belongs to a term like 用例图/视图."""
 
@@ -1410,7 +1419,13 @@ def assess_quality(
     span = question_span(item)
     if span > 1 and len(correct) != span:
         issues.append("answer_count_mismatch")
-    if ANSWER_LEAK_RE.search(stem) or any(ANSWER_LEAK_RE.search(text) for text in texts):
+    # 题干、选项与共享阅读材料（context）一并扫描：答案标记残留在 context
+    # 里同样会在展示时泄露。
+    if (
+        ANSWER_LEAK_RE.search(stem)
+        or any(ANSWER_LEAK_RE.search(text) for text in texts)
+        or ANSWER_LEAK_RE.search(str(item.get("context") or ""))
+    ):
         issues.append("answer_marker_leak")
     if (PLACEHOLDER_STEM_RE.fullmatch(stem) or PRIOR_CONTEXT_RE.match(stem)) and not has_context:
         issues.append("missing_required_context")

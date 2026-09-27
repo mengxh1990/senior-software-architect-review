@@ -14,42 +14,13 @@ import knowledge_taxonomy
 SCHEMA_VERSION = 1
 BANK_PRIMARY_TOPICS = json.loads((Path(__file__).with_name("exam_bank_topics.json")).read_text(encoding="utf-8"))["items"]
 
-# A source item may have a broad or incorrect heading. Only these verified
-# exceptions override its public topic mapping.
-ITEM_TOPIC_OVERRIDES = {
-    "exam-bank/02-os-concepts.md#3": "K01.OS_MEMORY_KERNEL",
-    "exam-bank/09-software-metrics.md#6": "K03.SOFTWARE_DESIGN_UML",
-    "exam-bank/09-software-metrics.md#7": "K03.SOFTWARE_DESIGN_UML",
-    "exam-bank/24-devops-serverless.md#13": "K27.EMERGING_TECH",
-    "exam-bank/24-devops-serverless.md#14": "K27.EMERGING_TECH",
-    "exam-bank/24-devops-serverless.md#15": "K27.EMERGING_TECH",
-    "exam-bank/24-devops-serverless.md#16": "K27.EMERGING_TECH",
-    "exam-bank/24-devops-serverless.md#17": "K27.EMERGING_TECH",
-    "exam-bank/24-devops-serverless.md#18": "K27.EMERGING_TECH",
-    "exam-bank/24-devops-serverless.md#19": "K23.PROJECT_MANAGEMENT_METRICS",
-    "exam-bank/25-enterprise-integration.md#4": "K12.PATTERNS_SOA_MICROSERVICES",
-    "exam-bank/25-enterprise-integration.md#5": "K12.PATTERNS_SOA_MICROSERVICES",
-    "exam-bank/25-enterprise-integration.md#6": "K12.PATTERNS_SOA_MICROSERVICES",
-    "exam-bank/25-enterprise-integration.md#7": "K12.PATTERNS_SOA_MICROSERVICES",
-    "exam-bank/25-enterprise-integration.md#8": "K21.MESSAGING_CACHE",
-    "exam-bank/25-enterprise-integration.md#9": "K21.MESSAGING_CACHE",
-    "exam-bank/25-enterprise-integration.md#10": "K21.MESSAGING_CACHE",
-    "exam-bank/25-enterprise-integration.md#11": "K12.PATTERNS_SOA_MICROSERVICES",
-    "exam-bank/25-enterprise-integration.md#12": "K12.PATTERNS_SOA_MICROSERVICES",
-    "exam-bank/25-enterprise-integration.md#13": "K21.MESSAGING_CACHE",
-    "exam-bank/25-enterprise-integration.md#14": "K21.MESSAGING_CACHE",
-    "exam-bank/25-enterprise-integration.md#15": "K21.MESSAGING_CACHE",
-    "exam-bank/25-enterprise-integration.md#16": "K21.MESSAGING_CACHE",
-    "exam-bank/25-enterprise-integration.md#17": "K26.ARCH_EVOLUTION",
-    "exam-bank/26-soa-evolution.md#9": "K12.PATTERNS_SOA_MICROSERVICES",
-    "exam-bank/26-soa-evolution.md#10": "K12.PATTERNS_SOA_MICROSERVICES",
-    "exam-bank/26-soa-evolution.md#11": "K12.PATTERNS_SOA_MICROSERVICES",
-    "exam-bank/26-soa-evolution.md#12": "K12.PATTERNS_SOA_MICROSERVICES",
-    "past-papers/comprehensive-by-year/2012下.md#17-17": "K18.COMPUTER_ARCH_STORAGE",
-    "past-papers/comprehensive-by-year/2022.md#32": "K12.PATTERNS_SOA_MICROSERVICES",
-    "past-papers/comprehensive-by-year/2024下.md#38": "K03.SOFTWARE_DESIGN_UML",
-    "past-papers/comprehensive-by-year/2025上.md#23": "K01.OS_MEMORY_KERNEL",
-}
+# Topic resolution priority (see topic_override): question_topics.json via
+# knowledge_taxonomy.objective_metadata -> exam_bank_topics.json ->
+# PUBLIC_ITEM_CORRECTIONS -> this table. An entry whose item already exists in
+# question_topics.json can never take effect, and an entry whose source file no
+# longer exists is a ghost; keep only items whose override here is the sole
+# source of their verified topic.
+ITEM_TOPIC_OVERRIDES = {}
 
 # Correct historical events in memory without changing the original answer log.
 PUBLIC_ITEM_CORRECTIONS = {
@@ -58,7 +29,6 @@ PUBLIC_ITEM_CORRECTIONS = {
     "exam-bank/26-soa-evolution.md#12": "K12.PATTERNS_SOA_MICROSERVICES",
     "past-papers/comprehensive-by-year/2022.md#26": "K03.SOFTWARE_DESIGN_UML",
     "past-papers/comprehensive-by-year/2018下.md#23": "K06.DESIGN_DATA_VIEWS",
-    "past-papers/comprehensive-by-year/2009下.md#21-21": "K06.DESIGN_DATA_VIEWS",
 }
 
 
@@ -104,6 +74,11 @@ def registry_path(data_dir: Path) -> Path:
     return data_dir / "question-registry.json"
 
 
+# 旧版私人登记文件的历史键：加载既有数据时剥离兼容，避免既有登记因格式演进
+# 无法加载而阻断 record/quiz-grade/doctor；严格未知键拒绝只用于新登记输入。
+LEGACY_ENTRY_KEYS = frozenset({"concept_id", "concept_label", "question_family_id"})
+
+
 def validate_entry(entry: Any) -> dict[str, Any]:
     if not isinstance(entry, dict):
         raise ValueError("题目登记项必须是对象")
@@ -115,9 +90,17 @@ def validate_entry(entry: Any) -> dict[str, Any]:
         not isinstance(option, str) or not option.strip() for option in options
     ):
         raise ValueError("题目登记项 options 至少包含两个非空字符串")
+    # question_fingerprint 是派生键：登记文件里给出也会被重新计算覆盖。
+    allowed_keys = (
+        "item_id", "topic_id", "stem", "options",
+        "variant_of", "memory_hook", "question_fingerprint",
+    )
+    unknown_keys = sorted(set(entry) - set(allowed_keys))
+    if unknown_keys:
+        raise ValueError(f"题目登记项含未知键：{', '.join(unknown_keys)}")
     normalized = {
         key: entry[key]
-        for key in ("item_id", "topic_id", "stem", "options", "variant_of", "memory_hook")
+        for key in allowed_keys
         if key in entry
     }
     normalized["question_fingerprint"] = content_fingerprint(entry["stem"], options)
@@ -143,6 +126,8 @@ def load_registry(path: Path) -> dict[str, dict[str, Any]]:
     result: dict[str, dict[str, Any]] = {}
     fingerprints: dict[str, str] = {}
     for raw in entries:
+        if isinstance(raw, dict) and LEGACY_ENTRY_KEYS & raw.keys():
+            raw = {key: value for key, value in raw.items() if key not in LEGACY_ENTRY_KEYS}
         entry = validate_entry(raw)
         item_id = entry["item_id"]
         if item_id in result:

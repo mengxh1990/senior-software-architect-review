@@ -35,7 +35,7 @@
 - **确定性调用**：答案格式、错因标记和命令已明确时，直接在同一响应中发起工具调用；平台要求 commentary 时只发送一句简短状态，不单独生成“收到／准备判分”等中间回复。
 - `quiz-prepare` 每轮只调用一次，返回的即为已过质量门禁的题：直接展示，不得再自行复核、筛选、丢弃或为该题重跑命令。作答或判分时才发现残缺（题干被解析污染、缺图缺表、答案不唯一）的题，用 `--invalidate` 排除，本回合结束后另开维护任务。
 - 题目质量在进入本循环前已由门禁判定：`quiz-prepare` 只会给出 `ready_for_quiz` 的题。若某题在作答后才发现残缺（例如依赖的表其实没给出），用 `--invalidate` 把它排除出本组，不要临场补内容；在本回合结束后，按 `item_id + 原因` 去重，新开独立维护任务尝试以权威原卷做最小修复。只有题干、必要材料和唯一答案均可可靠恢复时才能重新放行，否则维持拦截。
-- 同一轮同时要求"看薄弱点 + 安排训练"时，使用一次 `progress --json` 获取三科状态、薄弱点和统一路由，再按 `next_action` 出题；两段之间不插入探索性调用。`weakpoints` 只用于明确要求某科详细排名的只读请求。
+- 同一轮同时要求"看薄弱点 + 安排训练"时，属于统一路由白名单的豁免场景：允许一次 `progress --json` 同时获取三科状态、薄弱点和统一路由，再按 `next_action` 出题；两段之间不插入探索性调用。`weakpoints` 只用于明确要求某科详细排名的只读请求。
 - 第一次调用必须批量收集推荐、到期错题、候选题、题目元数据和去重信息，不得按题逐次搜索。
 - 非阻塞的诊断状态异常、元数据瑕疵或维护建议不得在训练回合内追查源码；记录后另开仓库维护任务处理。
 - `quiz-grade --prepare-next` 成功返回即表示判分、原子记档和状态更新完成；当路由为 `quiz_prepare` 时，返回值还会包含已创建的 `next_quiz`。收到整组答案后只调用一次该命令，判分前后都不得追加 `status` 或 `diagnose`；给出必要反馈后立即结束本轮。
@@ -126,7 +126,7 @@ python3 scripts/sanitize_bank.py exam-bank/07-software-engineering.md 1 4 6
 python3 scripts/sanitize_bank.py --topic K10.DATABASE_MODELING --limit 5
 
 # 指定考期 + §标签
-python3 scripts/sanitize_bank.py --year 2013下 --tag §5 --limit 3
+python3 scripts/sanitize_bank.py --year 2019下 --tag §5 --limit 3
 
 # 只看某份卷子
 python3 scripts/sanitize_bank.py past-papers/comprehensive-by-year/2018下.md --tag §6 --limit 5
@@ -149,7 +149,7 @@ python3 scripts/sanitize_bank.py --list
 - 一个题块含多个独立小问（如 `#7-8`）且尚未有逐小题选项、答案与记档模型时，会被质量门禁标记为 `multi_question_group` 并跳过；**不得**把多道题的答案压成一次作答或手工拆题。未来有结构化子题模型后再恢复。
 - `--source-type` 按考期来源选择：2018–2022 中可靠原卷用 `real`，2020 不完整回忆版用 `recalled_real`，回忆版考期（2023 下、2024 上/下、2025 上/下、2026 上）用 `recalled_real`；
 - 真题保留试卷原始的答案分布，**不要**套用"自编题正确答案需分散到不同选项"的规则；
-- 2019 下、2020、2023 下的整理版本只覆盖部分题目（26 / 12 / 1 个可用题块），抽不到时退回 `exam-bank/` 或自编题；
+- 2019 下、2020、2023 下的整理版本只覆盖部分题目（可盲练题块 44 / 14 / 20；2019 下另有 5 题过质量门但缺解析，暂不可盲练），抽不到时退回 `exam-bank/` 或自编题；
 - 当前客观题是文本契约，依赖插图但不可呈现的题由门禁拦截，不得用“原题含图”代替必要图示。
 
 ### Step 2c · 案例与论文真题（按题型 / 主题抽题）
@@ -276,7 +276,7 @@ python3 scripts/tutor.py quiz-grade --quiz-id <id> --answers 'C,B,A,X,B' \
 | `wrong_reasons` / `wrong_reason_status` | 只保存考生明确说明的错因；未说明的普通答错为 `unclassified`，`conceded` 固定为 `knowledge_gap` |
 | `explanation` | 已清洗的解析，是微课的事实素材；答对且确定时可能为 `null` |
 | `memory_hook` | 登记过的记忆钩子；为 `null` 时用一句话概括即可，不得检索 |
-| `variant_question` | 同一主考点的补练题；整组最多 2 道并受预算约束。不宣称精确变式，展示时隐藏 answer/explanation |
+| `variant_question` | 同一主考点的补练题；整组最多 2 道并受预算约束。不宣称精确变式；返回值不含 answer/explanation，作答后由 `quiz-variant-grade` 返回值获得解析 |
 | `next_review_at` | 该考点的下次复习日 |
 
 顶层另有 `score` / `max_score` / `conceded_count` / `invalidated_count`，用于一句话汇报本组结果。
@@ -424,7 +424,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 - `task_kind=mixed_check`：沿用返回的 `quiz-prepare --mixed` 命令，不附加单考点限制，不外推整卷分数。
 - `preparation_status=failed`：仍展示本轮 score/results；next_quiz 为空表示没有续练可展示。环境恢复后可重放原判分命令，保持幂等。
 
-变式支持与普通题相同的 `--invalidate` / `--audit`；题目在等待作答期间已从门禁池移除时自动排除，其他有效答案正常记档。变式解析直接从返回值获得。
+变式支持与普通题相同的 `--invalidate` / `--audit`；题目在等待作答期间已从门禁池移除时自动排除（记 `excluded`，仅维护参考、不永久拦截修复后的题），其他有效答案正常记档。变式解析直接从返回值获得。
 
 主观题原答和评分写入 `.study/` 的 JSON，包含 `response_text`、`rubric.version`、`rubric.points[]`（每点 score/max_score/evidence）。完整案例记档额外传 `--assessment-scope case --complete --max-score 25 --assessment-file ...`；论文完整限时传 `--mode full_timed --assessment-file ...`。如题目针对某个 K 考点的到期任务，在 JSON 的 `assessed_topics[]` 中记录实际考查的 topic_id/score/max_score/evidence；不得将整题分数无差别复制到所有关联考点。
 

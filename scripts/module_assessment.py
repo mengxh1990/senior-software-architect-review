@@ -1,11 +1,42 @@
-"""Module evidence and bank capacity. Note tags are deliberately not imported."""
+"""Module evidence, shared timestamp parsing, and bank capacity.
+
+Note tags are deliberately not imported.
+"""
 from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime
-from typing import Any
+from typing import Any, Iterable
 
 ENGLISH = 'K22.ENGLISH_READING'
+
+
+def parse_event_datetime(value: str) -> datetime:
+    """ISO-8601 时间戳解析的唯一实现：Z 记 UTC，裸时间按本地时区。
+
+    ``tutor.parse_datetime`` 包装本函数并补 TutorError 语义，保证证据日期
+    口径在 skill_status / apply_record_event / evidence_summary 三处一致。
+    """
+    normalized = value.strip().replace('Z', '+00:00')
+    parsed = datetime.fromisoformat(normalized)
+    return parsed.astimezone() if parsed.tzinfo is None else parsed
+
+
+def first_success_dates(rows: Iterable[dict[str, Any]]) -> dict[str, str]:
+    """每题只计其最早一条确定成功证据的日期（§4 跨日口径的唯一实现）。
+
+    身份键取 question_fingerprint 优先、item_id 兜底；复做旧题不新增日期，
+    返回 identity → 最早成功日（ISO 日期）。
+    """
+    dates: dict[str, str] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        identity = row.get('question_fingerprint') or row.get('item_id')
+        if identity and row.get('at'):
+            day = parse_event_datetime(row['at']).date().isoformat()
+            dates[identity] = min(dates.get(identity, day), day)
+    return dates
 
 
 def requirements(topic_id: str) -> dict[str, int]:
@@ -17,9 +48,16 @@ def evidence_summary(record: dict[str, Any], topic_id: str) -> dict[str, Any]:
     recent = record.get('recent_evidence', [])
     # Sampling history is independent of the rolling performance window.
     measured = list(record.get('measurement_items', {}).values()) if 'measurement_items' in record else recent
-    days = {datetime.fromisoformat(stamp).date().isoformat() for row in measured
-            for stamp in (row['at'], row.get('first_at', row['at']))}
-    contexts = {row['context_id'] for row in measured if row.get('context_id')}
+    # 跨日与材料口径：每个不同题只计其最早一条确定成功证据的日期（复做旧题
+    # 不新增日期），阅读材料只按确定成功的作答计数；最早日期与 rebuild/repair
+    # 的按时间序重放口径一致。
+    qualified = [
+        row for row in record.get('qualified_evidence', [])
+        if isinstance(row, dict) and (row.get('question_fingerprint') or row.get('item_id')) and row.get('at')
+    ]
+    first_success_days = first_success_dates(qualified)
+    contexts = {row['context_id'] for row in qualified if row.get('context_id')}
+    days = set(first_success_days.values())
     req = requirements(topic_id)
     sufficient = len(measured) >= req['distinct_items'] and len(days) >= req['days'] and len(contexts) >= req['contexts']
     accuracy = sum(row['weighted_ratio'] for row in recent) / len(recent) if recent else None

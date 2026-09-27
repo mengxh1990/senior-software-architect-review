@@ -9,18 +9,18 @@
   "coverage": {
     "recent": {
       "eligible_papers": 5,
-      "mapped_questions": 365,
-      "papers": 6,
+      "mapped_questions": 376,
+      "papers": 7,
       "ratio": 1.0,
-      "ready_questions": 365,
+      "ready_questions": 376,
       "unmapped_questions": 0
     },
     "stable": {
       "eligible_papers": 3,
-      "mapped_questions": 271,
-      "papers": 5,
+      "mapped_questions": 257,
+      "papers": 4,
       "ratio": 1.0,
-      "ready_questions": 271,
+      "ready_questions": 257,
       "unmapped_questions": 0
     }
   },
@@ -55,19 +55,6 @@
     {
       "cohort": "stable",
       "coverage": 1.0,
-      "exclusion_reason": "insufficient_paper_coverage",
-      "expected_questions": 75,
-      "frequency_eligible": false,
-      "mapped_questions": 14,
-      "paper_coverage": 0.1867,
-      "ready_questions": 14,
-      "source_type": "real",
-      "unmapped_questions": 0,
-      "year": "2020"
-    },
-    {
-      "cohort": "stable",
-      "coverage": 1.0,
       "exclusion_reason": null,
       "expected_questions": 75,
       "frequency_eligible": true,
@@ -97,6 +84,19 @@
       "exclusion_reason": "insufficient_paper_coverage",
       "expected_questions": 75,
       "frequency_eligible": false,
+      "mapped_questions": 14,
+      "paper_coverage": 0.1867,
+      "ready_questions": 14,
+      "source_type": "recalled_real",
+      "unmapped_questions": 0,
+      "year": "2020"
+    },
+    {
+      "cohort": "recent",
+      "coverage": 1.0,
+      "exclusion_reason": "insufficient_paper_coverage",
+      "expected_questions": 75,
+      "frequency_eligible": false,
       "mapped_questions": 20,
       "paper_coverage": 0.2667,
       "ready_questions": 20,
@@ -110,9 +110,9 @@
       "exclusion_reason": null,
       "expected_questions": 75,
       "frequency_eligible": true,
-      "mapped_questions": 73,
-      "paper_coverage": 0.9733,
-      "ready_questions": 73,
+      "mapped_questions": 70,
+      "paper_coverage": 0.9333,
+      "ready_questions": 70,
       "source_type": "recalled_real",
       "unmapped_questions": 0,
       "year": "2024上"
@@ -172,7 +172,7 @@
   ],
   "policy_version": 3,
   "schema_version": 1,
-  "source_digest": "1b7e36ab4c82cb66895682e12324d8263c8a4ff6bcfe09b9e315f04350f34859",
+  "source_digest": "f68632fab1793ba9450c8f49b2be7cce4b01c765710dd0cb585d1be86ff116f2",
   "taxonomy_version": 2,
   "topics": [
     {
@@ -284,10 +284,10 @@
       "weighted_questions_per_paper": 1.3867
     },
     {
-      "recent_questions_per_paper": 2.4,
+      "recent_questions_per_paper": 1.8,
       "stable_questions_per_paper": 2.0,
       "topic_id": "K19.ATAM_TACTICS",
-      "weighted_questions_per_paper": 2.08
+      "weighted_questions_per_paper": 1.96
     },
     {
       "recent_questions_per_paper": 4.0,

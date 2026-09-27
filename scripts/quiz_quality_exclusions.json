@@ -16,6 +16,21 @@
       "item_id": "past-papers/comprehensive-by-year/2023下.md#1-2",
       "reason": "conflicting_source_evidence",
       "note": "希赛回忆清单把「V(g)=m-n+1」「最大范围<10」并列为两个错误项（清单编号 1-2 指向两道单选），rkpass 重建稿则只保留一道单选且答案为 B、并把「McCabe数应小于10」列为正确项；两来源对题量与答案集合不一致，现有块又把两个错误项压成一个组合答案，选项 B 还带「（错误公式）」泄题标注。第二题的题干与选项在现有来源中无法恢复，故维持排除。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2024上.md#50",
+      "reason": "duplicate_transcription_pending_verification",
+      "note": "第 50–52 题为共题干三空题组按仓库惯例拆分的逐空小题，但三条的题干、选项（SAAM/ATAM/CBAM/SAEM）与答案（B×3）完全相同，疑为回忆源只保留了某一空的选项和答案并复制到三个条目。已核对软考达人两份 PDF（综合知识仅收录原卷第 1–31 题）与 CSDN、GitHub 等公开回忆版，均未收录该题组的逐空题干与答案，(50) 空的真实选项与答案暂不可考，暂停盲练待复核。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2024上.md#51",
+      "reason": "duplicate_transcription_pending_verification",
+      "note": "与 2024上.md#50 同一题组：题干「侧重于对最终体系结构而不是详细设计的评价」按软考教材惯例通常与 SAAM 配对（对照 2025下.md 第 9 题同类回忆题：ATAM 对应「分析多种质量属性的折中」，SAAM 主要关注可修改性），答案键 B（ATAM）与该惯例表述冲突，(51) 空的真实答案疑为 A（SAAM），但原卷材料中无法核验，暂停盲练待复核。"
+    },
+    {
+      "item_id": "past-papers/comprehensive-by-year/2024上.md#52",
+      "reason": "duplicate_transcription_pending_verification",
+      "note": "与 2024上.md#50 同一题组：(52) 空「用于分析多种质量属性之间的权衡」与答案 B（ATAM）语义一致，但三条条目的选项与答案完全相同（B×3）系回忆源单空数据被复制的痕迹，整组题面降质无法确认逐空答案，随 #50/#51 一并暂停盲练待复核。"
     }
   ]
 }

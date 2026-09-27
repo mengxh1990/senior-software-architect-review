@@ -35,8 +35,12 @@ import sanitize_bank
 
 SCHEMA_VERSION = 1
 QUESTION_LINK_VERSION = 5
-EVIDENCE_POLICY_VERSION = 5
+EVIDENCE_POLICY_VERSION = 6
 SUBJECT_TIME_LIMITS = {"comprehensive": 9000, "case": 5400, "essay": 7200}
+# 超时判定宽限：浏览器用满时限自动交卷时，服务端权威计时的发卷提前量、
+# 提交传输开销与秒级截断可把真实用时顶过限 1-2 秒；少量宽限避免恰好
+# 用满时限的考生被误判 overtime 丧失独立模考资格。
+OVERTIME_GRACE_SECONDS = 5
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CURRICULUM_PATH = REPO_ROOT / "tutor" / "curriculum.json"
 FREQUENCY_SNAPSHOT_PATH = REPO_ROOT / "tutor" / "frequency-snapshot.json"
@@ -68,7 +72,7 @@ WRONG_REASON_SOURCES = {
 REVIEW_INTERVAL_DAYS = (1, 3, 7, 14, 30)
 QUIZ_SCHEMA_VERSION = 1
 QUIZ_SESSIONS_DIR = "quiz-sessions"
-RECALLED_REAL_YEARS = {"2023下", "2024上", "2024下", "2025上", "2025下", "2026上"}
+RECALLED_REAL_YEARS = {"2020", "2023下", "2024上", "2024下", "2025上", "2025下", "2026上"}
 # An item answered correctly with certain confidence, or already shown as a
 # follow-up variant, stays out of rotation for this many days.  The fine
 # concept keeps its review schedule; only the exact item is retired so spacing
@@ -92,14 +96,10 @@ def now_iso() -> str:
 def parse_datetime(value: str | None) -> datetime:
     if not value:
         return datetime.now().astimezone()
-    normalized = value.strip().replace("Z", "+00:00")
     try:
-        parsed = datetime.fromisoformat(normalized)
+        return module_assessment.parse_event_datetime(value)
     except ValueError as error:
         raise TutorError(f"无效时间：{value!r}，请使用 ISO-8601 格式") from error
-    if parsed.tzinfo is None:
-        parsed = parsed.astimezone()
-    return parsed
 
 
 def parse_date(value: str) -> date:
@@ -557,7 +557,9 @@ def load_profile_and_state(
         state["question_link_version"] = previous.get("question_link_version", 0)
     elif pending:
         curriculum = load_curriculum()
-        for event in pending:
+        # 与 rebuild_evidence/repair 相同的时序重放：日志乱序（补录更早的作答）
+        # 时也按 at 排序后再回放，保证派生状态与重放结果一致。
+        for event in sorted(pending, key=lambda item: parse_datetime(item.get("at"))):
             apply_event_to_state(state, event, curriculum)
     curriculum = load_curriculum()
     topics = topic_map(curriculum)
@@ -711,7 +713,7 @@ def status_payload(profile: dict[str, Any], state: dict[str, Any]) -> dict[str, 
         item["status"] = subject_status(item, safe_target)
         stamp = item.get("last_measured_at")
         item["measurement_age_days"] = (datetime.now().astimezone().date() - parse_datetime(stamp).date()).days if stamp else None
-        item["needs_remeasurement"] = stamp is None or item["measurement_age_days"] >= 7
+        item["needs_remeasurement"] = stamp is None or item["measurement_age_days"] > 7
         subjects[name] = item
     # Report review dates with the interval floor applied, without mutating
     # the stored organic values.
@@ -867,13 +869,9 @@ def skill_status(
         item for item in record.get("qualified_evidence", []) if isinstance(item, dict)
     ]
     unique_items = {item.get("question_fingerprint") or item.get("item_id") for item in evidence if item.get("item_id")}
-    dates = sorted(
-        {
-            parse_datetime(item.get("at")).date().isoformat()
-            for item in evidence
-            if item.get("at")
-        }
-    )
+    # 跨日口径：不同题各自只计最早一条确定成功证据的日期；复做旧题不新增
+    # 跨日证据，且与 rebuild/repair 的按时间序重放口径一致。
+    dates = sorted(module_assessment.first_success_dates(evidence).values())
 
     if record.get("regression_active"):
         regressed_at = parse_datetime(record.get("regressed_at"))
@@ -1153,7 +1151,9 @@ def validate_record_event(event: dict[str, Any], curriculum: dict[str, Any]) -> 
         not isinstance(word_count, int) or isinstance(word_count, bool) or word_count < 0
     ):
         raise TutorError("word-count 必须是非负整数")
-    parse_datetime(event.get("at"))
+    if not isinstance(event.get("at"), str) or not event["at"].strip():
+        raise TutorError("at 必填：请提供 ISO-8601 格式的作答时间，缺失时不得默认当前时间")
+    parse_datetime(event["at"])
     reasons = event.get("wrong_reasons")
     if not isinstance(reasons, list):
         raise TutorError("wrong_reasons 必须是数组")
@@ -1223,7 +1223,6 @@ def apply_record_event(
     topic = topic_map(curriculum)[event["topic_id"]]
     attempted_at = parse_datetime(event["at"])
     attempted_iso = attempted_at.isoformat(timespec="seconds")
-    attempted_date = attempted_at.date().isoformat()
     score = float(event["score"])
     maximum = float(event["max_score"])
     ratio = score / maximum
@@ -1302,15 +1301,19 @@ def apply_record_event(
                 "duration_seconds": event.get("duration_seconds"),
                 "word_count": event.get("word_count"),
                 "question_fingerprint": event.get("question_fingerprint"),
+                "context_id": event.get("context_id"),
                 "variant_of": event.get("variant_of"),
                 "confidence": event.get("confidence"),
                 "assessment_scope": event.get("assessment_scope"),
                 "point_evidence": bool(event.get("_point_evidence")),
             }
         )
-        dates = set(record.get("successful_dates", []))
-        dates.add(attempted_date)
-        record["successful_dates"] = sorted(dates)
+        # 与 skill_status/module_assessment 同口径：每个不同题只保留其最早
+        # 一条确定成功证据的日期，复做旧题不新增跨日证据；按最早日期取值使
+        # 增量应用与按 at 排序重放的 rebuild/repair 在任何日志顺序下一致。
+        record["successful_dates"] = sorted(
+            module_assessment.first_success_dates(evidence).values()
+        )
     if skill == "production" and event.get("mode") == "full_timed":
         record["full_timed_count"] = int(record.get("full_timed_count", 0)) + 1
 
@@ -1350,7 +1353,8 @@ def apply_record_event(
         measured[identity] = {"first_at": first_at, "at": last_at, "context_id": event.get("context_id")}
     recent.append({"identity": identity, "item_id": event["item_id"], "context_id": event.get("context_id"),
                    "at": attempted_iso, "weighted_ratio": ratio * confidence_weight})
-    recent.sort(key=lambda item: item["at"])
+    # ISO 字符串在混合时区下字典序不可靠，统一按解析后的时间排序。
+    recent.sort(key=lambda item: parse_datetime(item["at"]))
     del recent[:-12]
     qualified_count = len({item.get("question_fingerprint") or item["item_id"] for item in record.get("qualified_evidence", [])})
     evidence_factor = min(1.0, (len(recent) if skill == "recognition" else qualified_count) / evidence_target)
@@ -1409,14 +1413,18 @@ def apply_record_event(
                       or skill == "production" and event.get("mode") == "full_timed"
                       and int(event.get("duration_seconds") or 0) <= SUBJECT_TIME_LIMITS["essay"])),
                   "attempt_id": attempt_id + ":" + point["topic_id"], "duration_seconds": None}
-        apply_record_event(state, linked, curriculum)
-        state["applied_attempt_ids"].remove(linked["attempt_id"])
-        state["subjects"][subject]["evidence_count"] -= 1
+        linked_result = apply_record_event(state, linked, curriculum)
+        # 派生 attempt_id 与真实日志事件撞名时跳过应用，也绝不能把真实事件
+        # 的已应用标记删掉，否则下次加载会重复计分。
+        if not linked_result.get("already_applied"):
+            state["applied_attempt_ids"].remove(linked["attempt_id"])
+            state["subjects"][subject]["evidence_count"] -= 1
     if skill == "production" and event.get("mode") == "full_timed":
         mock = {**event, "attempt_id": attempt_id + ":measurement", "event_type": "mock"}
-        apply_mock_event(state, mock)
-        state["applied_attempt_ids"].remove(mock["attempt_id"])
-        state["subjects"][subject]["evidence_count"] -= 1
+        mock_result = apply_mock_event(state, mock)
+        if not mock_result.get("already_applied"):
+            state["applied_attempt_ids"].remove(mock["attempt_id"])
+            state["subjects"][subject]["evidence_count"] -= 1
     minimum_interval = int(
         state.get("strategy", {}).get("min_review_interval_days", 0) or 0
     )
@@ -1505,6 +1513,13 @@ def cmd_record(args: argparse.Namespace) -> int:
     topic = topics.get(args.topic)
     if topic is None:
         raise TutorError(f"未知稳定考点 ID：{args.topic}")
+    if args.mode == "full_timed" and args.assessment_scope not in (None, "essay"):
+        # full_timed 只用于完整论文：显式传其他 scope 会绕过 --assessment-file
+        # 强制与原答字数重算，必须直接拒绝。
+        raise TutorError(
+            "full_timed 仅用于完整论文（assessment_scope=essay），"
+            "需要 --assessment-file 提供原答与评分依据"
+        )
     subject = args.subject or choose_subject_for_skill(topic, args.skill)
     private_registry = load_private_question_registry(args.data_dir)
     registered = private_registry.get(args.item_id)
@@ -1685,7 +1700,9 @@ def validate_mock_event(event: dict[str, Any]) -> None:
         "simulation",
     ):
         raise TutorError("模考 source_type 无效")
-    parse_datetime(event.get("at"))
+    if not isinstance(event.get("at"), str) or not event["at"].strip():
+        raise TutorError("at 必填：请提供 ISO-8601 格式的模考时间，缺失时不得默认当前时间")
+    parse_datetime(event["at"])
 
 
 def apply_mock_event(state: dict[str, Any], event: dict[str, Any]) -> dict[str, Any]:
@@ -1704,7 +1721,7 @@ def apply_mock_event(state: dict[str, Any], event: dict[str, Any]) -> dict[str, 
         ineligible.append("limited_curriculum_coverage")
     if any(item["paper_id"] == event["item_id"] for item in subject["mock_scores"]):
         ineligible.append("repeated_paper")
-    if int(event["duration_seconds"]) > SUBJECT_TIME_LIMITS[subject_name]:
+    if int(event["duration_seconds"]) > SUBJECT_TIME_LIMITS[subject_name] + OVERTIME_GRACE_SECONDS:
         ineligible.append("overtime")
     if event.get("prior_exposure_count", 0):
         ineligible.append("previously_exposed_items")
@@ -1724,7 +1741,8 @@ def apply_mock_event(state: dict[str, Any], event: dict[str, Any]) -> dict[str, 
             "prior_exposure_count": event.get("prior_exposure_count", 0),
         }
     )
-    subject["mock_scores"].sort(key=lambda item: item["at"])
+    # ISO 字符串在混合时区下字典序不可靠，统一按解析后的时间排序。
+    subject["mock_scores"].sort(key=lambda item: parse_datetime(item["at"]))
     previous_last = subject.get("last_practiced_at")
     if not previous_last or parse_datetime(measured_at) >= parse_datetime(previous_last):
         subject["last_practiced_at"] = measured_at
@@ -1938,17 +1956,25 @@ def select_target_subject(
         return None
     critical = [subject for subject in active if state["subjects"][subject].get("lower_bound_score") is None
                 or float(state["subjects"][subject]["lower_bound_score"]) < 45]
+    # Break otherwise equal needs by how little of the day each subject
+    # received; the danger/unmeasured hard gate above stays unchanged.
+    spent = state.get("training_days", {}).get(today.isoformat(), {})
+
+    def allocation_ranking(subject: str) -> tuple[float, int]:
+        return (
+            allocations[subject] / (1 + spent.get(subject, 0) / 60),
+            -SUBJECTS.index(subject),
+        )
+
     if critical:
-        return max(critical, key=lambda subject: (allocations[subject], -SUBJECTS.index(subject)))
-    primary = max(active, key=lambda subject: (allocations[subject], -SUBJECTS.index(subject)))
+        return max(critical, key=allocation_ranking)
+    primary = max(active, key=allocation_ranking)
     maintenance = select_maintenance_subject(state, primary, today)
     if maintenance:
         return maintenance
     if "case" in active and case_application_review_due(state, today):
         return "case"
-    # Break otherwise equal needs by how little of the day each subject received.
-    spent = state.get("training_days", {}).get(today.isoformat(), {})
-    return max(active, key=lambda subject: (allocations[subject] / (1 + spent.get(subject, 0) / 60), -SUBJECTS.index(subject)))
+    return primary
 
 
 def manual_trigger_subjects(state: dict[str, Any]) -> set[str]:
@@ -1969,8 +1995,22 @@ def record_training_time(state: dict[str, Any], event: dict[str, Any], *, mock: 
         return
     if mock and event.get("mode") == "full_timed":
         return  # essay practice already accounted for the same work
-    default = 60 if event["subject"] == "comprehensive" else 1500 if event.get("assessment_scope") == "case" else 300
+    # 缺失时长时的默认估值（§7）：客观题 1 分钟、完整案例 25 分钟、
+    # 非片段完整论文 45 分钟、片段 5 分钟。
+    default = (
+        60 if event["subject"] == "comprehensive"
+        else 1500 if event.get("assessment_scope") == "case"
+        else 2700 if event.get("assessment_scope") == "essay"
+        else 300
+    )
     seconds = event.get("duration_seconds") or default
+    if mock and event.get("duration_seconds"):
+        # 整卷墙钟/申报用时含挂机与睡眠：入账每日预算时以该科训练时限+超时
+        # 宽限封顶，完整原始用时仍留在模考证据与 attempts 日志里用于
+        # overtime 判定和用时展示。
+        limit = SUBJECT_TIME_LIMITS.get(event.get("subject") or "")
+        if limit is not None:
+            seconds = min(seconds, limit + OVERTIME_GRACE_SECONDS)
     day = parse_datetime(event["at"]).date().isoformat()
     bucket = state.setdefault("training_days", {}).setdefault(day, {})
     bucket[event["subject"]] = bucket.get(event["subject"], 0) + seconds
@@ -2025,7 +2065,7 @@ def next_training_action(
         return {"mode": "survival_review", "subject": subject, "command": None,
                 "reason": "考前只复习答题骨架与已确认错题", "budget": budget}
     last_measurement = state["subjects"][subject].get("last_measured_at")
-    needs_measurement = not last_measurement or (today-parse_datetime(last_measurement).date()).days >= 7
+    needs_measurement = not last_measurement or (today-parse_datetime(last_measurement).date()).days > 7
     if budget and needs_measurement and budget["remaining_seconds"] >= SUBJECT_TIME_LIMITS[subject]:
         if subject == "comprehensive" and mock_availability is None and data_dir is not None:
             sys.path.insert(0, str(REPO_ROOT / "tutor"))
@@ -2053,9 +2093,13 @@ def next_training_action(
         curriculum = load_curriculum()
         core = [item for group in curriculum.get("strategy", {}).get("comprehensive_cold_start_groups", []) for item in group]
         missing = [topic_id for topic_id in core if not state.get("topics", {}).get(topic_id, {}).get("mastery", {}).get("recognition", {}).get("attempt_count")]
-        due = any(record.get("next_review_at") and parse_date(record["next_review_at"]) <= today
-                  and (record.get("learning_status") == "needs_practice" if "learning_status" in record else record.get("status") != "pass_ready")
-                  for topic in state.get("topics", {}).values() for skill, record in topic.get("mastery", {}).items() if skill == "recognition")
+        try:
+            due = any(record.get("next_review_at") and parse_date(record["next_review_at"]) <= today
+                      and (record.get("learning_status") == "needs_practice" if "learning_status" in record else record.get("status") != "pass_ready")
+                      for topic in state.get("topics", {}).values() for skill, record in topic.get("mastery", {}).items() if skill == "recognition")
+        except TutorError:
+            # 单条损坏的复习日期不让只读路由整体崩溃：与推荐路径一致，降级为到期。
+            due = True
         if missing:
             task_kind = "diagnostic"
         elif due:
@@ -2274,16 +2318,17 @@ def learning_diagnosis(
             "verified": "该模块已有不同题目和不同日期的复测证据；原题错因仍保留",
         }[status]
 
-    priority = {
-        "pending_remediation": 0,
-        "due_review": 1,
-        "awaiting_review": 2,
-        "verified": 3,
-    }
+    # §7 薄弱点队列次序：模考失分 → 到期跨日复测 → 猜对或不确定 → 等待复测 → 已验证。
+    def queue_rank(item: dict[str, Any]) -> int:
+        if item["status"] == "pending_remediation":
+            # 未补练：模考失分最优先；猜对/不确定排在到期跨日复测之后。
+            return 0 if item["signal"] == "wrong" else 2
+        return {"due_review": 1, "awaiting_review": 3, "verified": 4}[item["status"]]
+
     issues = sorted(
         grouped.values(),
         key=lambda item: (
-            priority[item["status"]],
+            queue_rank(item),
             0 if item["signal"] == "wrong" else 1,
             item["topic_id"],
         ),
@@ -2607,7 +2652,7 @@ def build_progress_payload(args: argparse.Namespace) -> dict[str, Any]:
     for item in status["subjects"].values():
         stamp = item.get("last_measured_at")
         item["measurement_age_days"] = (today - parse_datetime(stamp).date()).days if stamp else None
-        item["needs_remeasurement"] = stamp is None or item["measurement_age_days"] >= 7
+        item["needs_remeasurement"] = stamp is None or item["measurement_age_days"] > 7
     raw_allocations, allocations = effective_subject_allocations(state, today)
     paused = manual_trigger_subjects(state)
     sys.path.insert(0, str(REPO_ROOT / "tutor"))
@@ -3055,7 +3100,18 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
             "SURVIVAL.md" in resource or resource.startswith("cheatsheets/")
             for resource in topic.get("resources", [])
         )
-        if crunch_mode and not progress:
+        # 考前 3 天只排除「低频且无保命卡」的未学考点（§7 不变量 7）：
+        # 高频或快分点、以及带保命卡的未学考点仍然保留。
+        high_frequency_quick_win = (
+            int(topic.get("frequency_count") or 0) >= 8
+            or float(topic.get("quick_win") or 0) >= 0.7
+        )
+        if (
+            crunch_mode
+            and not progress
+            and not survival_resource
+            and not high_frequency_quick_win
+        ):
             continue
         subjects = topic.get("subjects", [])
         if args.subject and args.subject not in subjects:
@@ -3195,6 +3251,9 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
         )
         cost = max(0.5, float(topic.get("estimated_minutes", 60)) / 60)
         score = allocations[chosen_subject] * need * due_factor * value / cost
+        if crunch_mode and survival_resource:
+            # 保命卡优先：考前 3 天带保命卡的考点在排序键中获得加分（§7 不变量 7）。
+            score *= 1.5
         # Pass-first is a hard subject gate, not merely a soft score. This
         # prevents a 75-point strong subject from outranking a 44-point weak one.
         gate = 1 if chosen_subject == target_subject else 0
@@ -3220,6 +3279,8 @@ def build_recommendation_payload(args: argparse.Namespace) -> dict[str, Any]:
             reasons.append("关联应用考点到期：" + "、".join(supporting_due_names))
         if crunch_mode:
             reasons.append("考前 3 天，只做错题、保命卡或答题骨架")
+            if survival_resource:
+                reasons.append("该考点有保命卡，考前优先")
         if frequency >= 6:
             reasons.append(f"综合题样本平均 {frequency:.1f} 题/卷" if chosen_subject == "comprehensive" else f"关联综合知识考频 {frequency:.1f}，仅用于路线排序")
         if float(topic.get("cross_subject_value", 0)) >= 0.8:
@@ -3802,6 +3863,23 @@ def paper_source_type(year: str | None) -> str:
     return "recalled_real" if year in RECALLED_REAL_YEARS else "real"
 
 
+def teaching_status_for(item: dict[str, Any]) -> str:
+    """Teaching gate shared by every pool source.
+
+    A quality-ready item additionally needs a real explanation before it may
+    enter the blind-practice pool. An unfilled placeholder such as
+    「（解析待补充）」 is not feedback and is treated exactly like a missing
+    explanation.
+    """
+
+    if item.get("quality_status") != "ready":
+        return "not_applicable"
+    explanation = str(item.get("explanation") or "").strip()
+    if explanation and not sanitize_bank.is_placeholder_explanation(explanation):
+        return "ready"
+    return "missing_explanation"
+
+
 
 def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
     """Load all objective questions once for a quiz preparation request.
@@ -3825,15 +3903,7 @@ def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
             normalized["source_type"] = (
                 "self_authored" if is_reconstruction else paper_source_type(item.get("year"))
             )
-            normalized["teaching_status"] = (
-                "not_applicable"
-                if normalized.get("quality_status") != "ready"
-                else (
-                    "ready"
-                    if str(normalized.get("explanation") or "").strip()
-                    else "missing_explanation"
-                )
-            )
+            normalized["teaching_status"] = teaching_status_for(normalized)
             override = question_registry.topic_override(item["id"])
             topics = {override} if override else set(item.get("candidate_topics", []))
             normalized["candidate_topics"] = sorted(topics)
@@ -3846,10 +3916,7 @@ def load_quiz_question_pool(curriculum: dict[str, Any]) -> list[dict[str, Any]]:
                 continue
             normalized = {**parsed, "year": None, "tag": None, "tag_label": None,
                           "source": resource, "source_type": "self_authored"}
-            normalized["teaching_status"] = (
-                "not_applicable" if normalized.get("quality_status") != "ready"
-                else "ready" if str(normalized.get("explanation") or "").strip()
-                else "missing_explanation")
+            normalized["teaching_status"] = teaching_status_for(normalized)
             merged[parsed["id"]] = normalized
     return [knowledge_taxonomy.annotate_question(item) for item in merged.values()]
 
@@ -3906,8 +3973,14 @@ def _quiz_candidate_sort_key(
 
 
 def question_version(question: dict[str, Any]) -> str:
-    return hashlib.sha256(json_text({key: question.get(key) for key in
-        ("stem", "context", "options", "correct", "explanation")}).encode()).hexdigest()
+    # 变式题携带的答案键是 answer（连写字母），对齐回题池的 correct 表示后再哈希，
+    # 使变式审计条目的版本号能与题池条目对上。
+    correct = question.get("correct")
+    if correct is None and isinstance(question.get("answer"), str):
+        correct = sorted(question["answer"])
+    payload = {key: question.get(key) for key in ("stem", "context", "options", "explanation")}
+    payload["correct"] = correct
+    return hashlib.sha256(json_text(payload).encode()).hexdigest()
 
 
 def quarantined_item_ids(data_dir: Path, pool: list[dict[str, Any]]) -> set[str]:
@@ -4314,7 +4387,9 @@ def _prepare_next_quiz_payload(
         topic=None if next_action.get("task_kind") == "mixed_check" else next_action.get("topic_id"),
         mixed=next_action.get("task_kind") == "mixed_check",
         limit=min(limit, max(1, (next_action.get("budget") or {}).get("remaining_seconds", limit * 60) // 60)),
-        today=parse_datetime(graded_at).date().isoformat(),
+        # 去重归日与 quiz_questions_served_on 一致，按子会话的真实创建时刻：
+        # --at 回填的 graded_at 不得改变当天去重集合。
+        today=None,
     )
     next_quiz = build_quiz_prepare_payload(
         prepare_args,
@@ -4326,6 +4401,34 @@ def _prepare_next_quiz_payload(
     payload["next_quiz"] = next_quiz
     payload["preparation_status"] = "ready"
     return payload
+
+
+def redact_variant_solutions(output: dict[str, Any]) -> dict[str, Any]:
+    """Drop a follow-up variant's answer/explanation from anything printed.
+
+    变式题在作答前就交给考生，判分输出不得携带答案与解析；会话清单保留
+    完整题面供 ``quiz-variant-grade`` 判分使用。
+    """
+
+    redacted = copy.deepcopy(output)
+    sections = [redacted]
+    grade = redacted.get("grade")
+    if isinstance(grade, dict):
+        sections.append(grade)
+    for section in sections:
+        results = section.get("results")
+        if not isinstance(results, list):
+            continue
+        for result in results:
+            if not isinstance(result, dict):
+                continue
+            variant = result.get("variant_question")
+            if isinstance(variant, dict):
+                result["variant_question"] = {
+                    key: value for key, value in variant.items()
+                    if key not in ("answer", "explanation")
+                }
+    return redacted
 
 
 def runtime_grade_payload(grade_payload: dict[str, Any]) -> dict[str, Any]:
@@ -4452,6 +4555,8 @@ def parse_quiz_marks(
             raise TutorError(f"{label} 的题号必须是数字：{token}") from error
         if not 1 <= number <= count:
             raise TutorError(f"{label} 的题号超出范围：{token}")
+        if number in marks:
+            raise TutorError(f"{label} 的题号重复：{number}")
         reason = reason_text.strip()
         if not reason:
             raise TutorError(f"{label} 缺少原因：{token}")
@@ -4742,14 +4847,14 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
                 if getattr(args, "runtime_json", False)
                 else advanced
             )
-            print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
+            print(json.dumps(redact_variant_solutions(output), ensure_ascii=False, indent=2, sort_keys=True))
         else:
             output = (
                 runtime_grade_payload(replay)
                 if getattr(args, "runtime_json", False)
                 else replay
             )
-            print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
+            print(json.dumps(redact_variant_solutions(output), ensure_ascii=False, indent=2, sort_keys=True))
         return 0
 
     curriculum = load_curriculum()
@@ -4997,14 +5102,14 @@ def cmd_quiz_grade(args: argparse.Namespace) -> int:
             if getattr(args, "runtime_json", False)
             else advanced
         )
-        print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
+        print(json.dumps(redact_variant_solutions(output), ensure_ascii=False, indent=2, sort_keys=True))
     else:
         output = (
             runtime_grade_payload(payload)
             if getattr(args, "runtime_json", False)
             else payload
         )
-        print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
+        print(json.dumps(redact_variant_solutions(output), ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
 
@@ -5105,6 +5210,9 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
     # Resolve the item against the current quality gate and topic mapping.
     pool = load_quiz_question_pool(curriculum)
     resolved: dict[str, dict[str, Any]] = {}
+    # 等待作答期间被移出门禁池的变式自动排除：只作维护参考（open），
+    # 不进入人工 --invalidate 才有的 quarantined 永久拦截。
+    auto_unavailable: dict[int, str] = {}
     for variant_number, (_, variant) in enumerate(served, 1):
         if variant_number in invalidations:
             continue
@@ -5119,6 +5227,7 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
                 break
         if item_id not in resolved:
             invalidations[variant_number] = "question_unavailable"
+            auto_unavailable[variant_number] = "question_unavailable"
 
     events: list[dict[str, Any]] = []
     results: list[dict[str, Any]] = []
@@ -5128,10 +5237,14 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
         if index in invalidations:
             if declared_wrong_reasons.get(index):
                 raise TutorError("无效变式不能同时记录学员错因")
+            auto_excluded = index in auto_unavailable
+            # 人工 --invalidate 是确认无效（invalidated，永久拦截直到放行）；
+            # 等待作答期间离开门禁池的自动排除只记 excluded，修复回池后可再出。
             results.append({"number": index, "item_id": variant["item_id"], "topic_id": variant["topic_id"],
-                            "response_state": "invalidated", "is_correct": None, "selected": None,
+                            "response_state": "excluded" if auto_excluded else "invalidated",
+                            "is_correct": None, "selected": None,
                             "correct": None, "counted": False, "invalid_reason": invalidations[index],
-                            "message": "题目无效，本题不计分"})
+                            "message": "题目当前不可用，本题不计分" if auto_excluded else "题目无效，本题不计分"})
             continue
         candidate = resolved[variant["item_id"]]
         source = (
@@ -5247,8 +5360,19 @@ def cmd_quiz_variant_grade(args: argparse.Namespace) -> int:
         )
 
     if audits or invalidations:
-        append_quiz_audit_entries(args.data_dir, args.quiz_id + "-variants", audits,
-                                  [variant for _, variant in served], graded_at, invalidations)
+        # 自动排除随审计队列落盘但状态保持 open；只有人工 --invalidate 才 quarantined。
+        append_quiz_audit_entries(
+            args.data_dir,
+            args.quiz_id + "-variants",
+            {**auto_unavailable, **audits},
+            [variant for _, variant in served],
+            graded_at,
+            {
+                number: reason
+                for number, reason in invalidations.items()
+                if number not in auto_unavailable
+            },
+        )
     payload = {
         "quiz_id": args.quiz_id,
         "score": sum(1 for result in results if result["is_correct"]),

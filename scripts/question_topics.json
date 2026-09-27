@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "taxonomy_version": 1,
+  "taxonomy_version": 2,
   "description": "题目直接归属唯一K模块；note_tags仅供笔记，无训练含义。",
   "items": {
     "past-papers/comprehensive-by-year/2018下.md#1": {

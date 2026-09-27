@@ -101,7 +101,7 @@ python3 scripts/serve.py
 | 科目 | 保命卡 | 支撑资料 |
 |---|---|---|
 | 📚 综合知识（45/75） | [`SURVIVAL_CARD.md`](./past-papers/SURVIVAL_CARD.md) 272 条核心考点 + [`HIGH_FREQ.md`](./past-papers/HIGH_FREQ.md) 高频统计 | [`comprehensive-by-year/`](./past-papers/comprehensive-by-year/) 11 个考期综合真题 |
-| 🎯 案例分析（45/75） | [`CASE_SURVIVAL.md`](./past-papers/CASE_SURVIVAL.md) 90 分钟战术 + 高频题型套路 | [`case-types/`](./past-papers/case-types/) 13 题型套路 + [`case-by-year/`](./past-papers/case-by-year/) 19 个考期真题 |
+| 🎯 案例分析（45/75） | [`CASE_SURVIVAL.md`](./past-papers/CASE_SURVIVAL.md) 90 分钟战术 + 高频题型套路 | [`case-types/`](./past-papers/case-types/) 15 题型套路 + [`case-by-year/`](./past-papers/case-by-year/) 20 个考期真题 |
 | ✍️ 论文（45/75） | [`PAPER_SURVIVAL.md`](./past-papers/PAPER_SURVIVAL.md) 万能项目 + 5 主题万能段落 | [`paper-samples/`](./past-papers/paper-samples/) 18 篇范文 + [`paper-topics/`](./past-papers/paper-topics/) 13 主题提纲 |
 
 **综合训练策略**：优先个人失分与到期知识点，再参考当前核验的考频。模块抽样表现和整卷测量分别展示；历史题目比例或一次模拟成绩不能保证过线。分类与可用题量见 [`tutor/topic-map.md`](./tutor/topic-map.md)。

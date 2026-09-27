@@ -29,6 +29,26 @@ MAX_BODY_BYTES = 256 * 1024
 SESSION_ID_RE = re.compile(r"^web-(" + "|".join(map(re.escape, PAPER_IDS)) + r")-[A-Za-z0-9-]{8,80}$")
 QUESTION_NUMBERS = {str(number) for number in range(1, 76)}
 
+# 本地单进程的内存开考记录：GET /api/mock-paper 发卷时登记，交卷按服务端时间计算真实用时。
+# 服务重启后记录丢失，交卷将回退为客户端申报用时；弃考会话由 evict_stale_issued_exams 定期清理。
+ISSUED_EXAMS: dict[str, dict[str, str]] = {}
+
+
+def evict_stale_issued_exams(keep: str | None = None) -> None:
+    """驱逐超过最长训练时限仍未交卷的开考记录，长驻进程内存不再无界增长。
+
+    ``keep`` 是当前正在处理的会话：即使其开考记录已超龄也保留，
+    迟到交卷仍按服务端时钟判定 overtime。
+    """
+    horizon = max(tutor.SUBJECT_TIME_LIMITS.values()) + tutor.OVERTIME_GRACE_SECONDS
+    now = tutor.parse_datetime(tutor.now_iso())
+    for session_id in list(ISSUED_EXAMS):
+        if session_id == keep:
+            continue
+        issued_at = tutor.parse_datetime(ISSUED_EXAMS[session_id]["issued_at"])
+        if (now - issued_at).total_seconds() > horizon:
+            del ISSUED_EXAMS[session_id]
+
 
 class RequestError(ValueError):
     """A client error that is safe to return without a traceback."""
@@ -93,6 +113,8 @@ def public_curriculum() -> dict[str, Any]:
     """Return only the syllabus metadata needed by the local dashboard."""
     curriculum = tutor.load_curriculum()
     frequency = tutor.runtime_frequency()
+    # 快照回退时保留课程表静态频次，避免标签为 curriculum_fallback 而数值为空。
+    use_runtime_frequency = frequency["active"] == "audited_snapshot"
     import paper_practice
     routes = paper_practice.build_case_items() + paper_practice.build_essay_items()
     fields = (
@@ -116,7 +138,7 @@ def public_curriculum() -> dict[str, Any]:
         "route_capacity": tutor.module_assessment.route_inventory([item for item in routes if paper_practice.eligible(item)], curriculum),
         "topics": [
             {**{field: topic[field] for field in fields if field in topic},
-             "frequency_count": frequency["topics"].get(topic["id"]),
+             "frequency_count": frequency["topics"].get(topic["id"]) if use_runtime_frequency else topic.get("frequency_count"),
              "frequency_source": frequency["active"] if topic["id"].startswith("K") else "not_estimated"}
             for topic in curriculum["topics"]
         ],
@@ -211,32 +233,39 @@ def persist_events(
             if len(existing_modes) != 1 or existing_modes.pop() not in {"mock", "review"}:
                 raise tutor.TutorError("该场模考的逐题模式不一致")
             session_mode = by_id[practice_events[0]["attempt_id"]]["mode"]
-            include_mock = mock_event["attempt_id"] in by_id
             retest = session_mode == "review"
-            if (session_mode == "mock") != include_mock:
-                raise tutor.TutorError("该场模考的整卷事件与逐题模式不一致")
         else:
             paper_measured = any(
                 event.get("event_type") == "mock" and event.get("item_id") == paper_id
                 for event in logged
             )
             session_mode = "review" if paper_measured else "mock"
-            include_mock = not paper_measured
             retest = paper_measured
 
         for event in practice_events:
             event["mode"] = session_mode
             tutor.validate_record_event(event, curriculum)
         candidates = [*practice_events]
-        if include_mock:
-            old_mock = by_id.get(mock_event["attempt_id"])
-            earlier = [event for event in logged if not str(event.get("attempt_id", "")).startswith(mock_event["attempt_id"])]
+        # 同卷复测同样保存整卷成绩，由 apply_mock_event 标注 repeated_paper 等降资格原因。
+        old_mock = by_id.get(mock_event["attempt_id"])
+        if old_mock is not None:
+            # 幂等重放沿用首次记录的整卷用时与曝光计数，避免重放被判定为内容冲突。
+            mock_event["duration_seconds"] = old_mock["duration_seconds"]
+            mock_event["prior_exposure_count"] = old_mock.get("prior_exposure_count", 0)
+        else:
+            question_prefix = mock_event["attempt_id"] + "-q-"
+            earlier = [
+                event for event in logged
+                if event.get("attempt_id") != mock_event["attempt_id"]
+                and not str(event.get("attempt_id", "")).startswith(question_prefix)
+            ]
             seen = mock_paper.exposed_identities(data_dir, earlier)
-            mock_event["prior_exposure_count"] = (old_mock.get("prior_exposure_count", 0) if old_mock else
-                sum((item.get("question_fingerprint") or item["item_id"]) in seen or item["item_id"] in seen
-                    for item in practice_events))
-            tutor.validate_mock_event(mock_event)
-            candidates.append(mock_event)
+            mock_event["prior_exposure_count"] = sum(
+                (item.get("question_fingerprint") or item["item_id"]) in seen or item["item_id"] in seen
+                for item in practice_events
+            )
+        tutor.validate_mock_event(mock_event)
+        candidates.append(mock_event)
 
         new_events: list[dict[str, Any]] = []
         for event in candidates:
@@ -252,6 +281,10 @@ def persist_events(
                 "retest": retest,
                 "status": tutor.status_payload(profile, state),
             }
+        # 交卷前复核整卷质量：在 data_lock 临界区内执行，与发卷路径（_handle_mock_paper）
+        # 保持同一互斥口径，并发维护写入（如 quiz-grade --invalidate）不会落在复核与
+        # 记档之间；发卷后新隔离的题阻止本次记档，纯幂等重放已在上面返回不被阻塞。
+        require_mock_quality(data_dir, paper_id)
         tutor.write_attempts(paths["attempts"], [*logged, *new_events])
         for event in new_events:
             tutor.apply_event_to_state(state, event, curriculum)
@@ -305,13 +338,20 @@ def persist_postmortem(
             if event.get("event_type") == "practice"
             and str(event.get("attempt_id", "")).startswith(trusted_prefix)
         ]
-        if len(trusted_events) != 75:
+        # 旧版交卷对未答题也写 selected_answer 为空的逐题事件；比较前先剔除
+        # 这些空答案事件，升级前交卷的旧会话仍可补交错因反馈。
+        trusted_events = [
+            event for event in trusted_events if event.get("selected_answer", "")
+        ]
+        # 未答题不写逐题事件，可信记录数应等于实际答题数。
+        answered = {number: answer for number, answer in answers.items() if answer}
+        if len(trusted_events) != len(answered):
             raise RequestError("尚未找到该场模考的可信交卷记录")
         persisted_answers = {
             str(int(str(event["attempt_id"]).rsplit("-q-", 1)[1])): event.get("selected_answer", "")
             for event in trusted_events
         }
-        if set(persisted_answers) != QUESTION_NUMBERS or persisted_answers != answers:
+        if persisted_answers != answered:
             raise RequestError("错因反馈中的答卷与该场可信交卷记录不一致")
         existing: list[dict[str, Any]] = []
         if postmortem_path.exists():
@@ -379,8 +419,22 @@ class ExamHandler(SimpleHTTPRequestHandler):
         if not self._guard():
             return
         self.send_response(204)
-        self.send_header("Allow", "GET, POST, OPTIONS")
+        self.send_header("Allow", "GET, POST, HEAD, OPTIONS")
         self.end_headers()
+
+    def do_HEAD(self) -> None:
+        """HEAD 与 GET 同源校验：API 返回空 204，静态资源回 GET 同款响应头。"""
+        path = urlsplit(self.path).path
+        if not self._guard(allow_document_navigation=path in {"/", "/index.html"}):
+            return
+        if path in {"/questions.json", "/api/questions"}:
+            self.send_error(404)
+            return
+        if path.startswith("/api/"):
+            self.send_response(204)
+            self.end_headers()
+            return
+        super().do_HEAD()
 
     def do_GET(self) -> None:
         parsed = urlsplit(self.path)
@@ -497,6 +551,7 @@ class ExamHandler(SimpleHTTPRequestHandler):
         try:
             requested = query.get("paper_id", [None])[0]
             review = query.get("mode", ["measurement"])[0] == "review"
+            session_id = query.get("session_id", [None])[0]
             if requested is not None and requested not in PAPER_IDS:
                 raise RequestError("未知模拟卷")
             with tutor.data_lock(self.data_dir):
@@ -511,6 +566,13 @@ class ExamHandler(SimpleHTTPRequestHandler):
                         "resource_unavailable": True, "papers": inventory["papers"]}, 409)
                     return
                 require_mock_quality(self.data_dir, paper_id)
+            if session_id is not None:
+                if session_paper_id(session_id) != paper_id:
+                    raise RequestError("开考会话与下发的试卷不一致")
+                # 首次发卷时刻即权威计时起点：同会话重复 GET（控制台/curl 重放）
+                # 不得把计时起点重置为当前时刻以缩短交卷用时。
+                evict_stale_issued_exams(keep=session_id)
+                ISSUED_EXAMS.setdefault(session_id, {"paper_id": paper_id, "issued_at": tutor.now_iso()})
             payload = public_payload(paper_id)
             payload["measurement"] = row
             payload["measurement_note"] += " 本卷符合未见题测量条件。" if row["available"] else " 本次为复习练习，保留成绩但不增加独立模考证据。"
@@ -528,9 +590,26 @@ class ExamHandler(SimpleHTTPRequestHandler):
         if body.get("paper_id", paper_id) != paper_id:
             raise RequestError("答卷与会话的试卷身份不一致")
         answers = validate_answers(body.get("answers"), paper_id)
-        duration_seconds = body.get("duration_seconds")
-        if not isinstance(duration_seconds, int) or isinstance(duration_seconds, bool) or not 1 <= duration_seconds <= 150 * 60:
-            raise RequestError("整卷用时必须是 1-9000 秒的整数")
+        # 清理其他弃考会话的过期开考记录；当前会话的记录即使超龄也保留，
+        # 迟到交卷仍按服务端时钟判定 overtime。
+        evict_stale_issued_exams(keep=session_id)
+        issued = ISSUED_EXAMS.get(session_id)
+        if issued is not None:
+            if issued["paper_id"] != paper_id:
+                raise RequestError("开考记录与答卷的试卷不一致")
+            # 服务端权威计时：后台标签页节流或系统睡眠导致的迟到交卷按真实用时判定超时。
+            duration_seconds = max(1, round(
+                (tutor.parse_datetime(tutor.now_iso()) - tutor.parse_datetime(issued["issued_at"])).total_seconds()
+            ))
+        else:
+            # 服务重启等导致内存开考记录缺失时，回退客户端申报用时，不封顶到训练时限：
+            # 跨天未交的旧会话照常记档，超限用时由记档侧按 overtime 降资格，
+            # 与服务端权威计时路径行为一致，避免重试必然 400 导致答卷无法记档。
+            duration_seconds = body.get("duration_seconds")
+            if not isinstance(duration_seconds, int) or isinstance(duration_seconds, bool) or duration_seconds < 1:
+                raise RequestError("整卷用时必须是正整数秒")
+        # 交卷前复核出卷资格：发卷后新隔离的题会阻止本次记档（在 persist_events
+        # 的 data_lock 临界区内执行，纯幂等重放不被新的隔离状态阻塞）。
         confidences = body.get("confidences", {})
         durations = body.get("durations", {})
         if not isinstance(confidences, dict) or not isinstance(durations, dict):
@@ -540,6 +619,9 @@ class ExamHandler(SimpleHTTPRequestHandler):
         practice_events: list[dict[str, Any]] = []
         for result, item in zip(results, private_items(paper_id)):
             key = str(result["number"])
+            if not answers[key]:
+                # 完全没有回应的题不写逐题事件（协议 §5），只在整卷成绩中按 0 分计。
+                continue
             confidence = confidences.get(key, "sure")
             if confidence not in {"sure", "unsure", "guess"}:
                 raise RequestError(f"第 {key} 题 confidence 无效")
@@ -595,6 +677,8 @@ class ExamHandler(SimpleHTTPRequestHandler):
             "feedback_seen": True,
         }
         stored = persist_events(self.data_dir, practice_events, mock_event)
+        # 交卷（含幂等重放）已落档，清理该会话的开考记录，长驻进程不再无界增长。
+        ISSUED_EXAMS.pop(session_id, None)
         return results, score, stored
 
     def _handle_mock_submit(self, body: dict[str, Any]) -> None:
