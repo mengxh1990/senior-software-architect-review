@@ -3652,8 +3652,9 @@ def cmd_case_prepare(args: argparse.Namespace) -> int:
         not public_item.get("missing_figure") and not chosen_missing_assets
     )
     public_item["coach_note"] = (
-        "只呈现 stem，不展示答案；若 figure_assets 非空，按顺序查看后用文字准确描述图意，"
-        "不要向考生输出本地路径；作答后按精确 item_id 调用 paper_practice --reveal。"
+        "只呈现 stem 与插图，不展示答案；若 figure_assets 非空，按【图 N】顺序用绝对路径以 Markdown 图片语法"
+        "内联贴图（正式考试同样看图作答，图文必须一起给），不要只给文字描述；"
+        "作答后按精确 item_id 调用 paper_practice --reveal。"
     )
     selected_topic_definition = topics[chosen_recommendation["topic_id"]]
     track_id = (
@@ -3888,8 +3889,8 @@ def cmd_case_mock_prepare(args: argparse.Namespace) -> int:
             "note": "三题逐题按完整案例记档，再用 mock --subject case --paper-id <paper_id> --score <实际得分> "
                     "--max-score 75 --duration-minutes <实际用时> --complete 记录整卷测量；不得用片段冒充整卷",
         },
-        "coach_note": "只呈现 items[].stem，不展示 answer；figure_assets 非空时按顺序查看后用文字准确描述图意，"
-                      "不要把本地路径输出给考生；作答后按精确 item_id 取参考答案再逐点评分。",
+        "coach_note": "只呈现 items[].stem 与插图，不展示 answer；figure_assets 非空时按【图 N】顺序用绝对路径"
+                      "以 Markdown 图片语法内联贴图，不要只给文字描述；作答后按精确 item_id 取参考答案再逐点评分。",
         "rejected_papers": rejections,
     }, ensure_ascii=False, indent=2, sort_keys=True))
     return 0

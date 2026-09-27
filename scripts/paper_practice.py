@@ -171,6 +171,17 @@ def normalise_body(body: str) -> tuple[str, list[str], bool]:
     return re.sub(r"\n{3,}", "\n\n", text).strip(), figures, missing_figure
 
 
+def figure_assets(item: dict) -> list[str]:
+    """Absolute paths of the item's existing figures, in 【图 N】 order."""
+    root = REPO_ROOT / "past-papers" / "assets" / str(item.get("year") or "")
+    assets: list[str] = []
+    for name in item.get("figures", []):
+        path = root / name
+        if path.is_file():
+            assets.append(str(path.resolve()))
+    return assets
+
+
 def assess_materials(item: dict) -> dict:
     """Blind separation, complete material and topic mapping are distinct gates."""
     stem = item.get("stem", "")
@@ -412,7 +423,7 @@ def report(subject: str, items: list[dict]) -> None:
     answer_keys = [i for i in items if i["practice_mode"] == "answer_key"]
     print(f"===== {subject} =====")
     print(
-        f"  可盲练 {len(servable)} 道（其中缺图 {len(missing)} 道，出题时需文字描述图意）"
+        f"  可盲练 {len(servable)} 道（其中缺图 {len(missing)} 道，出题时按权威原卷说明，不补造图意）"
         f" | 压缩回忆版 {len(outline)} 道（可单题练习，不作整卷）"
         f" | 待维护修复 {len(blocked)} 道（门禁已拦下，不进盲练）"
         f" | 仅研读 {len(readonly)} 道"
@@ -484,8 +495,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 item["answer_note"] = "关联研读版原文，可能含题干；按小问提取采分点，不冒充官方唯一措辞"
             else:
                 item["answer_note"] = "未找到关联答案材料，不能伪造评分依据"
+        item["figure_assets"] = figure_assets(item)
         item["coach_note"] = (
-            "作答前只呈现 stem；【图 N】对应 figures 中的插图，不要贴文件路径；"
+            "作答前呈现 stem 与插图；【图 N】按顺序用 figure_assets 的绝对路径以 Markdown 图片语法内联贴图，"
+            "不要只给文字描述、也不要把路径当正文；"
             "学员作答后再用 --reveal 取参考答案并按评分点估分"
             if item["practice_mode"] == "blind"
             else "题干与参考答案混排，仅作研读材料，不得用于盲练"

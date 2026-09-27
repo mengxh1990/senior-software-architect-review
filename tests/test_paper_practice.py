@@ -119,7 +119,7 @@ class SelectionTests(unittest.TestCase):
         return base
 
     def test_missing_figure_case_is_still_served_by_default(self) -> None:
-        """缺图不影响出题：教练用文字描述图意即可。"""
+        """缺图不影响出题：出题时说明缺失，由教练按权威原卷补充图意。"""
         items = [self._item(missing_figure=True)]
         chosen = practice.select(items, tag=None, year=None, numeral=None, blind_only=True, skip_missing_figures=False)
         self.assertEqual(len(chosen), 1)

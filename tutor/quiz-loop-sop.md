@@ -80,6 +80,11 @@ python3 scripts/tutor.py quiz-prepare --subject comprehensive --topic <next_acti
 `contexts[].text`（例如英语阅读短文或已验证的关联题干）；同一 context 只展示一次。
 没有上下文的题不得自行补写，质量门禁会在出题前过滤。
 
+**插图默认直接贴图**：题目带图（`figures` / `figure_assets` 非空）时，在对应
+`【图 N】` 位置用 Markdown 图片语法内联渲染，路径用返回的**绝对路径**。贴图与是否
+盲练无关——正式考试同样是看图作答，图必须和题面一起给。只有在运行环境不能渲染图片、
+或插图确实缺失时，才退化为文字描述图意，并明确告诉考生这是描述而非原图。
+
 ### 底层脱敏契约
 
 exam-bank 的题目块结构：
@@ -150,7 +155,7 @@ python3 scripts/sanitize_bank.py --list
 - `--source-type` 按考期来源选择：2018–2022 中可靠原卷用 `real`，2020 不完整回忆版用 `recalled_real`，回忆版考期（2023 下、2024 上/下、2025 上/下、2026 上）用 `recalled_real`；
 - 真题保留试卷原始的答案分布，**不要**套用"自编题正确答案需分散到不同选项"的规则；
 - 2019 下、2020、2023 下的整理版本只覆盖部分题目（可盲练题块 44 / 14 / 20；2019 下另有 5 题过质量门但缺解析，暂不可盲练），抽不到时退回 `exam-bank/` 或自编题；
-- 当前客观题是文本契约，依赖插图但不可呈现的题由门禁拦截，不得用“原题含图”代替必要图示。
+- 当前客观题是文本契约：题干里出现内联图片链接的题仍由门禁拦在盲练池外，需先补成可渲染的插图字段；不得用“原题含图”代替必要图示，也不得让考生凭空想象图形。
 
 ### Step 2c · 案例与论文真题（按题型 / 主题抽题）
 
@@ -168,6 +173,9 @@ python3 scripts/tutor.py case-prepare --topic K25.RELIABILITY_ENGINEERING
 `figure_assets` 绝对路径、作答后 reveal 参数和 record 上下文。默认跳过缺图或图文件
 不存在的题；只有用户明确接受缺图题时才加 `--allow-missing-figures`。收到成功结果后
 不得再调用 `--list`、手工比较题型或搜索图片路径。
+
+出题时按 `figure_assets` 顺序把插图内联贴到对应 `【图 N】` 位置，不要改写成纯文字
+描述；整卷模考的三张图同样一起给全，图和题面共同构成作答条件。
 
 论文取题使用 `python3 scripts/tutor.py essay-prepare`；案例/论文作答后的答案揭示使用 [`scripts/paper_practice.py`](../scripts/paper_practice.py)：
 
@@ -188,7 +196,7 @@ python3 scripts/paper_practice.py --list
 | `practice_mode=read_only` | 题干与参考答案混排（多见于 2009–2018 答案详解转录版），**只能当研读材料，不要出给学员** |
 | `practice_mode=answer_key` | 卷末答案区，工具已排除，不要当题目 |
 | `missing_figure=true` | 默认跳过，不得臆造图意；只有考生明确接受缺图题时使用 `--allow-missing-figures`，并说明缺失材料 |
-| `stem` 里的 `【图 N】` | 对应 `figures` 里的插图，呈现时**不要贴文件路径** |
+| `stem` 里的 `【图 N】` | 对应 `figures` 里的插图；用 `figure_assets` 的绝对路径**内联贴图**，不写成正文文字或路径文本 |
 | `source_type` | 直接作为 `record --source-type`（正式卷 `real` / 回忆版 `recalled_real`） |
 | `answer_source` | 原卷答案来源；`--reveal` 自动附上关联研读材料，标记为 reference_source_excerpt，教师按小问提取采分点 |
 
@@ -395,7 +403,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 - [ ] 没把 `✅` / `**答案**` / `**解析**` 泄给学员
 - [ ] 向考生说明作答格式时只用了占位符（如 `1_ 2_ 3_ 4_ 5_`），没有用真实字母组合举例——示例串不得恰好等于答案串
 - [ ] 没有硬贴 exam-bank 原文（一律走 `quiz-prepare`）
-- [ ] 出真题时没把 `![...](../assets/...)` 图片路径或 `【解析】` 贴给学员
+- [ ] 带图题目已按 `【图 N】` 内联贴出（缺图或环境不支持渲染时已明确说明），没有把图简化成文字描述
 - [ ] "不会"的题用了 `X`，没有伪造选项或让考生补答
 - [ ] 讲解只用了 `quiz-grade` 的返回值，没有读 manifest / 题库 / 知识库
 

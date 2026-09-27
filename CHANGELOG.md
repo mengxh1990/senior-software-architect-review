@@ -12,6 +12,7 @@
 
 ### Changed
 
+- 出题默认直接贴图：题目/整卷带图时按 `figure_assets`（`paper_practice` 新增该字段）用绝对路径在 `【图 N】` 位置内联渲染，文字描述降级为环境不可渲染或插图缺失时的兜底；`case-prepare` / `case-mock-prepare` / `paper_practice` 的 `coach_note`、`quiz-loop-sop.md` 与教师人格同步改为“图文一起给”，并撤下自检清单里“不得贴图片路径”的旧条目。
 - 题图水印不再作为剔除理由：`past-papers/assets/` 只删除纯广告/推广图与重复贴片，题图上的机构水印按原样保留；`paper_practice` 的「（原图含机构广告或水印，已移除）」标注不再让整道题失去盲练资格，只在正文一张图都没留下时才按缺图处理，是否真缺图继续由正文引用 + 存活插图判断；`sanitize_bank` 同步不再把该标注记为 `missing_required_figure`；`las_import_manifest.json` 移除 3 条水印类剔除项（2020 `p2_002`、2021 `p27_007`、2025上 `p26_010`）。
 
 ### Fixed
