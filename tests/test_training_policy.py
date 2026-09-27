@@ -415,6 +415,26 @@ class TrainingPolicyTests(unittest.TestCase):
         action = t.next_training_action(state, DAY, profile={"daily_minutes": 100})
         self.assertEqual("mock_manual_flow", action["mode"])
         self.assertEqual("case", action["subject"])
+        # 路由必须自带可执行入口：否则教师只能手工检索题库组卷
+        self.assertEqual("case-mock-prepare", action["command"])
+
+    def test_case_mock_prepare_returns_a_full_75_point_paper(self):
+        payload = self.cli("case-mock-prepare")
+        self.assertEqual("ready", payload["status"])
+        self.assertEqual(3, len(payload["items"]))
+        self.assertEqual(75, payload["total_score"])
+        self.assertTrue(payload["paper_id"].startswith("past-papers/case-by-year/"))
+        for item in payload["items"]:
+            with self.subTest(item=item["id"]):
+                self.assertEqual(25, item["max_score"])
+                self.assertTrue(item["stem"].strip())
+                self.assertEqual([], item["missing_figure_assets"])
+                self.assertNotIn("answer", item)
+                # 整卷测量不用压缩回忆版提纲题
+                self.assertFalse(item.get("recall_outline"))
+        self.assertEqual(
+            [item["id"] for item in payload["items"]], payload["record"]["item_ids"]
+        )
 
     def test_budget_stop_and_all_paused_work_in_plain_text_progress(self):
         for subject in t.SUBJECTS:

@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import copy
 import hashlib
+import itertools
 import json
 import math
 import os
@@ -37,6 +38,11 @@ SCHEMA_VERSION = 1
 QUESTION_LINK_VERSION = 5
 EVIDENCE_POLICY_VERSION = 6
 SUBJECT_TIME_LIMITS = {"comprehensive": 9000, "case": 5400, "essay": 7200}
+# 案例分析整卷测量：真题固定三道 25 分题，合计 75 分、限时 90 分钟。
+# case-mock-prepare 只按这三个常量组卷，避免"片段冒充整卷"。
+CASE_QUESTION_MAX_SCORE = 25
+CASE_MOCK_QUESTIONS = 3
+CASE_MOCK_MAX_SCORE = 75
 # 超时判定宽限：浏览器用满时限自动交卷时，服务端权威计时的发卷提前量、
 # 提交传输开销与秒级截断可把真实用时顶过限 1-2 秒；少量宽限避免恰好
 # 用满时限的考生被误判 overtime 丧失独立模考资格。
@@ -2073,7 +2079,8 @@ def next_training_action(
             import mock_paper
             mock_availability = mock_paper.availability(data_dir, state)
         if subject != "comprehensive" or mock_availability and mock_availability["available"]:
-            return {"mode": "mock_manual_flow", "subject": subject, "command": "serve.py" if subject == "comprehensive" else None,
+            return {"mode": "mock_manual_flow", "subject": subject,
+                    "command": {"comprehensive": "serve.py", "case": "case-mock-prepare"}.get(subject),
                     "paper_id": (mock_availability or {}).get("paper_id"),
                     "reason": "有整块时间且缺少近期独立模考，优先测量再排课", "budget": budget,
                     "estimated_minutes": SUBJECT_TIME_LIMITS[subject] // 60}
@@ -3717,6 +3724,174 @@ def cmd_case_prepare(args: argparse.Namespace) -> int:
         },
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+    return 0
+
+
+def case_mock_paper_id(year: str, batch: str | None) -> str:
+    """Stable paper identity for one 考期（含批次）的案例整卷。"""
+
+    base = f"past-papers/case-by-year/{year}.md"
+    return f"{base}#批次{batch}" if batch else base
+
+
+def case_mock_candidates(
+    items: list[dict[str, Any]],
+) -> tuple[list[tuple[str, str | None, tuple[dict[str, Any], ...]]], list[dict[str, Any]]]:
+    """Group blind case items into papers that can serve as a 75-point mock.
+
+    真题案例分析固定三道 25 分题，所以能当整卷测量的"卷"必须来自同一考期
+    （含批次）且恰好三道合格题、合计 75 分。返回 ``(candidates, rejections)``；
+    淘汰原因按卷记录，使 resources_unavailable 的答案可以直接拿去维修题库。
+    """
+
+    import paper_practice
+
+    pools: dict[tuple[str, str | None], list[dict[str, Any]]] = {}
+    for item in items:
+        if item.get("practice_mode") != "blind":
+            continue
+        if item.get("selection_only"):
+            # 2009–2017 只沉淀了经典选题，不是完整年份卷，不能充当整卷测量
+            continue
+        pools.setdefault((item["year"], item.get("batch")), []).append(item)
+
+    def question_score(item: dict[str, Any]) -> int:
+        points = item.get("subquestions") or []
+        scores = [point.get("max_score") for point in points]
+        # 缺小问或分值未核对时整题不得计入整卷，避免用残卷冒充 75 分测量
+        if not points or any(score is None for score in scores):
+            return 0
+        return sum(scores)
+
+    candidates: list[tuple[str, str | None, tuple[dict[str, Any], ...]]] = []
+    rejections: list[dict[str, Any]] = []
+    for (year, batch), pool in sorted(pools.items()):
+        eligible = [item for item in pool if paper_practice.eligible(item)]
+        blocked = [item for item in pool if not paper_practice.eligible(item)]
+        full = [item for item in eligible if not item.get("recall_outline")]
+        scored = [item for item in full if question_score(item) == CASE_QUESTION_MAX_SCORE]
+        papers = [
+            combo
+            for combo in itertools.combinations(scored, CASE_MOCK_QUESTIONS)
+            if sum(question_score(item) for item in combo) == CASE_MOCK_MAX_SCORE
+        ]
+        if papers:
+            candidates.extend((year, batch, combo) for combo in papers)
+            continue
+        rejections.append({
+            "paper_id": case_mock_paper_id(year, batch),
+            "year": year,
+            "batch": batch,
+            "reason": (
+                "eligible_questions_insufficient"
+                if len(scored) < CASE_MOCK_QUESTIONS
+                else "no_three_question_combination_sums_to_75"
+            ),
+            "eligible_questions": len(scored),
+            "recall_outline_questions": len(eligible) - len(full),
+            "blocked_questions": len(blocked),
+            "blocked_issues": sorted({issue for item in blocked for issue in item.get("quality_issues", [])}),
+            "required_questions": CASE_MOCK_QUESTIONS,
+        })
+    return candidates, rejections
+
+
+def cmd_case_mock_prepare(args: argparse.Namespace) -> int:
+    """Assemble one complete 75-point blind case paper for a full mock.
+
+    ``next_training_action`` 在有整块时间且案例测量过期时路由到
+    ``mock_manual_flow``。本命令只读返回那张卷子本身——三道题、75 分、插图
+    齐全——并附带 reveal/record 契约，使测量回合不必再手工检索题库组卷。
+    """
+
+    import paper_practice
+
+    today = parse_date(args.today) if args.today else datetime.now().astimezone().date()
+    items = paper_practice.build_case_items()
+    candidates, rejections = case_mock_candidates(items)
+    if not candidates:
+        print(json.dumps({
+            "mode": "case_full_mock",
+            "status": "resources_unavailable",
+            "reason": "没有可组成 75 分整卷的盲练案例题；按 rejected_papers 的逐年原因维修题库，不得用片段冒充整卷测量",
+            "today": today.isoformat(),
+            "question_count": CASE_MOCK_QUESTIONS,
+            "max_score": CASE_MOCK_MAX_SCORE,
+            "rejected_papers": rejections,
+        }, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+
+    last_attempt_by_item: dict[str, str] = {}
+    paths = state_paths(args.data_dir)
+    if paths["attempts"].is_file():
+        for event in load_attempts(paths["attempts"]):
+            if event.get("subject") != "case" or not event.get("item_id"):
+                continue
+            attempted_at = str(event.get("at") or "")
+            item_id = str(event["item_id"])
+            if attempted_at > last_attempt_by_item.get(item_id, ""):
+                last_attempt_by_item[item_id] = attempted_at
+
+    def candidate_key(candidate: tuple[str, str | None, tuple[dict[str, Any], ...]]) -> tuple[Any, ...]:
+        year, _, combo = candidate
+        exposed = sum(1 for item in combo if item["id"] in last_attempt_by_item)
+        recalled = sum(1 for item in combo if item.get("source_type") != "real")
+        matched = re.match(r"(\d{4})", str(year))
+        year_number = int(matched.group(1)) if matched else 0
+        return (exposed, recalled, -year_number, tuple(item["id"] for item in combo))
+
+    year, batch, combo = min(candidates, key=candidate_key)
+    order = {item["id"]: index for index, item in enumerate(items)}
+    public_items: list[dict[str, Any]] = []
+    for item in sorted(combo, key=lambda entry: order[entry["id"]]):
+        public = copy.deepcopy(item)
+        public.pop("answer", None)
+        assets, missing_assets = case_figure_assets(public)
+        public["figure_assets"] = assets
+        public["missing_figure_assets"] = missing_assets
+        public["max_score"] = sum(point.get("max_score") or 0 for point in public.get("subquestions") or [])
+        public_items.append(public)
+
+    paper_id = case_mock_paper_id(year, batch)
+    source_types = {item.get("source_type") for item in public_items}
+    print(json.dumps({
+        "mode": "case_full_mock",
+        "status": "ready",
+        "today": today.isoformat(),
+        "paper_id": paper_id,
+        "year": year,
+        "batch": batch,
+        "question_count": CASE_MOCK_QUESTIONS,
+        "max_score": CASE_MOCK_MAX_SCORE,
+        "total_score": sum(item["max_score"] for item in public_items),
+        "suggested_minutes": SUBJECT_TIME_LIMITS["case"] // 60,
+        "items": public_items,
+        "route_lock": {
+            "mode": "case_full_mock",
+            "subject": "case",
+            "paper_id": paper_id,
+            "item_ids": [item["id"] for item in public_items],
+        },
+        "reveal": {
+            "command": "paper_practice.py --subject case --item-id <item_id> --reveal",
+            "item_ids": [item["id"] for item in public_items],
+        },
+        "record": {
+            "subject": "case",
+            "skill": "application",
+            "assessment_scope": "case",
+            "max_score": CASE_MOCK_MAX_SCORE,
+            "paper_id": paper_id,
+            "item_ids": [item["id"] for item in public_items],
+            "timed_minutes": SUBJECT_TIME_LIMITS["case"] // 60,
+            "source_type": next(iter(source_types)) if len(source_types) == 1 else "recalled_real",
+            "note": "三题逐题按完整案例记档，再用 mock --subject case --paper-id <paper_id> --score <实际得分> "
+                    "--max-score 75 --duration-minutes <实际用时> --complete 记录整卷测量；不得用片段冒充整卷",
+        },
+        "coach_note": "只呈现 items[].stem，不展示 answer；figure_assets 非空时按顺序查看后用文字准确描述图意，"
+                      "不要把本地路径输出给考生；作答后按精确 item_id 取参考答案再逐点评分。",
+        "rejected_papers": rejections,
+    }, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
 
@@ -5947,6 +6122,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="显式允许插图被移除的案例题；默认只选择材料完整的盲练题",
     )
     case_prepare_parser.set_defaults(func=cmd_case_prepare)
+
+    case_mock_parser = subparsers.add_parser(
+        "case-mock-prepare",
+        help="只读组一张 75 分制完整盲练案例整卷（3 题、插图齐全、含记档契约）",
+    )
+    case_mock_parser.add_argument("--today")
+    case_mock_parser.set_defaults(func=cmd_case_mock_prepare)
 
     essay_prepare_parser = subparsers.add_parser("essay-prepare", help="只读选择完整、已分类的论文题")
     essay_prepare_parser.add_argument("--topic")

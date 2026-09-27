@@ -120,7 +120,7 @@ careless, guessed_correct
 - 2 次：`medium`；
 - 至少 3 次合格独立测量：`high`。
 
-这些等级不是通过概率。分数下界采用启发式余量，不是统计置信下界；最近有效测量超过 7 天显示 `needs_remeasurement`。`measurement_tasks` 返回待安排的完整测量；有足够当日整块时间时统一路由进入 `mock_manual_flow`。
+这些等级不是通过概率。分数下界采用启发式余量，不是统计置信下界；最近有效测量超过 7 天显示 `needs_remeasurement`。`measurement_tasks` 返回待安排的完整测量；有足够当日整块时间时统一路由进入 `mock_manual_flow`，并由 `next_action.command` 给出该科目的整卷入口（综合 `serve.py`、案例 `case-mock-prepare`）。整卷测量必须来自该入口返回的卷子：案例固定 3 题 75 分且插图齐全，不得由教师手工检索题库拼卷，也不得用片段冒充整卷。
 
 ## 7. 排课优先级
 

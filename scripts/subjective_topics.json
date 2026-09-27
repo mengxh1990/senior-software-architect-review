@@ -2088,7 +2088,7 @@
       ],
       "content_fingerprint": "3cbc4075145acd2f1c6da8701a9f66d948c4a1500098ddb7d9b0eeb8271670a3",
       "canonical_item_id": "past-papers/case-by-year/2019下.md#试题五",
-      "complete": true,
+      "complete": false,
       "covered_topic_ids": [
         "K10.DATABASE_MODELING",
         "K21.MESSAGING_CACHE"

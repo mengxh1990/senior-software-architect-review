@@ -30,7 +30,7 @@
 ## 回合预算与结束条件
 
 - “今天学什么／安排训练”先调用一次只读 `progress --runtime-json`，再按其 `next_action` 调用对应训练入口；综合出题回合只调用一次 `quiz-prepare`，判分回合只调用一次带 `--prepare-next --runtime-json` 的 `quiz-grade`。只有命令失败且直接阻塞本轮时，才允许增加一次修复或诊断调用。
-- **运行时白名单**：统一路由阶段只允许 `progress --runtime-json`，综合出题回合只允许 `quiz-prepare`，判分回合只允许 `quiz-grade --prepare-next --runtime-json`，变式回合只允许 `quiz-variant-grade --prepare-next --runtime-json`。不得用 `cat` / `rg` / `sed` 读取源码、题库、`quiz-sessions/*.json`、`state.json` 或知识库来"确认"答案，也不得手工改 manifest、伪造选项或要求考生补答"不会"的题。命令非零退出且直接阻塞本轮时，最多做一次只读诊断；仍失败就如实报告阻塞，改开维护任务。
+- **运行时白名单**：统一路由阶段只允许 `progress --runtime-json`，综合出题回合只允许 `quiz-prepare`，判分回合只允许 `quiz-grade --prepare-next --runtime-json`，变式回合只允许 `quiz-variant-grade --prepare-next --runtime-json`。不得用 `cat` / `rg` / `sed` 读取源码、题库、`quiz-sessions/*.json`、`state.json` 或知识库来"确认"答案，也不得手工改 manifest、伪造选项或要求考生补答"不会"的题。命令非零退出且直接阻塞本轮时，最多做一次只读诊断；仍失败就如实报告阻塞，改开维护任务。本白名单只约束客观题循环：路由为 `mock_manual_flow` 的整卷测量，按 `next_action.command` 调用对应入口（综合 `serve.py` / 案例 `case-mock-prepare`），同样不得直接读题库或 `state.json` 自行组卷。
 - **上下文预算**：非题面输出保持简短，不把完整题库、候选池或状态全集带进教学线程；题目本身不受此限制。为了"确认"重复运行确定性命令也算违规。每个日历日用新任务从 `.study/` 恢复；同一任务一旦发生源码/题库排查，后续教学转到新任务，避免维护上下文跨日累积。
 - **确定性调用**：答案格式、错因标记和命令已明确时，直接在同一响应中发起工具调用；平台要求 commentary 时只发送一句简短状态，不单独生成“收到／准备判分”等中间回复。
 - `quiz-prepare` 每轮只调用一次，返回的即为已过质量门禁的题：直接展示，不得再自行复核、筛选、丢弃或为该题重跑命令。作答或判分时才发现残缺（题干被解析污染、缺图缺表、答案不唯一）的题，用 `--invalidate` 排除，本回合结束后另开维护任务。
@@ -420,7 +420,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 - `resources_unavailable`：进度正常可读，但没有满足门禁的题；说明原因，不循环重试。
 - `targeted_fragment`：剩余预算不足完整主观题，仅练短答/骨架，并按片段记档。
 - `survival_review`：只复习已学错题与答题骨架，不开新专题。
-- `mock_manual_flow`：有足够整块时间且测量到期，按科目模考流程执行；综合用本地考试页，案例完整 3 题，论文完整限时成文。
+- `mock_manual_flow`：有足够整块时间且测量到期，按科目模考流程执行。综合用本地考试页（`python3 scripts/serve.py`）；案例直接调用一次 `python3 scripts/tutor.py case-mock-prepare` 取整卷（3 题、75 分、插图齐全，附 reveal/record 契约），返回 `resources_unavailable` 时按 `rejected_papers` 的逐年原因维修题库，**不得**再手工检索题库拼卷；论文完整限时成文。
 - `task_kind=mixed_check`：沿用返回的 `quiz-prepare --mixed` 命令，不附加单考点限制，不外推整卷分数。
 - `preparation_status=failed`：仍展示本轮 score/results；next_quiz 为空表示没有续练可展示。环境恢复后可重放原判分命令，保持幂等。
 

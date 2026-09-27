@@ -159,6 +159,11 @@ class SelectionTests(unittest.TestCase):
 
 
 class ShippedPaperSafetyTests(unittest.TestCase):
+    def test_shipped_gate_blocks_the_declared_incomplete_item(self) -> None:
+        items = {item["id"]: item for item in practice.build_case_items()}
+        self.assertTrue(items["past-papers/case-by-year/2019下.md#试题五"]["declared_incomplete"])
+        self.assertTrue(items["past-papers/case-by-year/2025下.md#批次2-试题一"]["recall_outline"])
+
     def test_blind_case_stems_never_contain_answer_markers(self) -> None:
         leaks = []
         for item in practice.build_case_items():
@@ -185,6 +190,68 @@ class ShippedPaperSafetyTests(unittest.TestCase):
             with self.subTest(item=item["id"]):
                 self.assertTrue(item["stem"].strip())
                 self.assertTrue(item["tag"].startswith("论文"))
+
+
+class MaterialGateTests(unittest.TestCase):
+    """裁切插图与压缩回忆版题面必须在出题前被拦下，而不是靠人肉看图。"""
+
+    def _item(self, **overrides):
+        base = {
+            "id": "fixture:gate",
+            "subject": "case",
+            "year": "2013下",
+            "numeral": "一",
+            "tag": "案例 01",
+            "practice_mode": "blind",
+            "missing_figure": False,
+            "figures": [],
+            "stem": "阅读以下叙述。\n\n【说明】\n" + "系统背景与设计要求。" * 30,
+        }
+        base.update(overrides)
+        return base
+
+    def test_declared_incomplete_material_is_blocked_without_a_shape_rule(self) -> None:
+        items = {item["id"]: item for item in practice.build_case_items()}
+        item = items["past-papers/case-by-year/2019下.md#试题五"]
+        # 它没有任何结构性质量问题，唯一依据是登记表对内容的核对结论
+        self.assertEqual([], item["quality_issues"])
+        self.assertTrue(item["declared_incomplete"])
+        self.assertFalse(item["complete"])
+        self.assertFalse(practice.eligible(item))
+
+    def test_figure_shape_never_decides_eligibility(self) -> None:
+        # 运行时不读像素尺寸：竖版、超高的插图只要内容没问题就照常出题
+        self.assertFalse(hasattr(practice, "figure_size"))
+        self.assertFalse(hasattr(practice, "CROPPED_FIGURE_RATIO"))
+        items = {item["id"]: item for item in practice.build_case_items()}
+        for item_id in (
+            "past-papers/case-by-year/2023下.md#试题一",
+            "past-papers/case-by-year/2015下-原卷.md#试题二",
+        ):
+            with self.subTest(item=item_id):
+                self.assertTrue(practice.eligible(items[item_id]))
+
+    def test_outline_only_recall_stem_is_marked_but_still_practiceable(self) -> None:
+        assessed = practice.assess_materials(
+            self._item(
+                stem="### 题目描述\n\n某电商系统缓存击穿。\n\n### 问题1（13分）\n说明两种方案的实现原理。\n\n### 问题2（12分）\n对比两种方案。"
+            )
+        )
+        # 保真度分级，不是材料缺陷：不进 quality_issues，仍可作单题练习
+        self.assertTrue(assessed["recall_outline"])
+        self.assertNotIn("recall_outline_stem", assessed["quality_issues"])
+        self.assertNotIn("incomplete_scoring_material", assessed["quality_issues"])
+
+    def test_shipped_recall_outline_item_stays_eligible_for_single_case_practice(self) -> None:
+        items = {item["id"]: item for item in practice.build_case_items()}
+        item = items["past-papers/case-by-year/2025下.md#批次2-试题二"]
+        self.assertTrue(item["recall_outline"])
+        # 微服务赛道就靠这道题维持单题训练；只有整卷组卷会排除它
+        self.assertTrue(practice.eligible(item))
+
+    def test_stem_with_intro_section_is_never_flagged_as_outline(self) -> None:
+        assessed = practice.assess_materials(self._item(stem="【说明】\n" + "背景。" * 5))
+        self.assertFalse(assessed["recall_outline"])
 
 
 if __name__ == "__main__":

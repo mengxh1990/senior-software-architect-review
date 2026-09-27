@@ -59,6 +59,22 @@ IMAGE_LINK_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
 REMOVED_FIGURE_MARK = "原图含机构广告或水印，已移除"
 MISSING_FIGURE_NOTE = "原题必要插图缺失，默认不出题；明确接受缺图练习时请对照权威原卷，不得补造图意"
 RECALL_YEARS = {"2023下", "2024上", "2024下", "2025上", "2025下", "2026上"}
+# 压缩回忆版体检：缺【说明】且正文不足 200 字时（2024上/2025上/2025下批次2），
+# 题干只剩考点提纲，无法独立判分。全库 60 道盲练案例题中位 712 字，这条只拦提纲题。
+THIN_CASE_STEM_CHARS = 200
+CASE_INTRO_RE = re.compile(r"【\s*说明\s*】|\*\*\s*说明\s*\*\*|^#{1,4}\s*说明\s*$", re.MULTILINE)
+
+
+def is_thin_recall_stem(stem: str) -> bool:
+    """True when a 案例 stem is only a compressed recall outline.
+
+    这是**保真度分级**而不是材料缺陷：回忆版提纲仍能当单题练习（小问清楚、
+    可判分），但不足以充当全真整卷测量，所以不写进 ``quality_issues``，
+    只作为 ``recall_outline`` 标记供整卷组卷排除。
+    """
+    if CASE_INTRO_RE.search(stem):
+        return False
+    return len(re.sub(r"\s+", "", stem)) < THIN_CASE_STEM_CHARS
 
 
 def _load_tagger():
@@ -159,6 +175,7 @@ def assess_materials(item: dict) -> dict:
     """Blind separation, complete material and topic mapping are distinct gates."""
     stem = item.get("stem", "")
     issues = []
+    recall_outline = False
     if item.get("practice_mode") != "blind":
         issues.append("not_blind")
     if re.search(r"暂缺|待补(?:充|齐)?|尚未还原|未还原|不得据以出题|选项内容[.。]空|题干[、与及].{0,15}缺失", stem):
@@ -168,8 +185,9 @@ def assess_materials(item: dict) -> dict:
     if item.get("missing_figure") and (item["subject"] == "case" or re.search(r"如图|见图|下图|图中|下表", stem)):
         issues.append("missing_required_figure")
     root = REPO_ROOT / "past-papers" / "assets" / item["year"]
-    if any(not (root / name).is_file() for name in item.get("figures", [])):
-        issues.append("missing_figure_asset")
+    for name in item.get("figures", []):
+        if not (root / name).is_file():
+            issues.append("missing_figure_asset")
     if not item.get("figures") and re.search(r"如图|见图|图\s*\d+[-－]\d+|在图中|填写图中", stem):
         issues.append("missing_required_figure")
     if re.search(r"(?:表\s*\d+|下表|表中).{0,35}(?:空白|填|所示)|填.{0,20}表\s*\d+", stem) and not sanitize_bank.MARKDOWN_TABLE_RE.search(stem) and not item.get("figures"):
@@ -179,6 +197,7 @@ def assess_materials(item: dict) -> dict:
         scores = [re.search(r"[（(](\d+)[ \t]*分", heading) for heading in question_headers]
         if scores and all(scores) and sum(int(score.group(1)) for score in scores) != 25:
             issues.append("incomplete_scoring_material")
+        recall_outline = is_thin_recall_stem(stem)
 
         if not item.get("figures") and re.search(r"(?:效用树|架构图|序列图|状态图|活动图|用例图).{0,15}(?:填空|空白|填入)|(?:完成|补充|填写).{0,20}(?:图|效用树)", stem):
             issues.append("missing_required_figure")
@@ -187,7 +206,12 @@ def assess_materials(item: dict) -> dict:
     if str(item.get("tag", "")).endswith("00"):
         issues.append("unclassified")
     metadata = knowledge_taxonomy.subjective_metadata(item["id"])
+    # 材料完整性是**声明事实**：转录时对内容做过一次核对，结论记在登记表的
+    # ``complete`` 字段，运行时只如实转述，不按宽高比一类形态特征反推——
+    # 图对不对只取决于图的内容，形状说明不了任何问题。
+    declared_complete = True
     if metadata:
+        declared_complete = bool(metadata.get("complete", True))
         item = {**item, "topic_id": metadata["topic_id"], "covered_topic_ids": metadata.get("covered_topic_ids", []),
                 "subquestions": metadata.get("subquestions", []),
                 "canonical_item_id": metadata.get("canonical_item_id", item["id"])}
@@ -196,11 +220,18 @@ def assess_materials(item: dict) -> dict:
     elif item.get("practice_mode") == "blind":
         issues.append("missing_module_mapping")
     return {**item, "quality_issues": sorted(set(issues)),
-            "quality_status": "invalid" if issues else "ready", "complete": not issues}
+            "quality_status": "invalid" if issues else "ready",
+            "complete": (not issues) and declared_complete,
+            "declared_incomplete": not declared_complete,
+            "recall_outline": recall_outline}
 
 
 def eligible(item: dict, *, allow_missing_figures: bool = False) -> bool:
     if item.get("practice_mode") != "blind":
+        return False
+    if item.get("declared_incomplete"):
+        # 登记表已声明材料不完整（如插图被裁）；不接受缺图开关覆盖，
+        # 因为这不是"缺图"而是"内容对不上/不齐"，只有重新抽图或核对后才能放行
         return False
     issues = set(item.get("quality_issues", []))
     if allow_missing_figures:
@@ -369,20 +400,29 @@ def select(items: list[dict], *, tag: str | None, year: str | None, numeral: str
 def report(subject: str, items: list[dict]) -> None:
     pool = practice_items(items)
     blind = [i for i in pool if i["practice_mode"] == "blind"]
-    missing = [i for i in blind if i["subject"] == "case" and i["missing_figure"]]
+    servable = [
+        i for i in blind if not i.get("quality_issues") and not i.get("declared_incomplete")
+    ]
+    blocked = [
+        i for i in blind if i.get("quality_issues") or i.get("declared_incomplete")
+    ]
+    missing = [i for i in servable if i["subject"] == "case" and i["missing_figure"]]
+    outline = [i for i in servable if i.get("recall_outline")]
     readonly = [i for i in pool if i["practice_mode"] == "read_only"]
     answer_keys = [i for i in items if i["practice_mode"] == "answer_key"]
     print(f"===== {subject} =====")
     print(
-        f"  可盲练 {len(blind)} 道（其中缺图 {len(missing)} 道，出题时需文字描述图意）"
+        f"  可盲练 {len(servable)} 道（其中缺图 {len(missing)} 道，出题时需文字描述图意）"
+        f" | 压缩回忆版 {len(outline)} 道（可单题练习，不作整卷）"
+        f" | 待维护修复 {len(blocked)} 道（门禁已拦下，不进盲练）"
         f" | 仅研读 {len(readonly)} 道"
         f" | 答案区 {len(answer_keys)} 段 | 合计 {len(items)} 道"
     )
     by_tag: dict[str, int] = {}
-    for item in blind:
+    for item in servable:
         by_tag[item["tag"]] = by_tag.get(item["tag"], 0) + 1
     for tag, count in sorted(by_tag.items()):
-        label = next((i["tag_label"] for i in blind if i["tag"] == tag), "")
+        label = next((i["tag_label"] for i in servable if i["tag"] == tag), "")
         print(f"    {tag} {label}：{count} 道")
 
 
