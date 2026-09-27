@@ -1717,8 +1717,9 @@ def apply_mock_event(state: dict[str, Any], event: dict[str, Any]) -> dict[str, 
     score_75 = score / maximum * 75
     subject = state["subjects"][subject_name]
     ineligible = []
-    if event["item_id"] in {"hf-pass-mock-01-v2", "hf-pass-mock-01"}:
-        ineligible.append("limited_curriculum_coverage")
+    # 2026-09-27 考生显式决定：hf-pass 系列窄覆盖模拟卷按整卷证据计入，不再标记
+    # limited_curriculum_coverage；其未覆盖的 K 模块由考点级 recognition 证据单独跟踪
+    # （9/8 卷实际覆盖 18/31 个 K 模块）。
     if any(item["paper_id"] == event["item_id"] for item in subject["mock_scores"]):
         ineligible.append("repeated_paper")
     if int(event["duration_seconds"]) > SUBJECT_TIME_LIMITS[subject_name] + OVERTIME_GRACE_SECONDS:

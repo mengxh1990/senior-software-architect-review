@@ -337,6 +337,25 @@ class TrainingPolicyTests(unittest.TestCase):
         self.assertEqual("low", state["subjects"]["case"]["evidence_level"])
         self.assertEqual(["overtime"], state["subjects"]["case"]["mock_scores"][-1]["ineligible_reasons"])
 
+    def test_legacy_high_frequency_paper_counts_as_full_paper_evidence(self):
+        state = self.state(False)
+        result = t.apply_mock_event(
+            state,
+            {
+                "attempt_id": "hf-pass-01",
+                "item_id": "hf-pass-mock-01-v2",
+                "at": "2026-09-08T12:03:21+08:00",
+                "subject": "comprehensive",
+                "score": 68,
+                "max_score": 75,
+                "duration_seconds": 3089,
+                "source_type": "simulation",
+                "complete": True,
+            },
+        )
+        self.assertTrue(result["measurement_eligible"])
+        self.assertEqual([], state["subjects"]["comprehensive"]["mock_scores"][0]["ineligible_reasons"])
+
     def test_full_essay_measures_subject_but_overtime_does_not_qualify(self):
         state = self.state(False)
         event = self.event(1, topic="P01.ESSAY_ARCHITECTURE", skill="production", score=60, max_score=75,
