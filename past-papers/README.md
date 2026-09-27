@@ -21,7 +21,7 @@ past-papers/
 ├── comprehensive-by-year/    # ⭐ 综合知识按考期（2018 下 – 2026 上）
 ├── case-by-year/             # ⭐ 案例分析按考期（2009–2017 经典选题，2018 起按年，2023 部分还原）
 ├── essay-by-year/            # ⭐ 论文按考期（完整题干与小问）
-├── assets/                   # 原题插图（无损 WebP，已剔除广告与水印图）
+├── assets/                   # 原题插图（无损 WebP，已剔除广告/推广图；题图水印保留）
 ├── incoming-raw/             # 待整理的回忆版原始文本
 ├── source-pdfs/              # 明确标记的非官方回忆版来源文件
 ├── paper-topics/             # ⭐ 论文 13 大主题（按题型分类）

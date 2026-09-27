@@ -6,7 +6,8 @@ script performs the deterministic part of the import:
 
 * strip watermark / advertising / page-number boilerplate,
 * split one parsed document into 综合知识 / 案例分析 / 论文 sections,
-* drop advertiser logos and repeated stamp images while keeping exam figures,
+* drop advertiser logos, promotion images and repeated stamps while keeping
+  exam figures — a watermark printed over an exam figure is kept as-is,
 * write ``past-papers/<dimension>-by-year/<label>.md`` with a source header,
 * copy kept figures into ``past-papers/assets/<label>/`` and rewrite links.
 
@@ -245,10 +246,13 @@ def plan_images(
 ) -> dict[str, ImageDecision]:
     """Classify every extracted image, dropping banners and repeated stamps.
 
-    ``extra_drops`` carries reviewed removals from the manifest: images that
-    survived the shape/duplicate rules but still carry a watermark or an
-    advertiser's promotion (verified by OCR). Their file name maps to the
-    reason that is recorded in the import report.
+    Watermarks printed over an exam figure are accepted: only decoration
+    (advert banners, QR/promotion images, repeated stamps) is dropped.
+
+    ``extra_drops`` carries reviewed removals from the manifest: promotion
+    images that survived the shape/duplicate rules but are not exam content
+    (verified by OCR). Their file name maps to the reason recorded in the
+    import report. A watermark alone is not a removal reason.
     """
     from PIL import Image
 

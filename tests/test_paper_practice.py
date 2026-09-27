@@ -87,6 +87,22 @@ class ClassificationTests(unittest.TestCase):
         self.assertIsNone(answer)
 
 
+class RemovedFigureNoteTests(unittest.TestCase):
+    """广告/推广图被剔除的标注不再等同于"整题缺图"。"""
+
+    def test_note_with_a_surviving_figure_is_not_missing(self) -> None:
+        body = "题干\n\n*（原图含机构广告或水印，已移除）*\n\n![](../assets/2022/p3_001.webp)\n"
+        _, figures, missing = practice.normalise_body(body)
+        self.assertEqual(figures, ["p3_001.webp"])
+        self.assertFalse(missing)
+
+    def test_note_without_any_figure_still_counts_as_missing(self) -> None:
+        body = "题干\n\n*（原图含机构广告或水印，已移除）*\n"
+        _, figures, missing = practice.normalise_body(body)
+        self.assertEqual(figures, [])
+        self.assertTrue(missing)
+
+
 class SelectionTests(unittest.TestCase):
     def _item(self, **overrides):
         base = {

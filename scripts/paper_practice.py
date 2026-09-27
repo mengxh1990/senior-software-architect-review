@@ -9,8 +9,10 @@ kind of flow ``sanitize_bank.py`` gives the objective questions:
 * pick by 题型/主题 tag, by year, or list what is available;
 * for 案例, split the question from its 参考答案 and only hand the answer over
   when ``--reveal`` is passed (the learner writes first);
-* skip questions whose figures were removed by default;
-  ``--allow-missing-figures`` requires the learner to explicitly accept missing materials;
+* keep exam figures that carry a bookstore watermark (only pure advert/promo
+  images are dropped), so a removed-image note alone never blocks a question;
+  genuinely missing figures are still skipped, and ``--allow-missing-figures``
+  requires the learner to explicitly accept such materials;
 * replace ``![](../assets/...)`` links with ``【图 N】`` markers so no file path
   is ever shown to the learner.
 
@@ -145,7 +147,10 @@ def normalise_body(body: str) -> tuple[str, list[str], bool]:
         return f"【图 {counter['value']}】"
 
     text = IMAGE_LINK_RE.sub(replace, text)
-    missing_figure = REMOVED_FIGURE_MARK in text
+    # 带水印的题图不再从题库删除：这里的提示只说明"某个广告/推广图曾占据此处"。
+    # 只有正文一张图都没留下时才按缺图处理，是否真缺图由 assess_materials 按
+    # 正文引用（如图/效用树/架构图…）继续把关。
+    missing_figure = REMOVED_FIGURE_MARK in text and not figures
     text = text.replace(f"*（{REMOVED_FIGURE_MARK}）*", "").replace(REMOVED_FIGURE_MARK, "")
     return re.sub(r"\n{3,}", "\n\n", text).strip(), figures, missing_figure
 

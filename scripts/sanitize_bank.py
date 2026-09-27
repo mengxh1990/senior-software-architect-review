@@ -808,11 +808,7 @@ def parse_paper_transcript(text: str, year: str) -> List[Dict]:
                 "source_figure_status": (
                     "figure_not_renderable"
                     if RESOURCE_LINK_RE.search(source_fragment)
-                    else (
-                        "missing_required_figure"
-                        if "原图含机构广告或水印，已移除" in source_fragment
-                        else None
-                    )
+                    else None
                 ),
                 "source_requires_table": bool(
                     re.search(r"<table\b", source_fragment, re.IGNORECASE)

@@ -2036,7 +2036,7 @@
       ],
       "content_fingerprint": "573222de707c2bfa11c3c372da30b74a3148ad5ac65929da277d79fb3b232a6a",
       "canonical_item_id": "past-papers/case-by-year/2019下.md#试题三",
-      "complete": false,
+      "complete": true,
       "covered_topic_ids": [
         "K07.REALTIME_EMBEDDED",
         "K11.COMPONENTS_4PLUS1"
@@ -2137,7 +2137,7 @@
           ]
         }
       ],
-      "content_fingerprint": "f167c4f510c3c8db595323d69dffc91508385f19c67e1c322f13989a991fceb3",
+      "content_fingerprint": "ab10a0511ab0f562c83e4d9d4018a16c94e894cfc2681e75a7173767a3741660",
       "canonical_item_id": "past-papers/case-by-year/2020.md#试题一",
       "complete": false,
       "covered_topic_ids": [
@@ -2484,7 +2484,7 @@
           "topic_ids": []
         }
       ],
-      "content_fingerprint": "d476e26d586d4d80e997dd4b86812b718249cdb4efd0a53f94c68937cfed48c7",
+      "content_fingerprint": "40cff8ef21f013a645ce70d90975f8e806d7d9efa3897e17e015741c5539efaa",
       "canonical_item_id": "past-papers/case-by-year/2021.md#试题五",
       "complete": false,
       "covered_topic_ids": [
@@ -2513,7 +2513,7 @@
       ],
       "content_fingerprint": "51d5fea314680c60e22aea99270781e49459d3f1b2723cfd9d52767829c66fdf",
       "canonical_item_id": "past-papers/case-by-year/2022.md#试题一",
-      "complete": false,
+      "complete": true,
       "covered_topic_ids": [
         "K04.ARCH_STYLES_ABSD",
         "K09.QUALITY_SCENARIOS",
@@ -3076,7 +3076,7 @@
       ],
       "content_fingerprint": "ffafd074aa385c90d22cfe06a61bfb1e73338f5985c37ae48cd1b2a0b8a07e10",
       "canonical_item_id": "past-papers/case-by-year/2025上.md#试题二",
-      "complete": false,
+      "complete": true,
       "covered_topic_ids": [
         "K18.COMPUTER_ARCH_STORAGE",
         "K27.EMERGING_TECH"
@@ -3103,9 +3103,9 @@
           "topic_ids": []
         }
       ],
-      "content_fingerprint": "dcf6e198619bf5e913d275f7f47c63ec2f547e910f9f6b33b1b90f99c0d4cd5e",
+      "content_fingerprint": "76dea88b4686e3dfa87adeadb50aa0c37850a45146309c6941cc568635350776",
       "canonical_item_id": "past-papers/case-by-year/2025上.md#试题三",
-      "complete": false,
+      "complete": true,
       "covered_topic_ids": [
         "K10.DATABASE_MODELING",
         "K21.MESSAGING_CACHE"

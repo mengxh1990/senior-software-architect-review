@@ -263,13 +263,26 @@ class ReviewedRemovalTests(unittest.TestCase):
             for document in manifest["documents"]
             for name in (document.get("drop_images") or {})
         }
-        self.assertGreater(len(drops), 0, "保留考期的广告/水印剔除清单不应为空")
+        self.assertGreater(len(drops), 0, "保留考期的广告/推广图剔除清单不应为空")
         for label, stem in drops:
             with self.subTest(asset=f"{label}/{stem}"):
                 self.assertFalse(
                     (REPO_ROOT / "past-papers" / "assets" / label / f"{stem}.webp").exists(),
-                    f"{label}/{stem} 属于广告或水印图，必须已从仓库删除",
+                    f"{label}/{stem} 属于广告/推广图，必须已从仓库删除",
                 )
+
+    def test_manifest_never_drops_a_figure_for_its_watermark_alone(self) -> None:
+        """带水印的题图按原样入库：只有纯推广图才允许剔除。"""
+        import json
+
+        manifest = json.loads((REPO_ROOT / "scripts" / "las_import_manifest.json").read_text(encoding="utf-8"))
+        reasons = [
+            (document["label"], name, reason)
+            for document in manifest["documents"]
+            for name, reason in (document.get("drop_images") or {}).items()
+        ]
+        watermark_only = [entry for entry in reasons if "水印" in entry[2] and "推广" not in entry[2]]
+        self.assertEqual(watermark_only, [], "水印不再是剔除理由，带水印题图必须保留")
 
 
 class HeadingNormalizationTests(unittest.TestCase):
