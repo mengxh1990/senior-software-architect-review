@@ -8,6 +8,7 @@ import tempfile
 import threading
 import unittest
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -382,6 +383,29 @@ class ExamServerTest(unittest.TestCase):
         public = exam_server.public_payload()
         serialized = json.dumps(public, ensure_ascii=False)
         self.assertNotIn("question_fingerprint", serialized)
+
+    def test_mock_paper_serves_figure_assets_and_rejects_traversal(self) -> None:
+        """网页模考里的带图题必须能取到同源裁图，且只能取到资产目录内的图。"""
+        _, payload = self.request("/api/mock-paper")
+        items = payload["data"]["items"]
+        figures = [item for item in items if item.get("figures")]
+        self.assertTrue(figures, "带图真题必须在网页模考里带出题图 URL")
+        url = figures[0]["figures"][0]
+        self.assertTrue(url.startswith("/api/figure?path="), url)
+        with urllib.request.urlopen(self.origin + url, timeout=3) as response:
+            self.assertEqual(200, response.status)
+            self.assertEqual("image/webp", response.headers.get("Content-Type"))
+            self.assertGreater(len(response.read()), 1024)
+        for blocked in (
+            "../scripts/tutor.py",
+            "past-papers/comprehensive-by-year/2018下.md",
+            "past-papers/assets/comprehensive/2018下/absent.webp",
+        ):
+            with self.subTest(path=blocked):
+                target = self.origin + "/api/figure?path=" + urllib.parse.quote(blocked)
+                with self.assertRaises(urllib.error.HTTPError) as caught:
+                    urllib.request.urlopen(target, timeout=3)
+                self.assertEqual(404, caught.exception.code)
 
     def test_new_form_keeps_its_identity_for_grading_replay_and_feedback(self) -> None:
         paper_id = exam_server.PAPER_IDS[1]

@@ -39,6 +39,8 @@
 
 **知识点标签**：综合训练只保留 2018 下–2026 上的转录。2009–2017 综合题已删除，旧题组映射及批量导入入口同步移除；私人历史记录不受影响。
 
+**插图覆盖**：综合知识里依赖原卷插图的题（如 2018 下第 2 题的三态进程 PCB 组织图）由 `past-papers/assets/comprehensive/<考期>/` 下的原卷裁图供给，来源 PDF、页码与裁剪框记录在 [`scripts/comprehensive_figure_manifest.json`](../scripts/comprehensive_figure_manifest.json)，可用 [`scripts/build_comprehensive_figures.py`](../scripts/build_comprehensive_figures.py) 复现。拿不到裁图的题按 `figure_mode=text` 用题面已有的文字描述/转写表兜底（如 2025 下第 6 题的四象限表）；图与描述都缺的题（如 2025 下第 18 题、2021 第 4 题）按 `figure_mode=unavailable` 照常出题，只标记材料缺失、不臆造图意，由考生按题干作答。
+
 **案例与论文标签**：标签表现有案例 91 条、论文 60 条（含不同版本/答案区，不等于独立试卷题数）。2009–2017 仅保留 30 道案例和 28 道论文。案例编号 01–15，论文编号 01–13；逐题依据见 [历史题复核](HISTORICAL_CURATION.md)，标签与正文一致性由 `scripts/tag_case_essay.py --check` 校验。
 
 ## 案例分析覆盖（20 / 20 考期）

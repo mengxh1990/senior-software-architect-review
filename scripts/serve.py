@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import mimetypes
 import re
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -52,6 +53,28 @@ def evict_stale_issued_exams(keep: str | None = None) -> None:
 
 class RequestError(ValueError):
     """A client error that is safe to return without a traceback."""
+
+
+FIGURE_SUFFIXES = {".webp", ".png", ".jpg", ".jpeg", ".gif"}
+
+
+def resolve_figure_request(raw_path: str) -> Path:
+    """Resolve one ``/api/figure`` request to a crop inside the asset directory.
+
+    Only the tracked comprehensive crop directory is reachable; anything else
+    (traversal, other repo paths, non-image suffixes) is refused so the local
+    exam page can render figures without exposing the rest of the checkout.
+    """
+
+    candidate = (REPO_ROOT / raw_path).resolve()
+    root = mock_paper.FIGURE_ROOT.resolve()
+    if (
+        root not in candidate.parents
+        or candidate.suffix.lower() not in FIGURE_SUFFIXES
+        or not candidate.is_file()
+    ):
+        raise RequestError("题图资源不存在")
+    return candidate
 
 
 def json_response(handler: SimpleHTTPRequestHandler, data: Any, status: int = 200) -> None:
@@ -449,6 +472,8 @@ class ExamHandler(SimpleHTTPRequestHandler):
             self._handle_learning_plan(parse_qs(parsed.query))
         elif path == "/api/mock-paper":
             self._handle_mock_paper(parse_qs(parsed.query))
+        elif path == "/api/figure":
+            self._handle_figure(parse_qs(parsed.query))
         elif path in {"/questions.json", "/api/questions"}:
             json_response(self, {"ok": False, "error": "答案库不向考试浏览器开放"}, 404)
         elif path.startswith("/api/"):
@@ -546,6 +571,26 @@ class ExamHandler(SimpleHTTPRequestHandler):
             json_response(self, {"ok": False, "error": str(error)}, 400)
         except tutor.TutorError as error:
             json_response(self, {"ok": False, "error": str(error)}, 409)
+
+    def _handle_figure(self, query: dict[str, list[str]]) -> None:
+        """Serve one tracked comprehensive crop to the same-origin exam page."""
+
+        raw_path = (query.get("path") or [""])[0]
+        try:
+            asset = resolve_figure_request(raw_path)
+        except RequestError as error:
+            json_response(self, {"ok": False, "error": str(error)}, 404)
+            return
+        payload = asset.read_bytes()
+        self.send_response(200)
+        self.send_header(
+            "Content-Type",
+            mimetypes.guess_type(asset.name)[0] or "application/octet-stream",
+        )
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(payload)
 
     def _handle_mock_paper(self, query: dict[str, list[str]]) -> None:
         try:

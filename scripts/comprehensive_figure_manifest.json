@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "description": "综合知识插图资产来源表。每一条记录一道（或一组）依赖插图的综合知识真题所引用的原卷裁图：源 PDF、页码与裁剪框均可复现。裁图由 scripts/build_comprehensive_figures.py 生成到 past-papers/assets/comprehensive/<考期>/，并在题目 markdown 里以 ![](../assets/comprehensive/<考期>/<文件>) 引用。",
+  "source_root": "/Users/bytedance/Documents/软考/高级架构师/00、历年真题【最高优先】",
+  "render": {
+    "tool": "pdftoppm",
+    "notes": "裁剪框 x/y/width/height 的单位是在 dpi 指定分辨率下渲染出的像素；命令行：pdftoppm -png -r <dpi> -f <page> -l <page> -x <x> -y <y> -W <width> -H <height> <pdf> <out>。生成后按灰度扫描件做粉色水印抑制，再以无损 WebP 写入资产目录。"
+  },
+  "assets": [
+    {
+      "id": "2018下-p02-pcb-index",
+      "file": "past-papers/assets/comprehensive/2018下/p02_pcb_index.webp",
+      "item_ids": [
+        "past-papers/comprehensive-by-year/2018下.md#2",
+        "past-papers/comprehensive-by-year/2018下.md#3"
+      ],
+      "caption": "三态进程 PCB 组织：运行/就绪/阻塞进程索引表分别指向 PCB1～PCB9",
+      "note": "第 2、3 题共用同一张原卷插图：运行索引表 2 项、就绪索引表 3 项、阻塞索引表 4 项。（2）问索引方式，（3）问 2 运行 3 就绪 4 阻塞。",
+      "source": {
+        "pdf": "2018年下半年/2018年下半年 系统架构设计师 综合知识.pdf",
+        "page": 2,
+        "dpi": 300,
+        "crop": {
+          "x": 738,
+          "y": 1655,
+          "width": 1196,
+          "height": 670
+        }
+      }
+    }
+  ]
+}

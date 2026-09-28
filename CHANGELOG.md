@@ -4,6 +4,7 @@
 
 ### Added
 
+- 综合知识插图通道：依赖原卷插图的客观题不再只给文字转写。裁图来源记入 [`scripts/comprehensive_figure_manifest.json`](scripts/comprehensive_figure_manifest.json)（源 PDF、页码、DPI、裁剪框），由 [`scripts/build_comprehensive_figures.py`](scripts/build_comprehensive_figures.py) 用 `pdftoppm` 复现到 `past-papers/assets/comprehensive/<考期>/` 并做灰度水印抑制；题目 markdown 用 `![](../assets/comprehensive/<考期>/<文件>)` 引用，`sanitize_bank` 把它换成 `【图 N】` 并输出 `figures`，`quiz-prepare` 与案例题对齐地补上绝对路径 `figure_assets` / `figures_complete`。首批入库 2018 下第 2 题（三态进程 PCB 组织）。
 - 统一两层训练分类并修复评估状态与复测资源调度：训练分类收敛为知识域→K模块（细知识点仅作笔记标签），跨日与阅读材料证据同最近 12 题窗口分开计量，新增三套互不重题的 75 题固定模考卷并在出卷前检查曝光资格，案例材料不足且已成功时不再自动重复等待达标。
 - 答题循环运行时编排：`progress` / `quiz-prepare` / `quiz-grade` / `quiz-variant-grade` 支持 `--runtime-json` 精简返回值，`quiz-grade` 可用 `--prepare-next` 在同一命令内判分并准备续练，SOP 与教师人格建立运行时白名单与回合预算。
 - 新增只读 `tutor.py progress` 聚合入口，一次返回三科状态、有效时间分配、薄弱 Top、到期复习和下一步；`manual_trigger` 科目从自动分配中剔除并单独提示，不再为“看看进度”创建答题会话。
@@ -12,6 +13,7 @@
 
 ### Changed
 
+- 综合知识材料门禁放开为「题干在就出题」：图/表缺失不再拦截，`sanitize_bank` 把 `missing_required_figure` / `missing_required_table` / `figure_not_renderable` / `missing_figure_asset` 从 `quality_issues` 移到非阻塞的 `quality_notes`，`quality_status` 只对真正不可用的题（空/残缺题干、选项集或答案键坏、泄题、人工排除）判 `invalid`。`quiz-prepare` 用 `figure_mode`（`asset` 贴原卷裁图 / `text` 用题面文字描述兜底 / `unavailable` 图与描述都缺仍照常出 / `null` 不需要图）与 `material_missing` 说明材料情况，教练按现状如实呈现、不替考生补写材料；考生遇到完全无法作答的题仍可用 `--invalidate` 排除本轮。据此 2021 第 4 题、2025 下第 18 题等进入可出池（可出题 1149→1151，门禁拦下 27→25），考频快照同步重建。
 - 出题默认直接贴图：题目/整卷带图时按 `figure_assets`（`paper_practice` 新增该字段）用绝对路径在 `【图 N】` 位置内联渲染，文字描述降级为环境不可渲染或插图缺失时的兜底；`case-prepare` / `case-mock-prepare` / `paper_practice` 的 `coach_note`、`quiz-loop-sop.md` 与教师人格同步改为“图文一起给”，并撤下自检清单里“不得贴图片路径”的旧条目。
 - 题图水印不再作为剔除理由：`past-papers/assets/` 只删除纯广告/推广图与重复贴片，题图上的机构水印按原样保留；`paper_practice` 的「（原图含机构广告或水印，已移除）」标注不再让整道题失去盲练资格，只在正文一张图都没留下时才按缺图处理，是否真缺图继续由正文引用 + 存活插图判断；`sanitize_bank` 同步不再把该标注记为 `missing_required_figure`；`las_import_manifest.json` 移除 3 条水印类剔除项（2020 `p2_002`、2021 `p27_007`、2025上 `p26_010`）。
 

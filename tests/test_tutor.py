@@ -2726,6 +2726,97 @@ class TutorAcceptanceTest(unittest.TestCase):
             {"recalled_real"}, sources, "2020 回忆版不得标记为 real 完整真题"
         )
 
+    def test_comprehensive_figure_assets_reach_the_quiz_payload(self) -> None:
+        """综合知识带图题必须把原卷裁图带进公开题面契约。"""
+        scripts_path = str(REPO_ROOT / "scripts")
+        if scripts_path not in sys.path:
+            sys.path.insert(0, scripts_path)
+        import argparse
+        import tutor as module
+
+        curriculum = module.load_curriculum()
+        topics = module.topic_map(curriculum)
+        pool = module.load_quiz_question_pool(curriculum)
+        raw = next(
+            item
+            for item in pool
+            if item["id"] == "past-papers/comprehensive-by-year/2018下.md#2"
+        )
+        self.assertEqual("ready", raw["quality_status"])
+        self.assertEqual(["K01.OS_MEMORY_KERNEL"], raw["candidate_topics"])
+        question = module.quiz_question_for_topic(
+            raw, topics["K01.OS_MEMORY_KERNEL"]
+        )
+        assert question is not None
+        self.assertEqual(1, len(question["figure_assets"]))
+        self.assertTrue(Path(question["figure_assets"][0]).is_file())
+        self.assertEqual("asset", question["figure_mode"])
+        self.assertTrue(question["figures_complete"])
+        self.assertIn("【图 1】", question["stem"])
+        self.assertNotIn("](", question["stem"])
+
+        # 无裁图但有可作答文字描述的题按 figure_mode=text 放行兜底。
+        fallback_raw = next(
+            item
+            for item in pool
+            if item["id"] == "past-papers/comprehensive-by-year/2025下.md#6"
+        )
+        fallback = module.quiz_question_for_topic(
+            fallback_raw, topics["K26.ARCH_EVOLUTION"]
+        )
+        assert fallback is not None
+        self.assertEqual("text", fallback["figure_mode"])
+        self.assertEqual([], fallback["figure_assets"])
+        self.assertFalse(fallback["figures_complete"])
+        self.assertFalse(fallback["material_missing"])
+
+        # 既无裁图也无文字描述的题照样出，只标记材料缺失。
+        for item_id, topic_id in (
+            ("past-papers/comprehensive-by-year/2025下.md#18", "K14.OS_SCHEDULING_FILES"),
+            ("past-papers/comprehensive-by-year/2021.md#4", "K01.OS_MEMORY_KERNEL"),
+        ):
+            bare = module.quiz_question_for_topic(
+                next(item for item in pool if item["id"] == item_id),
+                topics[topic_id],
+            )
+            assert bare is not None, item_id
+            self.assertEqual("unavailable", bare["figure_mode"], item_id)
+            self.assertEqual([], bare["figure_assets"], item_id)
+            self.assertFalse(bare["figures_complete"], item_id)
+            self.assertTrue(bare["material_missing"], item_id)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            data_dir = Path(temporary)
+            self._init(data_dir)
+            payload = module.build_quiz_prepare_payload(
+                argparse.Namespace(
+                    data_dir=data_dir,
+                    subject="comprehensive",
+                    topic="K01.OS_MEMORY_KERNEL",
+                    mixed=False,
+                    limit=40,
+                    today=None,
+                )
+            )
+        self.assertTrue(
+            all(
+                "figure_assets" in q
+                and "figures_complete" in q
+                and "figure_mode" in q
+                and "material_missing" in q
+                for q in payload["questions"]
+            ),
+            "每道公开题都要声明插图契约字段",
+        )
+        figure_questions = [q for q in payload["questions"] if q["figure_assets"]]
+        self.assertTrue(figure_questions, "带图真题必须把裁图带进公开题面契约")
+        figure = figure_questions[0]
+        self.assertEqual("2018下", figure["year"])
+        self.assertTrue(figure["figures_complete"])
+        self.assertTrue(Path(figure["figure_assets"][0]).is_file())
+        self.assertIn("【图 1】", figure["stem"])
+        self.assertNotIn("](", figure["stem"])
+
     def test_variant_audit_version_hash_matches_the_pool_entry(self) -> None:
         scripts_path = str(REPO_ROOT / "scripts")
         if scripts_path not in sys.path:

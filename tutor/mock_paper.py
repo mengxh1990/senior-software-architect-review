@@ -10,16 +10,31 @@ import copy
 import json
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import tutor
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PAPER_ID = "curriculum-mock-01-v4"
 BLUEPRINT_PATH = REPO_ROOT / "tutor/mock-blueprint.json"
+# 综合知识带图题的原卷裁图目录；网页模考通过同源 /api/figure 读取，
+# 不把本地绝对路径暴露给浏览器。
+FIGURE_ROOT = REPO_ROOT / "past-papers" / "assets" / "comprehensive"
 
 
 PAPER_IDS = tuple(f"curriculum-mock-{n:02d}-v4" for n in range(1, 4))
 FORMS_PATH = REPO_ROOT / "tutor/mock-forms.json"
+
+
+def figure_url(asset: str | Path) -> str:
+    """Same-origin URL for one tracked crop asset (served by ``serve.py``)."""
+
+    path = Path(asset)
+    try:
+        relative = path.resolve().relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        relative = path.as_posix()
+    return "/api/figure?path=" + quote(relative, safe="")
 
 
 def _selected(paper_id: str = PAPER_ID) -> list[dict[str, Any]]:
@@ -113,6 +128,7 @@ def private_items(paper_id: str = PAPER_ID) -> list[dict[str, Any]]:
                     "id": item["item_id"],
                     "topic_name": item["topic_name"],
                     "stem": item["stem"],
+                    "figure_assets": list(item.get("figure_assets") or []),
                     "options": [
                         {"key": o["label"], "text": o["text"]} for o in item["options"]
                     ],
@@ -134,6 +150,7 @@ def public_payload(paper_id: str = PAPER_ID) -> dict[str, Any]:
             "id": i["question"]["id"],
             "topic_name": i["question"]["topic_name"],
             "stem": i["question"]["stem"],
+            "figures": [figure_url(asset) for asset in i["question"].get("figure_assets") or []],
             "options": copy.deepcopy(i["question"]["options"]),
         }
         for i in private_items(paper_id)

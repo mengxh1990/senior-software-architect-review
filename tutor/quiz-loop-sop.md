@@ -80,10 +80,12 @@ python3 scripts/tutor.py quiz-prepare --subject comprehensive --topic <next_acti
 `contexts[].text`（例如英语阅读短文或已验证的关联题干）；同一 context 只展示一次。
 没有上下文的题不得自行补写，质量门禁会在出题前过滤。
 
-**插图默认直接贴图**：题目带图（`figures` / `figure_assets` 非空）时，在对应
+**插图默认直接贴图**：题目带图（`figure_mode=asset`，`figure_assets` 非空）时，在对应
 `【图 N】` 位置用 Markdown 图片语法内联渲染，路径用返回的**绝对路径**。贴图与是否
-盲练无关——正式考试同样是看图作答，图必须和题面一起给。只有在运行环境不能渲染图片、
-或插图确实缺失时，才退化为文字描述图意，并明确告诉考生这是描述而非原图。
+盲练无关——正式考试同样是看图作答。`figure_mode=text` 表示这道题没有原卷裁图，按题面里
+已有的文字描述/转写表作答，并说明这是文字描述而非原图。`figure_mode=unavailable`
+（`material_missing=true`）表示图与描述都没有，照样出题，但要如实告诉考生"本题所需图/表
+缺失，请按题干作答"，不得替考生补写图形内容。只有运行环境不能渲染图片时才退化为文字描述。
 
 ### 底层脱敏契约
 
@@ -113,7 +115,8 @@ C. 选项文本
 python3 scripts/sanitize_bank.py exam-bank/07-software-engineering.md 1 4 6
 ```
 
-输出是 JSON 数组，每项含 `stem` / `options[]` / `correct` / `explanation`。
+输出是 JSON 数组，每项含 `stem` / `options[]` / `correct` / `explanation`，真题还可带
+`figures`（题目引用的仓库内裁图，已把原始 `![]()` 路径换成 `【图 N】`）。
 `correct` 与 `explanation` **只**用于判分和作答后反馈，**不**在作答前回显。
 
 ### Step 2b · 真题抽题契约（由 `quiz-prepare` 内部执行）
@@ -148,6 +151,16 @@ python3 scripts/sanitize_bank.py --list
 | `range` | 原卷题号区间，如 `[7, 8]`；运行时只放行可作为**单个独立作答单元**呈现的题 |
 | `candidate_topics` | 由题目模块映射表确定的唯一 K 主模块；原始标签仅用于来源追溯 |
 
+`quiz-prepare` 返回的每道题另外声明插图契约（与案例题 `figure_assets` 对齐）：
+
+| 字段 | 含义 |
+|---|---|
+| `figures` | 该题引用的仓库内裁图（相对路径，用于追溯） |
+| `figure_assets` | 上述裁图的**绝对路径**，作答前按 `【图 N】` 顺序内联渲染；无图题为空数组 |
+| `figure_mode` | `asset`=有原卷裁图（贴原图）；`text`=没有裁图，用题面里的文字描述/转写表兜底；`unavailable`=图与描述都缺，仍照常出题；`null`=本题不需要图 |
+| `figures_complete` | 是否拿到了原卷裁图；只有 `figure_mode=asset` 时为 `true` |
+| `material_missing` | 题面引用的图/表确实缺失（`unavailable` 或裁图文件不存在）。为 `true` 时照常出题，但要向考生说明材料情况 |
+
 抽题注意事项：
 
 - `id` 形如 `past-papers/comprehensive-by-year/2019下.md#6-7`，**record 时原样作为 `--item-id`**；
@@ -155,7 +168,8 @@ python3 scripts/sanitize_bank.py --list
 - `--source-type` 按考期来源选择：2018–2022 中可靠原卷用 `real`，2020 不完整回忆版用 `recalled_real`，回忆版考期（2023 下、2024 上/下、2025 上/下、2026 上）用 `recalled_real`；
 - 真题保留试卷原始的答案分布，**不要**套用"自编题正确答案需分散到不同选项"的规则；
 - 2019 下、2020、2023 下的整理版本只覆盖部分题目（可盲练题块 44 / 14 / 20；2019 下另有 5 题过质量门但缺解析，暂不可盲练），抽不到时退回 `exam-bank/` 或自编题；
-- 当前客观题是文本契约：题干里出现内联图片链接的题仍由门禁拦在盲练池外，需先补成可渲染的插图字段；不得用“原题含图”代替必要图示，也不得让考生凭空想象图形。
+- 依赖插图的题走**插图通道**：原卷裁图放在 `past-papers/assets/comprehensive/<考期>/`，来源 PDF、页码与裁剪框记录在 [`scripts/comprehensive_figure_manifest.json`](../scripts/comprehensive_figure_manifest.json)，由 [`scripts/build_comprehensive_figures.py`](../scripts/build_comprehensive_figures.py) 复现；题目 markdown 用 `![](../assets/comprehensive/<考期>/<文件>)` 引用，脱敏器把它换成 `【图 N】` 并输出 `figures`，`quiz-prepare` 再补上绝对路径的 `figure_assets`。已入库的裁图题（如 2018 下第 2 题）按 `figure_assets` 内联贴图。
+- **材料检查不再拦题**：出题只要求题干可用（选项、答案键、无泄题）。`figure_mode=asset` 贴原卷裁图；`text` 用题面已有的文字描述/转写表作答；`unavailable`（`material_missing=true`）表示图/描述都缺——照常出题，由考生按题干作答，教练只需如实说明"本题所需图/表缺失"，**不得**替考生补写图形、表格或原题材料。考生若在作答时发现某题完全无法作答，仍按异常决策表 `--invalidate 题号=missing_required_figure/table` 排除本轮。
 
 ### Step 2c · 案例与论文真题（按题型 / 主题抽题）
 
@@ -403,7 +417,7 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 - [ ] 没把 `✅` / `**答案**` / `**解析**` 泄给学员
 - [ ] 向考生说明作答格式时只用了占位符（如 `1_ 2_ 3_ 4_ 5_`），没有用真实字母组合举例——示例串不得恰好等于答案串
 - [ ] 没有硬贴 exam-bank 原文（一律走 `quiz-prepare`）
-- [ ] 带图题目已按 `【图 N】` 内联贴出（缺图或环境不支持渲染时已明确说明），没有把图简化成文字描述
+- [ ] `figure_mode=asset` 的题已按 `【图 N】` 内联贴图；`text` 照原样给出题面里的文字描述并注明“非原图”；`unavailable` 已如实说明“图/表缺失、按题干作答”，没有替考生补写图形或材料
 - [ ] "不会"的题用了 `X`，没有伪造选项或让考生补答
 - [ ] 讲解只用了 `quiz-grade` 的返回值，没有读 manifest / 题库 / 知识库
 
@@ -415,6 +429,8 @@ python3 scripts/tutor.py quiz-variant-grade --quiz-id <quiz-id> \
 |---|---|---|
 | CLI | [`scripts/tutor.py`](../scripts/tutor.py) | init / status / progress / weakpoints / recommend / quiz-prepare / quiz-grade（支持 `--prepare-next`）/ quiz-variant-grade（支持 `--prepare-next`）/ record / configure / doctor |
 | 脱敏器 | [`scripts/sanitize_bank.py`](../scripts/sanitize_bank.py) | 题库维护、抽查与人工修复用；支持 `--topic` / `--tag` / `--year` / `--list`，不在答题循环内调用 |
+| 综合知识插图来源表 | [`scripts/comprehensive_figure_manifest.json`](../scripts/comprehensive_figure_manifest.json) | 记录每题裁图的源 PDF、页码与裁剪框，可追溯、可复现 |
+| 综合知识裁图生成 | [`scripts/build_comprehensive_figures.py`](../scripts/build_comprehensive_figures.py) | 按来源表用 `pdftoppm` 复现裁图到 `past-papers/assets/comprehensive/<考期>/`；`--check` 校验资产齐全 |
 | 质量排除表 | [`scripts/quiz_quality_exclusions.json`](../scripts/quiz_quality_exclusions.json) | 人工确认的坏题黑名单；`doctor` 报告拦截数量，`quiz-prepare` 机械跳过 |
 | 考点表生成 | [`scripts/gen_topic_map.py`](../scripts/gen_topic_map.py) | 由 `curriculum.json` 生成 `topic-map.md` |
 | 教师人格 | [`.claude/agents/senior-architect-pass-coach.md`](../.claude/agents/senior-architect-pass-coach.md) | 覆盖诊断 / 案例 / 论文全流程决策 |

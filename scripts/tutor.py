@@ -4040,6 +4040,17 @@ def paper_source_type(year: str | None) -> str:
     return "recalled_real" if year in RECALLED_REAL_YEARS else "real"
 
 
+# 材料缺失类诊断（图/表）。它们不再拦截出题，只用于向教练说明题面材料情况。
+MATERIAL_MISSING_NOTES = frozenset(
+    {
+        "missing_required_figure",
+        "missing_required_table",
+        "missing_figure_asset",
+        "figure_not_renderable",
+    }
+)
+
+
 def teaching_status_for(item: dict[str, Any]) -> str:
     """Teaching gate shared by every pool source.
 
@@ -4115,6 +4126,16 @@ def quiz_question_for_topic(
         return None
     if raw.get("classification_status") == "needs_review":
         return None
+    # 综合知识是文本契约 + 脱敏器：插图不入题面正文，而是由题图资产目录提供
+    # 绝对路径，运行时按 ``【图 N】`` 位置内联渲染，契约与案例题 figure_assets
+    # 对齐。没有裁图时按 figure_mode 说明：text=用题面文字兜底，
+    # unavailable=图与描述都缺仍照常出题。
+    figure_assets, missing_figure_assets = sanitize_bank.resolve_figure_assets(
+        raw.get("figures") or [],
+        REPO_ROOT / str(raw["source"]) if raw.get("source") else None,
+    )
+    figure_mode = raw.get("figure_mode")
+    quality_notes = list(raw.get("quality_notes") or [])
     return {
         "item_id": raw["id"],
         "topic_id": topic_id,
@@ -4124,6 +4145,13 @@ def quiz_question_for_topic(
         "difficulty": raw.get("difficulty", 1),
         "taxonomy_version": knowledge_taxonomy.TAXONOMY_VERSION,
         "stem": raw["stem"],
+        "figures": list(raw.get("figures") or []),
+        "figure_assets": figure_assets,
+        "missing_figure_assets": missing_figure_assets,
+        "figure_mode": figure_mode,
+        "figures_complete": figure_mode == "asset",
+        "material_missing": any(note in MATERIAL_MISSING_NOTES for note in quality_notes),
+        "quality_notes": quality_notes,
         "context_id": raw.get("context_id"),
         "context_title": raw.get("context_title"),
         "context": raw.get("context"),
@@ -4381,6 +4409,14 @@ def build_quiz_prepare_payload(
             "source_type": item["source_type"],
             "year": item.get("year"),
             "topic_name": item["topic_name"],
+            # 与案例题一致：题目带图时给出可渲染的绝对路径，教练按
+            # ``【图 N】`` 位置内联贴图；无图题为空数组。figure_mode=text
+            # 表示没有裁图、以题面里的文字描述兜底；unavailable 表示图与描述
+            # 都缺但题目仍照常出，由教练说明材料缺失。
+            "figure_assets": list(item.get("figure_assets") or []),
+            "figures_complete": bool(item.get("figures_complete", True)),
+            "figure_mode": item.get("figure_mode"),
+            "material_missing": bool(item.get("material_missing")),
         }
         for item in selected
     ]
@@ -5768,6 +5804,14 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
             and sanitize_bank.parse_exam_bank(path)
         ]
         blocked = [item for item in pool if item not in ready]
+        material_fallback = [
+            item
+            for item in ready
+            if any(
+                note in MATERIAL_MISSING_NOTES
+                for note in item.get("quality_notes", [])
+            )
+        ]
         reason_counts: dict[str, int] = {}
         for item in blocked:
             issues = list(item.get("quality_issues", []))
@@ -5802,6 +5846,11 @@ def doctor_checks(data_dir: Path) -> tuple[bool, list[dict[str, Any]]]:
                 "message": (
                     f"可出题 {len(routable)} 道，质量门禁拦下 {len(blocked)} 道"
                     + (f"（{top_reasons}）" if top_reasons else "")
+                    + (
+                        f"，其中材料缺失靠题干作答 {len(material_fallback)} 道"
+                        if material_fallback
+                        else ""
+                    )
                     + f"，考点映射未入池 {unmapped} 道"
                     + f"，未接入题库文件 {len(unreferenced_bank_files)} 个"
                     + ("（" + "、".join(unreferenced_bank_files) + "）" if unreferenced_bank_files else "")

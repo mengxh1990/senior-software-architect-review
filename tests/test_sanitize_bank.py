@@ -262,7 +262,7 @@ class PastPaperParsingTests(unittest.TestCase):
         )
         self.assertTrue(sanitize_bank.parse_paper(path)[0]["id"].endswith("#1-1"))
 
-    def test_canonicalised_transcript_ignores_image_and_blank_marker_in_stem(self) -> None:
+    def test_canonicalised_transcript_promotes_image_and_drops_blank_marker(self) -> None:
         path = self._write(
             "\n".join(
                 [
@@ -282,7 +282,10 @@ class PastPaperParsingTests(unittest.TestCase):
             "2024上",
         )
         item = sanitize_bank.parse_paper(path)[0]
-        self.assertEqual(item["stem"], "题干保留。")
+        # 图片不再被整段丢弃：原始仓库路径换成 ``【图 N】`` 占位标记，路径本身
+        # 走结构化 figures 字段，绝不进入面向考生的题干。
+        self.assertEqual(item["stem"], "题干保留。 【图 1】")
+        self.assertEqual(item["figures"], ["../assets/example.webp"])
 
     def test_legacy_inline_metadata_adapter_keeps_metadata_out_of_stem(self) -> None:
         path = self._write(
@@ -559,7 +562,8 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual("ready", verdict["quality_status"])
         self.assertEqual([], verdict["quality_issues"])
 
-    def test_quality_gate_flags_missing_figure_table_and_answer_key(self) -> None:
+    def test_quality_gate_reports_missing_material_without_blocking(self) -> None:
+        """缺图/缺表只记诊断，不再拦题；坏答案键仍在拦截。"""
         verdict = sanitize_bank.assess_quality(
             {
                 "id": "past-papers/x.md#1",
@@ -573,10 +577,12 @@ class PastPaperParsingTests(unittest.TestCase):
             }
         )
         self.assertEqual("invalid", verdict["quality_status"])
-        self.assertIn("missing_required_figure", verdict["quality_issues"])
-        self.assertIn("missing_required_table", verdict["quality_issues"])
         self.assertIn("answer_not_in_options", verdict["quality_issues"])
+        self.assertIn("missing_required_figure", verdict["quality_notes"])
+        self.assertIn("missing_required_table", verdict["quality_notes"])
+        self.assertNotIn("missing_required_figure", verdict["quality_issues"])
         self.assertTrue(verdict["requires_figure"])
+        self.assertEqual("unavailable", verdict["figure_mode"])
 
     def test_quality_gate_recognizes_truncated_work_hours_table_reference(self) -> None:
         verdict = sanitize_bank.assess_quality(
@@ -593,8 +599,9 @@ class PastPaperParsingTests(unittest.TestCase):
                 "explanation": None,
             }
         )
-        self.assertEqual("invalid", verdict["quality_status"])
-        self.assertIn("missing_required_table", verdict["quality_issues"])
+        self.assertEqual("ready", verdict["quality_status"])
+        self.assertEqual([], verdict["quality_issues"])
+        self.assertIn("missing_required_table", verdict["quality_notes"])
 
     def test_quality_gate_requires_complete_option_set_and_context(self) -> None:
         incomplete = sanitize_bank.assess_quality(
@@ -694,7 +701,7 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertEqual("invalid", verdict["quality_status"])
         self.assertIn("incomplete_stem", verdict["quality_issues"])
 
-    def test_quality_gate_blocks_repository_image_links_until_renderable(self) -> None:
+    def test_quality_gate_reports_unrendered_image_links_without_blocking(self) -> None:
         verdict = sanitize_bank.assess_quality(
             {
                 "id": "past-papers/x.md#figure",
@@ -702,13 +709,138 @@ class PastPaperParsingTests(unittest.TestCase):
                 "options": [
                     {"label": "A", "text": "第一项"},
                     {"label": "B", "text": "第二项"},
+                    {"label": "C", "text": "第三项"},
+                    {"label": "D", "text": "第四项"},
                 ],
                 "correct": ["A"],
                 "explanation": None,
             }
         )
-        self.assertEqual("invalid", verdict["quality_status"])
-        self.assertIn("figure_not_renderable", verdict["quality_issues"])
+        # 图不可渲染不再是拦截理由：只记诊断，题目照样按题干出。
+        self.assertEqual("ready", verdict["quality_status"])
+        self.assertEqual([], verdict["quality_issues"])
+        self.assertIn("figure_not_renderable", verdict["quality_notes"])
+
+    def test_curated_figure_asset_satisfies_the_figure_gate(self) -> None:
+        """综合知识带图题：裁图入库后通过门禁，路径换 ``【图 N】``。"""
+        directory = Path(tempfile.mkdtemp())
+        papers = directory / "past-papers" / "comprehensive-by-year"
+        assets = directory / "past-papers" / "assets" / "comprehensive" / "2018下"
+        papers.mkdir(parents=True)
+        assets.mkdir(parents=True)
+        (assets / "p02_pcb_index.webp").write_bytes(b"fake-image")
+        path = papers / "2018下.md"
+        path.write_text(
+            "\n".join(
+                [
+                    "### 2. 【题干】",
+                    "进程管理采用三态模型，PCB 组织方式采用（2）。",
+                    "![三态进程 PCB 组织](../assets/comprehensive/2018下/p02_pcb_index.webp)",
+                    "A. 顺序方式",
+                    "B. 链接方式",
+                    "C. 索引方式",
+                    "D. Hash",
+                    "**答案**：C",
+                    "**考点**：§1.4 进程 PCB 组织",
+                    "**解析**：三态模型下 PCB 通过索引表分别指向就绪、阻塞队列。",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        item = sanitize_bank.parse_paper(path)[0]
+        self.assertEqual("ready", item["quality_status"])
+        self.assertEqual("asset", item["figure_mode"])
+        self.assertEqual(
+            ["../assets/comprehensive/2018下/p02_pcb_index.webp"], item["figures"]
+        )
+        self.assertIn("【图 1】", item["stem"])
+        self.assertNotIn("../assets", item["stem"])
+        existing, missing = sanitize_bank.resolve_figure_assets(item["figures"], path)
+        self.assertEqual([str((assets / "p02_pcb_index.webp").resolve())], existing)
+        self.assertEqual([], missing)
+
+    def test_missing_figure_asset_degrades_to_unavailable_mode(self) -> None:
+        """声明的裁图文件不存在时不再拦题，只降级说明并保证不外发不存在的路径。"""
+        verdict = sanitize_bank.assess_quality(
+            {
+                "id": "past-papers/x.md#2",
+                "stem": "根据下图选择正确答案。 【图 1】",
+                "options": [
+                    {"label": "A", "text": "第一项"},
+                    {"label": "B", "text": "第二项"},
+                    {"label": "C", "text": "第三项"},
+                    {"label": "D", "text": "第四项"},
+                ],
+                "correct": ["A"],
+                "explanation": None,
+                "figures": ["../assets/comprehensive/2018下/absent.webp"],
+            },
+            source_path=REPO_ROOT / "past-papers" / "comprehensive-by-year" / "2018下.md",
+        )
+        self.assertEqual("ready", verdict["quality_status"])
+        self.assertEqual([], verdict["quality_issues"])
+        self.assertIn("missing_figure_asset", verdict["quality_notes"])
+        self.assertEqual("unavailable", verdict["figure_mode"])
+
+    def test_figure_text_fallback_is_servable_without_a_crop(self) -> None:
+        """无裁图但有可作答的文字描述/转写表时，按文字兜底放行。"""
+        cases = {
+            "转写文字": "进程管理采用三态模型，PCB 组织方式采用（2）。 "
+            "题图文字转写：运行、就绪、阻塞分别通过独立的进程索引表指向 PCB1～PCB9，"
+            "运行索引表 2 项、就绪索引表 3 项、阻塞索引表 4 项。",
+            "转写表格": "对于遗留系统的评价框架如下图所示，处于高水平、低价值区的策略为（）。 "
+            "原卷图不可用：本地原卷目录未提供扫描原卷。\n\n"
+            "| 技术水平 \\ 业务价值 | 高价值 | 低价值 |\n"
+            "|---|---|---|\n| 高水平 | 继承 | 改造 |\n| 低水平 | 集成 | 淘汰 |",
+        }
+        for name, stem in cases.items():
+            with self.subTest(name=name):
+                verdict = sanitize_bank.assess_quality(
+                    {
+                        "id": "past-papers/x.md#figure",
+                        "stem": stem,
+                        "options": [
+                            {"label": "A", "text": "第一项"},
+                            {"label": "B", "text": "第二项"},
+                            {"label": "C", "text": "第三项"},
+                            {"label": "D", "text": "第四项"},
+                        ],
+                        "correct": ["A"],
+                        "explanation": None,
+                    }
+                )
+                self.assertEqual("ready", verdict["quality_status"], verdict["quality_issues"])
+                self.assertEqual("text", verdict["figure_mode"])
+                self.assertTrue(verdict["requires_figure"])
+
+    def test_figure_note_without_any_description_is_still_servable(self) -> None:
+        """只声明“图不可用/未转写”而没有内容时照常出题，仅标记材料缺失。"""
+        for stem in (
+            "在磁盘调度管理中，假设磁盘移动臂位于21号柱面上，如果采用最短移臂调度算法，"
+            "那么系统的响应序列应为（）。 原卷图不可用：题目依赖的磁盘请求表未包含在当前来源文本，"
+            "且本地原卷目录没有扫描原卷；为避免猜补，不转写请求参数。",
+            "前趋图（Precedence Graph） 题图给出了进程 P1–P8 之间的前趋关系"
+            "（原卷插图未随转录保留），那么前趋图可记为（ ）。",
+        ):
+            with self.subTest(stem=stem[:24]):
+                verdict = sanitize_bank.assess_quality(
+                    {
+                        "id": "past-papers/x.md#figure",
+                        "stem": stem,
+                        "options": [
+                            {"label": "A", "text": "第一项"},
+                            {"label": "B", "text": "第二项"},
+                            {"label": "C", "text": "第三项"},
+                            {"label": "D", "text": "第四项"},
+                        ],
+                        "correct": ["A"],
+                        "explanation": None,
+                    }
+                )
+                self.assertEqual("ready", verdict["quality_status"])
+                self.assertEqual([], verdict["quality_issues"])
+                self.assertEqual("unavailable", verdict["figure_mode"])
+                self.assertIn("missing_required_figure", verdict["quality_notes"])
 
     def test_compound_figure_terms_are_not_treated_as_missing_figures(self) -> None:
         for stem in (
@@ -1054,7 +1186,7 @@ class PastPaperParsingTests(unittest.TestCase):
         self.assertNotIn("missing_required_table", item["quality_issues"])
         self.assertIn("| 输入数据 |", item["stem"])
 
-    def test_transcript_blocks_image_before_question_heading(self) -> None:
+    def test_transcript_reports_image_before_question_heading_without_blocking(self) -> None:
         path = self._write(
             "\n".join(
                 [
@@ -1075,8 +1207,11 @@ class PastPaperParsingTests(unittest.TestCase):
             "2013下",
         )
         item = sanitize_bank.parse_paper(path)[0]
-        self.assertEqual("invalid", item["quality_status"])
-        self.assertIn("figure_not_renderable", item["quality_issues"])
+        # 图/表缺失不再拦题；仍如实报告，便于教练说明材料情况。
+        self.assertEqual("ready", item["quality_status"])
+        self.assertEqual([], item["quality_issues"])
+        self.assertIn("figure_not_renderable", item["quality_notes"])
+        self.assertEqual("unavailable", item["figure_mode"])
 
     def test_previous_explanation_table_does_not_block_next_question(self) -> None:
         path = self._write(

@@ -205,6 +205,21 @@ NEXT_QUESTION_HEADER_RE = re.compile(
     re.MULTILINE,
 )
 RESOURCE_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+# 只匹配图片语法，用于把题目自带的插图抽成结构化字段；普通链接不算插图。
+IMAGE_LINK_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
+# 转录稿显式声明“题图没有随转录保留”的标记。出现这些标记的题是依赖图但当前
+# 没有可渲染插图的题：优先由图资产目录提供裁图；拿不到裁图时，只有确实写出
+# 了可作答的文字描述（转写文本或数据表）才用文字兜底放行，否则继续拦截。
+FIGURE_UNAVAILABLE_MARKER_RE = re.compile(
+    r"题图文字转写|原卷图不可用|原卷插图未随转录保留|原图未随转录"
+)
+# 兜底说明里明确表示“没有转写内容”的措辞。这类说明不构成可作答的文字描述，
+# 必须保持拦截（例如“为避免猜补，不转写请求参数”）。
+FIGURE_FALLBACK_EMPTY_RE = re.compile(
+    r"不(?:再)?转写|未转写|不予转写|不补写|不再补写|未包含|未提供|无法提供"
+)
+# 文字兜底至少要写出这么多实质字符，否则视为“只说了图缺失”的占位说明。
+FIGURE_FALLBACK_MIN_CHARS = 12
 OPTION_LABELS = ("A", "B", "C", "D")
 DOMAIN_NAMES = {
     1: "计算机系统",
@@ -931,16 +946,22 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
             )
         # A canonicalised transcript may retain source images and an explicit
         # ``(N)`` sub-question marker immediately before its first option.
-        # Those are layout scaffolding, not learner-facing stem content; the
-        # legacy transcript adapter already omitted them, so the canonical
-        # path must do the same to preserve its public payload exactly.
-        stem_lines = _curated_stem_lines([header_text] + [
-            line
-            for line in content_lines[:option_start]
-            if line.strip()
-            and not IMAGE_ONLY_RE.match(line.strip())
-            and not PLACEHOLDER_STEM_RE.match(line.strip())
-        ])
+        # The blank marker is layout scaffolding, not learner-facing stem
+        # content, so it is dropped; a source image is instead promoted to a
+        # ``【图 N】`` marker backed by a tracked crop asset (see
+        # :func:`extract_stem_figures`). This keeps the raw repository path
+        # out of the payload while still handing the learner the required
+        # figure.
+        figures: List[str] = []
+        stem_source_lines: List[str] = []
+        for line in content_lines[:option_start]:
+            stripped = line.strip()
+            if not stripped or PLACEHOLDER_STEM_RE.match(stripped):
+                continue
+            rewritten, found = extract_stem_figures(stripped)
+            figures.extend(found)
+            stem_source_lines.append(rewritten)
+        stem_lines = _curated_stem_lines([header_text] + stem_source_lines)
         options = _parse_options(content_lines[option_start:])
 
         explanation = ""
@@ -964,6 +985,7 @@ def parse_paper_curated(text: str, year: str) -> List[Dict]:
                 "options": options,
                 "correct": correct,
                 "explanation": explanation,
+                "figures": figures,
                 "source_figure_status": CURATED_SOURCE_FIGURE_STATUS_OVERRIDES.get(
                     f"past-papers/comprehensive-by-year/{year}.md#{number}"
                 ),
@@ -1313,6 +1335,69 @@ def references_table(stem: str) -> bool:
     return bool(TABLE_REF_RE.search(stem or ""))
 
 
+def extract_stem_figures(stem: str) -> tuple[str, List[str]]:
+    """Promote local inline image links to ``【图 N】`` markers.
+
+    The learner-facing quiz payload is text plus separately-rendered figure
+    assets, so a raw repository path must never survive in the stem. Every
+    repository-relative image link is replaced in order with ``【图 N】`` and
+    its target collected; remote/data links are left untouched so the quality
+    gate can still reject them.
+    """
+
+    figures: List[str] = []
+
+    def replace(match: "re.Match[str]") -> str:
+        target = match.group(1).split("#", 1)[0].strip()
+        if not target or target.startswith(("http://", "https://", "data:")):
+            return match.group(0)
+        figures.append(target)
+        return f"【图 {len(figures)}】"
+
+    return IMAGE_LINK_RE.sub(replace, stem or ""), figures
+
+
+def resolve_figure_assets(
+    figures: Sequence[str], source_path: Path | None
+) -> tuple[List[str], List[str]]:
+    """Resolve figure link targets to absolute paths, split by existence."""
+
+    base = source_path.parent if source_path is not None else REPO_ROOT
+    existing: List[str] = []
+    missing: List[str] = []
+    for target in figures:
+        path = (base / target).resolve()
+        (existing if path.is_file() else missing).append(str(path))
+    return existing, missing
+
+
+def figure_text_fallback(stem: str) -> str | None:
+    """Return the transcribed text that stands in for a missing figure.
+
+    A figure-dependent item without a crop asset may still be answerable when
+    the transcript replaced the figure with prose or a data table. Only an
+    explicit transcription marker with real content counts; a note that merely
+    states the material is missing (or was deliberately not transcribed)
+    returns ``None`` so the item stays blocked instead of being served
+    unanswerable.
+    """
+
+    text = stem or ""
+    marker = FIGURE_UNAVAILABLE_MARKER_RE.search(text)
+    if not marker:
+        return None
+    body = text[marker.end() :].strip()
+    if MARKDOWN_TABLE_RE.search(text[marker.start() :]):
+        # A transcribed table is the most concrete substitute for a figure.
+        return body or text.strip()
+    if not body or FIGURE_FALLBACK_EMPTY_RE.search(body):
+        return None
+    substance = re.sub(r"[\s\W_]+", "", body)
+    if len(substance) < FIGURE_FALLBACK_MIN_CHARS:
+        return None
+    return body
+
+
 def is_incomplete_stem(stem: str) -> bool:
     """Return whether a stem is an obvious truncated prompt."""
 
@@ -1380,12 +1465,18 @@ def assess_quality(
 ) -> Dict:
     """Judge whether one parsed item may be shown as a blind quiz question.
 
-    The gate is deliberately conservative: an item that references a figure or
-    table it does not carry, leaks an answer marker, or has an unusable answer
-    key is reported with a stable issue id instead of being quietly repaired.
+    Blocking is reserved for defects that make the item unusable as a
+    text question (empty/truncated stem, broken option set or answer key, leaked
+    answer/explanation, confirmed deny-list entry). Missing *material* — a
+    figure or table the stem points at — is reported through ``quality_notes``
+    and ``figure_mode`` instead of blocking: the item still ships, the coach
+    presents the stem as-is, and the learner may reason from what is written.
+    A learner who finds such an item unusable can still ``--invalidate`` it for
+    that round.
     """
 
     issues: List[str] = []
+    notes: List[str] = []
     stem = str(item.get("stem") or "").strip()
     options = item.get("options") or []
     correct = [letter for letter in (item.get("correct") or []) if letter]
@@ -1393,8 +1484,24 @@ def assess_quality(
     texts = [str(option.get("text") or "").strip() for option in options]
     explanation = item.get("explanation")
     has_context = bool(str(item.get("context") or "").strip())
+    # ``figures`` holds repository-relative crop assets that
+    # :func:`extract_stem_figures` promoted out of the stem; ``image_links``
+    # still catches any raw link that was not promoted (remote URLs,
+    # hand-written paths) and therefore cannot be rendered to the learner.
+    figures = [str(target) for target in (item.get("figures") or []) if str(target).strip()]
+    _, missing_figure_assets = resolve_figure_assets(figures, source_path)
     image_links = RESOURCE_LINK_RE.findall(stem)
-    requires_figure = references_figure(stem) or bool(image_links)
+    source_figure_status = str(item.get("source_figure_status") or "").strip()
+    unavailable_marker = bool(FIGURE_UNAVAILABLE_MARKER_RE.search(stem))
+    figure_fallback = figure_text_fallback(stem)
+    requires_figure = (
+        references_figure(stem)
+        or bool(figures)
+        or bool(image_links)
+        or bool(source_figure_status)
+        or unavailable_marker
+        or bool(figure_fallback)
+    )
     has_renderable_table = bool(MARKDOWN_TABLE_RE.search(stem))
     requires_table = references_table(stem) or has_renderable_table
 
@@ -1445,31 +1552,31 @@ def assess_quality(
         # answered at all; the carrier stays out until a reviewed split ships
         # one item per blank with its authoritative option bank.
         issues.append("multi_question_group")
-    source_figure_status = item.get("source_figure_status")
+    # 材料缺失（图/表）不再拦截：题干在就出题，教练按 ``figure_mode`` /
+    # ``quality_notes`` 如实说明材料情况，考生可就题干作答或用 ``--invalidate``
+    # 排除本轮遇到的坏题。缺裁图但已有裁图链接时只记录诊断，不向考生承诺图。
+    if figures:
+        if missing_figure_assets:
+            notes.append("missing_figure_asset")
+    elif image_links:
+        notes.append("figure_not_renderable")
     if source_figure_status:
-        issues.append(str(source_figure_status))
+        notes.append(source_figure_status)
+    if requires_figure and not figures and not image_links and not source_figure_status and not figure_fallback:
+        notes.append("missing_required_figure")
     if item.get("source_requires_table") and not has_renderable_table:
-        issues.append("missing_required_table")
-    if image_links:
-        # quiz-prepare currently exposes a text-only public contract. A raw
-        # repository-relative Markdown path is not a renderable learner asset,
-        # so keep image-dependent questions out until the runtime can return a
-        # structured figure or an approved textual substitute.
-        issues.append("figure_not_renderable")
-    elif requires_figure and not (
-        has_renderable_table and "原卷图不可用" not in stem
-    ):
-        issues.append("missing_required_figure")
+        notes.append("missing_required_table")
     if requires_table and not has_renderable_table:
-        issues.append("missing_required_table")
-    for link in image_links:
-        target = link.split("#", 1)[0].strip()
-        if target.startswith(("http://", "https://")):
-            continue
-        base = source_path.parent if source_path is not None else REPO_ROOT
-        if not (base / target).resolve().exists():
-            issues.append("missing_figure_asset")
-            break
+        notes.append("missing_required_table")
+    if figures and not missing_figure_assets:
+        figure_mode: str | None = "asset"
+    elif figure_fallback:
+        figure_mode = "text"
+    elif requires_figure:
+        # 题目依赖图/表，但没有裁图也没有文字描述：照常出题，由教练说明材料缺失。
+        figure_mode = "unavailable"
+    else:
+        figure_mode = None
     if explanation and (
         NEXT_QUESTION_HEADER_RE.search(explanation)
         or EXPLANATION_LEAK_RE.search(explanation)
@@ -1484,9 +1591,13 @@ def assess_quality(
     return {
         "quality_status": "ready" if not issues else "invalid",
         "quality_issues": sorted(set(issues)),
+        "quality_notes": sorted(set(notes)),
         "requires_figure": requires_figure,
         "requires_table": requires_table,
         "requires_context": has_context,
+        # 题目带图时的呈现方式：asset=有原卷裁图，text=只有文字兜底，
+        # unavailable=图与描述都缺（仍可出题，需说明材料缺失），None=不需要图。
+        "figure_mode": figure_mode,
     }
 
 

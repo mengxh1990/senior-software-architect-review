@@ -9,18 +9,18 @@
   "coverage": {
     "recent": {
       "eligible_papers": 5,
-      "mapped_questions": 376,
+      "mapped_questions": 377,
       "papers": 7,
       "ratio": 1.0,
-      "ready_questions": 376,
+      "ready_questions": 377,
       "unmapped_questions": 0
     },
     "stable": {
       "eligible_papers": 3,
-      "mapped_questions": 257,
+      "mapped_questions": 258,
       "papers": 4,
       "ratio": 1.0,
-      "ready_questions": 257,
+      "ready_questions": 258,
       "unmapped_questions": 0
     }
   },
@@ -58,9 +58,9 @@
       "exclusion_reason": null,
       "expected_questions": 75,
       "frequency_eligible": true,
-      "mapped_questions": 71,
-      "paper_coverage": 0.9467,
-      "ready_questions": 71,
+      "mapped_questions": 72,
+      "paper_coverage": 0.96,
+      "ready_questions": 72,
       "source_type": "real",
       "unmapped_questions": 0,
       "year": "2021"
@@ -149,9 +149,9 @@
       "exclusion_reason": null,
       "expected_questions": 75,
       "frequency_eligible": true,
-      "mapped_questions": 69,
-      "paper_coverage": 0.92,
-      "ready_questions": 69,
+      "mapped_questions": 70,
+      "paper_coverage": 0.9333,
+      "ready_questions": 70,
       "source_type": "recalled_real",
       "unmapped_questions": 0,
       "year": "2025下"
@@ -172,14 +172,14 @@
   ],
   "policy_version": 3,
   "schema_version": 1,
-  "source_digest": "6fe3cdbc6da40de6976fd3047d31f530fa645cc27e1013263955bca3eef7977b",
+  "source_digest": "ba3ce14658d42361b50f1be720f9a1173d1f3a5a1a01f0931968c7ef1de79c6b",
   "taxonomy_version": 2,
   "topics": [
     {
       "recent_questions_per_paper": 3.0,
-      "stable_questions_per_paper": 1.3333,
+      "stable_questions_per_paper": 1.6667,
       "topic_id": "K01.OS_MEMORY_KERNEL",
-      "weighted_questions_per_paper": 1.6667
+      "weighted_questions_per_paper": 1.9333
     },
     {
       "recent_questions_per_paper": 2.0,
@@ -326,10 +326,10 @@
       "weighted_questions_per_paper": 1.0
     },
     {
-      "recent_questions_per_paper": 0.8,
+      "recent_questions_per_paper": 1.0,
       "stable_questions_per_paper": 0.6667,
       "topic_id": "K26.ARCH_EVOLUTION",
-      "weighted_questions_per_paper": 0.6933
+      "weighted_questions_per_paper": 0.7333
     },
     {
       "recent_questions_per_paper": 3.4,

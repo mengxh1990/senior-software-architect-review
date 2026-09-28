@@ -70,6 +70,7 @@ python3 scripts/serve.py
 │   ├── case-by-year/           # ⭐ 案例分析历年真题（2009–2017 经典选题，2018 起按年，2023 部分还原）
 │   ├── essay-by-year/          # ⭐ 论文历年真题完整题干（写作训练用）
 │   ├── assets/                 # 原题插图（无损 WebP，已剔除广告/推广图；题图水印保留）
+│   │   └── comprehensive/      # 综合知识客观题的原卷裁图（来源 PDF/页码/裁剪框见 scripts/comprehensive_figure_manifest.json）
 │   ├── essay-questions-by-year.md  # ⭐ 2009-2024 历年论文真题清单 + 主题映射 + 选题决策树
 │   ├── analysis-template.md    # 历年真题解析模板
 │   └── wrong-questions.md      # 错题本
