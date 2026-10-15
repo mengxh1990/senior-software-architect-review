@@ -213,6 +213,7 @@ python3 scripts/build_frequency_snapshot.py --check
 - 高频课程表：[`curriculum.json`](./curriculum.json)
 - 进度协议：[`PROGRESS_PROTOCOL.md`](./PROGRESS_PROTOCOL.md)
 - 公共模板：[`templates/`](./templates/)
+- 论文写作指南：[`essay-writing-guide.md`](./essay-writing-guide.md) — 真实素材、摘要、逐小问提纲、实施论证与自查；个人内容仅保存到 `.study/`
 
 运行验收：
 
