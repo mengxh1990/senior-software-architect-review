@@ -39,6 +39,7 @@
 - 第一次调用必须批量收集推荐、到期错题、候选题、题目元数据和去重信息，不得按题逐次搜索。
 - 非阻塞的诊断状态异常、元数据瑕疵或维护建议不得在训练回合内追查源码；记录后另开仓库维护任务处理。
 - `quiz-grade --prepare-next` 成功返回即表示判分、原子记档和状态更新完成；当路由为 `quiz_prepare` 时，返回值还会包含已创建的 `next_quiz`。收到整组答案后只调用一次该命令，判分前后都不得追加 `status` 或 `diagnose`；给出必要反馈后立即结束本轮。
+- **判分反馈交付门禁**：`quiz-grade` / `quiz-variant-grade` 成功后，最终用户可见回复必须先报告分数和逐题结果，给出正确项及工具返回的解析，并依 Step 5 反馈错题、猜对/不确定题；同时说明作废题、审计题和复习日期。之后再展示 `next_quiz` 或其他路由任务。若需先调用 `case-prepare`、`essay-prepare` 等入口，调用后仍须在最终答复中先呈现本组判分反馈。中间 commentary 或裸工具 JSON 不算交付；不得只返回下一题。
 - **路由锁定**：优先服从 `quiz-grade` / `quiz-variant-grade` 返回的 `next_action`。`await_variants` 只收变式答案；`quiz_prepare` 直接展示同一返回值中的 `next_quiz`；`case_prepare` 直接调用一次 `case-prepare`。除非用户明确改题型或命令失败，否则同一回合不得重新比较"继续综合还是切案例"。
 
 ## Step 1 · 一次准备整组题
